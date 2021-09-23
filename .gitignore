@@ -1,0 +1,7 @@
+.vscode
+shaders
+assets
+build
+*.png
+lib-amVK.lib
+rtr.exe
