@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 # Paths with SPACES Aren't Supported
-project(amGHOST)  #Cmake Docs on this command says,  SubDirectory should have usually have its own project() too
+project(amVK)  #Cmake Docs on this command says,  SubDirectory should have usually have its own project() too
 
 # If you do add_subdirectory(amVK)   specity   amVK_EXTERN cmake var
 # TODO: extern should be OPTIONAL.... cz ppl could have these in their very own EXTERN dir
@@ -40,21 +40,7 @@ find_program (glslc-exe
     REQUIRED
 )
 
-message(${glslc-exe})
-
-execute_process(
-    COMMAND 
-      ${glslc-exe} one.vert -o one.vert.spv
-    COMMAND
-      ${glslc-exe} one.frag -o one.frag.spv
-
-    WORKING_DIRECTORY
-      ${CMAKE_CURRENT_SOURCE_DIR}/shaders
-    RESULT_VARIABLE
-      CMD_MSG
-)
-
-message(${CMD_MSG})
+message("\n${glslc-exe}\n")
 
 
 add_library(lib-amVK amVK.cpp amVK_WI.cpp amVK_Device.cpp amVK_Pipeline.cpp amVK_ImgMemBuf.cpp)
