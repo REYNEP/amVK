@@ -21,13 +21,33 @@ struct amVK_Array {
 
 //Report this bug to VSCODE, everything looks the same goddamn color
 //Holds info about multiple PD
+//Only used for amVK_CX::PD... and it was intended
 typedef struct everything_PD__ {
   VkPhysicalDevice                 *list = nullptr;         //'Physical Devices List'       [will be sorted after sort_physical_devices() is called]
   VkPhysicalDeviceProperties      *props = nullptr;         //'Physical Devices Properties' [                        ++                            ]
   VkPhysicalDeviceFeatures     *features = nullptr;         //'Physical Devices Features'
   uint32_t                             n = 0;               //'Physical Devices Count'
-  amVK_Array<VkQueueFamilyProperties> *qFamily_lists = nullptr;     //'One Physical Devices can have Multiple qFamilies'
-} everyInfo_PD;
+  amVK_Array<VkQueueFamilyProperties> *qFamily_lists = nullptr;     //'One Physical Devices can have Multiple qFamilies
+
+  /** Plus Plus Stuffs */
+  VkPhysicalDevice                chozen = nullptr;
+  uint32_t                  chozen_index = 0;
+  bool                           *isUsed = nullptr;
+  uint32_t                   *benchMarks = nullptr;
+  uint32_t           *index_sortedByMark = nullptr;
+} loaded_PD_info_plus_plus;
+
+typedef enum amVK_TDevicePreset__ {
+  amVK_DevicePreset_Undefined = 0,
+  amVK_DevicePreset_Graphics = 1,
+  amVK_DevicePreset_RayTracing = 2,     // WIP
+  amVK_DevicePreset_Compute = 4,        // WIP
+  amVK_DevicePreset_Encode_Decode = 8,  // WIP
+  amVK_DevicePreset_Image_Shaders = 16, // WIP
+  amVK_DevicePreset_Compositor = 32,    // WIP
+  amVK_DevicePreset_Transfer = 64,      // WIP
+  amVK_DevicePreset_Sparse = 128        // WIP
+} amVK_TDevicePresetFlags;
 
 
 /** SWAPCHAIN IMAGE FORMAT DOCS

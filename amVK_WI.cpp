@@ -5,7 +5,7 @@
 
 VkBool32 amVK_WI::is_present_sup(uint32_t qFamily_Index) {
     VkBool32 res = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(amVK_CX::heart->_device_list[_amVK_D->_D]->_PD, qFamily_Index, _surface, &res);
+    vkGetPhysicalDeviceSurfaceSupportKHR(amVK_CX::heart->_vkDevice_list[_amVK_D->_D]->_PD, qFamily_Index, _surface, &res);
     return res;
 }
 
@@ -18,7 +18,7 @@ VkBool32 amVK_WI::is_present_sup(uint32_t qFamily_Index) {
  */
 VkSwapchainKHR amVK_WI::create_swapchain(bool full) {
     //Get PhysicalDevice
-    VkPhysicalDevice PD = amVK_CX::heart->_device_list[_amVK_D->_D]->_PD;
+    VkPhysicalDevice PD = amVK_CX::heart->_vkDevice_list[_amVK_D->_D]->_PD;
     
     //VUID-VkSwapchainCreateInfoKHR-surface-01270
     VkBool32 is_sup_surface = false;

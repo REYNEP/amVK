@@ -61,11 +61,13 @@ bool mergeSort(uint32_t first_index, uint32_t last_index, T *unsorted, uint32_t 
 
             memcpy(unsorted, sorted_tmp, i*sizeof(uint32_t));
             memcpy(origIndex, sorted_tmp2, i*sizeof(uint32_t));
+            //The Rest of unsorted is already SORTED
             return true;
         } 
         else if (q == q_lim) {
             if (mid_index-p != n-i-1) {LOG("algorithm Failure code x010");}
 
+            //Copy the rest of Unsorted-Left (a.k.a unsorted+p)
             memcpy((unsorted+i), (unsorted+p), (p-first_index)*sizeof(uint32_t));
             memcpy(unsorted, sorted_tmp, i*sizeof(uint32_t));
 

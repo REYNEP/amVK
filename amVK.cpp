@@ -7,22 +7,28 @@
  * \see ./.readme/amVK.md
  * if you are inspecting this file, make sure, you use    'function collapse'   option
  * I came across a Cool theme for VSCODE: EvaTheme
+ * also ANSI Decorative Fonts: [i am pretty sure the NAME is misused]   \see ASCIIDecorator by helixquar and 'Convert To ASCII Art' by BitBelt... I also se my CUSTOM ONE ;) 
  */
 
 //---------------- THE ULTIMATE GOAL WE'RE WORKING TOWARDS ----------------
 amVK_CX                       *amVK_CX::heart = nullptr;
-VkInstance                     amVK_CX::instance{};         //Multiple Instance is not supported yet
+VkInstance                     amVK_CX::instance{};         //Multiple Instance is not supported yet officially
 VkApplicationInfo              amVK_CX::vk_appInfo{};
 
 
 VkInstance amVK_CX::CreateInstance(void) {
+    if (amVK_CX::instance != nullptr) {     //But this Function would still work
+        LOG("amVK_CX::instance isn't  nullptr....   maybe you Created an Instance already");
+        return nullptr;
+    }
+
     if (amVK_CX::vk_appInfo.engineVersion == NULL) {  //amVK_CX::set_VkApplicationInfo()  sets  engineVersion by default
         amVK_CX::set_VkApplicationInfo(nullptr);      //this func wasn't called before
     }
 
 
     // ----------- Extensions for vkCreateInstance ------------
-    amVK_CX::enum_InstanceExts();           //Loads into  _iep
+    amVK_CX::enum_InstanceExts();           //Loads into  _iep      [Force_Load]
     amVK_CX::filter_SurfaceExts();          // _req_surface_ep
     amVK_CX::add_InstanceExts(_req_surface_ep[0].extensionName);
     amVK_CX::add_InstanceExts(_req_surface_ep[1].extensionName);
@@ -72,69 +78,57 @@ VkInstance amVK_CX::CreateInstance(void) {
 
 
 
-amVK_Device *amVK_CX::CreateDevice(VkDevice *D, bool surfaceSupport) {
+amVK_Device *amVK_CX::CreateDevice(amVK_TDevicePresetFlags preset, VkDeviceCreateInfo *CI) {
     // ----------- Physical Device Info ------------
-    amVK_CX::enum_PhysicalDevs();
-    amVK_CX::enum_PD_qFamilies();
-    
-    if (pdChozen == nullptr) {
-        bool PD_reUse = this->auto_choosePD();
-        if (!PD_reUse) {
-    #ifdef REUSE_PHYSICAL_DEVICE
-            LOG("reUsing GPU a.k.a PhysicalDevice for VkDevice Creation");
-    #else
-            LOG("Can't use Same PhysicalDevice to create LogicalDevice. returning nullptr. [See macro REUSE_PHYSICAL_DEVICE]");
-            return nullptr;
-    #endif
-        }
+    if (PD.chozen == nullptr) {
+        amVK_CX::enum_PhysicalDevs();
+        amVK_CX::enum_PD_qFamilies();
+        this->auto_choosePD();
+    }
+    LOG("GPU SELECTED:- \u0027"  << PD.props[PD_to_index(PD.chozen)].deviceName << "\u0027 Going in For vkCreateDevice");
+
+
+    // ----------- THE CREATE INFO ------------
+    if (CI != nullptr) {
+        goto finally_CreateDevice;
     }
 
-    LOG("GPU SELECTED. Going in For vkCreateDevice");
-    // ----------- CreateInfo for vkCreateDevice Queues ------------
-    // [GDC16, Downloaded talk], stackoverflow.com/a/55273688 & see 3.2 Fundamentals.Queues of VKSpecs [additional res: github.com/jcoder58/VulkanResources]
-    // vkSpecs[Sec3.2 BoxNote] says that one VkDevice
-    // ---- qFamily Selection ---- [why different qFamilies exists stackoverflow.com/a/65086765]
-    // queues are So Fucking Confusing : https://www.reddit.com/r/vulkan/comments/kjb388/reason_for_only_creating_1_queue/ggw81mc?utm_source=share&utm_medium=web2x&context=3
-    VkDeviceCreateInfo the_info = {};
-        the_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;  //[khr-reg]/vulkan/specs/1.2-extensions/man/html/VkStructureType.html
+    VkDeviceCreateInfo the_info;
+    CI = &the_info;
+        the_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         the_info.pNext = nullptr;
-        //the_info.flags [reserved for Future usage] & 40.3.1. Device Layer Deprecation
-        the_info.queueCreateInfoCount = 1;      //Probably this enables multiple queueFamilies \see [khr-reg]/vulkan/specs/1.2-extensions/man/html/VkDeviceCreateInfo.html
-        VkDeviceQueueCreateInfo info2 = {};
-            info2.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            info2.pNext = nullptr;
-            info2.flags = 0;             //currently only 1 option [khr-vk]/1.2-extensions/man/html/VkDeviceQueueCreateFlagBits.html
-            info2.queueFamilyIndex = 0;  //TODO: Add support for Choices & multiple queueFamilies
-            info2.queueCount = 1;        //TODO: Add support for choices
-            float qPriorityList = 0.f;      //TODO: QueuePriority
-            info2.pQueuePriorities = &qPriorityList;
-        the_info.pQueueCreateInfos = &info2;
-        the_info.enabledExtensionCount = dExtc_alpha;     //TODO + Below
+
+        VkDeviceQueueCreateInfo qCI;
+        qCI = default_qCI_for_PD_chozen();
+        the_info.queueCreateInfoCount = 1;
+        the_info.pQueueCreateInfos = &qCI;
+
+        // ----------- DEVICE EXTENSIONS, ENABLED FEATURES, LAYERS ------------
+        the_info.enabledExtensionCount = dExtc_alpha;
         the_info.ppEnabledExtensionNames = dExts_alpha;
         VkPhysicalDeviceFeatures info3 = {};
         the_info.pEnabledFeatures = &info3;
         the_info.ppEnabledLayerNames = _vLayers.data();
-        the_info.enabledLayerCount = 1;
+        the_info.enabledLayerCount = _vLayers.size();
 
     
-    // ----------- Actually Create the VkInstance ------------
-    VkDevice device = nullptr;
-    VkResult res = vkCreateDevice( //Occupies Almost 20MB
-        pdChozen,           //VkPhysicalDevice physicalDevice           [Obviously, The Physical Device that is gonna be Used]
-        &the_info,          //const VkDeviceCreateInfo*  pCreateInfo    [Just like the regular Other createInfo's that other vkCreateFuncs has]
-        nullptr,            //const VkAllocationCallbacks* pAllocator   [Duh!!!!]
-        &device             //VkDevice* pDevice                         [Our Very New LOGICAL DEVICE]
-    );
-    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateDevice() failed, time to call the devs, it's an highly unstable emergency"); return nullptr;}
-    
-    if (D != nullptr) {*(D) = device;}
+    // ----------- Actually Create the VkDevice ------------
+    finally_CreateDevice:
+    {
+        VkDevice device = nullptr;
+        VkResult res = vkCreateDevice( //Occupies Almost 20MB
+            PD.chozen, CI, nullptr, &device
+        );
+        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateDevice() failed, time to call the devs, it's an highly unstable emergency"); return nullptr;}
 
-    LOG("VkDevice Created! Yessssss, Time Travel! \n");
+        LOG("VkDevice Created! Yessssss, Time Travel! \n");
 
-    amVK_Device *the_device = new amVK_Device(device, pdChozen);
-    _device_list.push_back(the_device);
+        amVK_Device *the_device = new amVK_Device(device, PD.chozen);
+        _vkDevice_list.push_back(the_device);
+        PD.isUsed[PD.chozen_index] = true;
 
-    return the_device;
+        return the_device;
+    }
 }
 
 /** \param appInfo: default value is nullptr. */
@@ -431,7 +425,7 @@ bool amVK_CX::load_PD_info(bool force_load) {
 }
 
 bool amVK_CX::enum_PhysicalDevs() {
-    if (PD.list != nullptr) free(PD.list);      //By Default force_load()
+    if (PD.list != nullptr) free(PD.list);      //By Default force_load
 
     vkEnumeratePhysicalDevices(instance, &PD.n, nullptr);
     if (PD.n == 0) {
@@ -446,14 +440,30 @@ bool amVK_CX::enum_PhysicalDevs() {
     void *test = malloc((PD_n * sizeof(VkPhysicalDevice))
                        +(PD_n * sizeof(VkPhysicalDeviceProperties))
                        +(PD_n * sizeof(VkPhysicalDeviceFeatures))
-                       +(PD_n * sizeof(amVK_Array<VkQueueFamilyProperties>)));      //sizeof this one will be 16
+                       +(PD_n * sizeof(amVK_Array<VkQueueFamilyProperties>))    //sizeof this one will be 16
+                       +(PD_n * sizeof(bool))                                   //bool to store 'isUsed' list
+                       +(PD_n * sizeof(uint32_t))                               //benchMarks
+                       +(PD_n * sizeof(uint32_t)));                             //index_sortedByMark
     
 
-    // ----------- Use Malloc ------------
     PD.list = static_cast<VkPhysicalDevice *> (test);
     PD.props = reinterpret_cast<VkPhysicalDeviceProperties *> (PD.list + PD_n);
     PD.features = reinterpret_cast<VkPhysicalDeviceFeatures *> (PD.props + PD_n);
     PD.qFamily_lists = reinterpret_cast< amVK_Array<VkQueueFamilyProperties>* > (PD.features + PD_n);
+
+    PD.isUsed = reinterpret_cast<bool *> (PD.qFamily_lists + PD_n);
+    PD.benchMarks = reinterpret_cast<uint32_t *> (PD.isUsed + PD_n);
+    PD.index_sortedByMark = reinterpret_cast<uint32_t *> (PD.benchMarks + PD_n);
+
+    /**
+     * ----------- NULL / nullptr / 0 (ZERO) ------------
+    for (uint32_t i = 0; i < PD_n; i++) {   
+        PD.qFamily_lists[i].data = 0;     enum_PD_qFamilies()
+        PD.isUsed[i] = false;             auto_choosePD()
+        Dont need to do this to the PD.benchMarks or PD.index_sortedByMark.... 
+    }
+    */
+    memset(PD.qFamily_lists, 0, PD_n * (sizeof(amVK_Array<VkQueueFamilyProperties>) + sizeof(bool)));
 
 
     // ----------- Get Stuffs ------------
@@ -470,9 +480,9 @@ bool amVK_CX::enum_PhysicalDevs() {
 }
 
 bool amVK_CX::enum_PD_qFamilies() {
-#ifndef NDEBUG
-    if (PD.list == nullptr) LOG("call amVK_CX::enum_PhysicalDevs() first");  return false;
-#endif
+    #ifndef NDEBUG
+        if (PD.list == nullptr) {LOG("call amVK_CX::enum_PhysicalDevs() first");  return false;}
+    #endif
 
     // ----------- GET HOW MUCH TO MALLOC ------------
     uint32_t n = 0;
@@ -482,84 +492,89 @@ bool amVK_CX::enum_PD_qFamilies() {
         tmp_n += n;
     }
 
-
-    if (PD.qFamily_lists[0].data != nullptr) free(PD.qFamily_lists[0].data);
-
-    // ----------- The Malloc ------------
-    void *test = malloc(tmp_n * sizeof(VkQueueFamilyProperties));
-    PD.qFamily_lists[0].data = static_cast<VkQueueFamilyProperties *> (test);
+    //----------- By Default force_load   &  The Malloc ------------
+    if (PD.qFamily_lists[0].data != nullptr) {free(PD.qFamily_lists[0].data);}
+        PD.qFamily_lists[0].data  = static_cast<VkQueueFamilyProperties *>    ( malloc(tmp_n * sizeof(VkQueueFamilyProperties)) );
 
     // ----------- Use Malloc & Get qFamily_props ------------
     n = 0;
     tmp_n = 0;
     for (uint32_t i = 0; i < PD.n; i++) {
         vkGetPhysicalDeviceQueueFamilyProperties(PD.list[i], &n, nullptr);
-        tmp_n += n;
 
         PD.qFamily_lists[i].data = reinterpret_cast<VkQueueFamilyProperties *> (PD.qFamily_lists[0].data + tmp_n);
         vkGetPhysicalDeviceQueueFamilyProperties(PD.list[i], &PD.qFamily_lists[i].n, PD.qFamily_lists[i].data);
+
+        tmp_n += n;
     }
     return true;
 }
 
 void amVK_CX::benchMark_PD(void) {
-    if (PD.list != nullptr) {
-        pd_benchMarks = (uint32_t *) calloc(PD.n, sizeof(uint32_t));
+#ifndef NDEBUG
+    if (PD.list == nullptr) {LOG("call amVK_CX::enum_PhysicalDevs() first");  return;}
+#endif
 
-        for (uint32_t i = 0; i < PD.n; i++) {
-            uint32_t mk = 0;
+    // ----------- THE GREAT TIME TRAVELING BENCHMARK ------------
+    for (uint32_t i = 0; i < PD.n; i++) {
+        LOG("BenchMarking " << PD.props[i].deviceName);
+        uint32_t mk = 0;
+        VkPhysicalDeviceFeatures features = PD.features[i];
+        VkPhysicalDeviceProperties *props = &PD.props[i];
 
-            LOG("BenchMarking " << PD.props[i].deviceName);
-            VkPhysicalDevice device = PD.list[i];
-            VkPhysicalDeviceProperties device_props = PD.props[i];
+        // ----------- PD Properties [MAIN STUFFS] ------------
+        if (props->deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) mk += 2021;
+        mk += props->limits.maxImageDimension2D;
+    
+        // ----------- PD Features ------------
+        if (features.shaderStorageImageExtendedFormats) mk += 15360;    //16K Width   cz    mk += maxImageDimension2D
+        if (features.shaderFloat64) mk += 4;
+        if (features.shaderInt64) mk += 2;
+        if (features.shaderInt16) mk += 2;
+        if (features.tessellationShader) mk += 8;
+        if (features.geometryShader) mk += 6;
+        if (features.shaderTessellationAndGeometryPointSize) mk += 1;
+        if (!features.sampleRateShading) mk -= 8;
 
-            if (device_props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-                mk += 2073600;     //1920*1080 [See the comment below]
-            }
-            //we really need to work on Score values, instead of += limits.maxImageDimension2D
-            mk += device_props.limits.maxImageDimension2D;
-
-            pd_benchMarks[i] = mk;
-        }
-
-        //Sorting [TODO: Test mergeSOrt, Impl memcpy, don't include <string> in amVK_utils]
-
-        bool sort_success = false;
-
-        
-        pd_sortedByMark = static_cast<uint32_t *> (calloc(PD.n, sizeof(uint32_t)));
-        for (int i = 0; i < PD.n; i++) {pd_sortedByMark[i] = i;}
-        sort_success = amVK_Utils::mergeSort<uint32_t> (0, PD.n-1, pd_benchMarks, pd_sortedByMark);
-    } else {
-        LOG_EX("call amVK_CX::load_PD_info() before calling this function");
+        // ----------- PD Properties Extended [TODO] ------------
+        // ----------- In this way 3060TI & 3070 will most Likely hit the SAME mk.... so TODO ------------
+        PD.benchMarks[i] = mk;
     }
+
+    // ----------- SORTING ------------ [TODO: Test mergeSort, Impl memcpy, don't include <string> in amVK_utils]
+    for (int i = 0; i < PD.n; i++) {PD.index_sortedByMark[i] = i;}
+    bool sort_success = amVK_Utils::mergeSort<uint32_t> (0, PD.n-1, PD.benchMarks, PD.index_sortedByMark);
 }
 
 bool amVK_CX::auto_choosePD(void) {
-    benchMark_PD();
-    //Iterate over PD.list[pd_sortedByMark[i]]
+    benchMark_PD(); //even if already benchmarked ONCE
+
+    // ----------- FIND NEXT notUsed PD ------------
     for (uint32_t i = 0; i < PD.n; i++) {
-        bool matched = false;
-        //Check if used before
-        if (_usedPD_list.size() > 0) {
-            for (VkPhysicalDevice used_PD : _usedPD_list) {
-                if (used_PD == PD.list[pd_sortedByMark[i]]) {
-                    matched = true;
-                    break;
-                }
-            }
-        }
-        
-        if (!matched) {pdChozen = PD.list[pd_sortedByMark[i]]; break;}
+        if (!PD.isUsed[i]) {PD.chozen = PD.list[PD.index_sortedByMark[i]];    PD.chozen_index = i;  break;}
     }
-    //If no non used_PD is found. then clear the usedPD_list & use the same ones in BenchMark order
-    if (pdChozen == nullptr) {
-        pdChozen = PD.list[pd_sortedByMark[0]]; //that means we take the first one in the SortedList
+
+    // ----------- USE STRONGEST PD for RECREATION ------------
+    if (PD.chozen == nullptr) {
+        PD.chozen = PD.list[PD.index_sortedByMark[0]];
+        PD.chozen_index = 0;
+        LOG_EX("reUsing \u0027"  << PD.props[PD.index_sortedByMark[0]].deviceName << "\u0027 (PhysicalDevice) for VkDevice Creation");
         return false;
     } else {
         return true;
     }
 }
+
+
+/**
+    https://open.spotify.com/playlist/142cbkQ47RALYjSZ1SDfkj?si=0a3c910e6a214e3c
+    https://open.spotify.com/playlist/6OlaKLLkqZMbeiYVlnYS3O?si=c9d61255910b4723
+    https://open.spotify.com/playlist/6yIn9i7Z8WutrZaCB7ixVw?si=e3a1c53adddc4eec
+    https://open.spotify.com/user/31i7ysye54yvmkkteb757x3z6zo4?si=c538a3a94a084030
+    https://open.spotify.com/playlist/4rmpEaJO1C4lODSDVTST24?si=bcdf324e080141bb
+    https://open.spotify.com/playlist/7sva0cdxDoes7IULKHdQZK?si=859584c635c249fc
+    https://open.spotify.com/playlist/5O6qx7wpZ8kcC2VuhziNSK?si=36819cd6102f4580
+ */
 
 
 

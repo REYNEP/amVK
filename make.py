@@ -1,4 +1,5 @@
 # Well, why make.py?   FASTEST thing I could think of.... and will work on ALL Platforms   + the syntax is WAY TOO COOL
+# Thanks to Threads that made the process so so fast....  https://stackoverflow.com/a/21406995.... https://stackoverflow.com/a/50255019.... https://stackoverflow.com/a/3131251.... https://stackoverflow.com/a/50670037
 import subprocess
 import sys
 import os

@@ -26,6 +26,12 @@
  * D: VkDeviceCreateInfo.pEnabledFeatures for enabling Extra Features from a GPU
  * D: VkDeviceCreateInfo.ppEnabledExtensionNames for all the Exts that you are gonna use [eg: VK_KHR_SWAPCHAIN, RTX]
  * D: Finally Create the Device, its a Logical One, so you could create multiple in same Physical one, But i don't think anyone needs that
+ * D: Fun fact, VkPhysicalDevice itself is an Pointer
+ * 
+ *     ONE-ONE: the VULKAN CI [Create Info]
+ *              .sType ; [khr-reg]/vulkan/specs/1.2-extensions/man/html/VkStructureType.html]
+ *              .pNext ; [TODO]
+ *              .flags ; [mostly 'reserved for future'] - - - 
  * 
  * TWO: The PROLOGUE Starts! - (Single-Thread Still yet)
  * D: Remember the SurfaceExtension that you queried for vkCreateInstance? You'll need to create Surface for every window
@@ -146,6 +152,14 @@
  * 
  * 
  * 
+ *  D: Queues
+ *     Sm stuffs about QUEUES: stackoverflow.com/a/55273688
+ *          QUOTE: For many apps, a single "universal" queue is all they need. More advanced ones might have one graphics+compute queue, a separate compute-only queue for asynchronous compute work, 
+ *                 and a transfer queue for async DMA. Then map what you'd like onto what's available;
+ *     if you are confused about queues and qFamilies: [https://stackoverflow.com/a/65086765]
+ *     and yes if you think more queues = (idk, what you are thinking, just check this out): [https://www.reddit.com/r/vulkan/comments/kjb388/reason_for_only_creating_1_queue/ggw81mc]
+ *     
+ * 
  *  D: CommandPool & CommandBuffers
  *     a Good point to start: https://vkguide.dev/docs/chapter-1/vulkan_command_flow/
  *     SHORT: Unlike OpenGL or DirectX pre-11, in Vulkan, all GPU commands have to go through a command buffer. 
@@ -217,6 +231,14 @@
  * UNDER-THE-HOOD in a GLANCE
  */
 
+
+
+
+
+
+
+
+  ADDITIONAL RESOURCES: github.com/jcoder58/VulkanResources
 -->
 
 
@@ -239,6 +261,8 @@
 - Showing ALl the info like iep, iExts, PDinfo etc in a good UI kinda WAY, Maybe a NODE SYSTEM based?
 - Document the DEPENDENCY Graph of FIles
 - A UI for what vulkan.gpuinfo.com gives you, check their json files, Very Interesting
+
+- [Maybe a way (UI) for ppl/devs to actually see vkDataTypes [e.g.PhysicalDeviceProps&_otherData], then in a NODE-LIKE way set up Logic....[e.g._IF_RayTracing_Sup] which can be executed by amVK to select stuffs and settings at runtime [e.g._Use_smth_like_JSON_to_READ_and_Match_Required_RayTracingSettings]]
 
 # MODULE_STYLES
 - Functions that are still in BETA/ALPHA stages will have CAMEL-CASE style

@@ -52,29 +52,35 @@
  * also \see    
  * 
  * RULE-I: we Dont do much Error Handling ourself cz of FAST & FURIOUS performance.... please do that yourselves, we return BOOL    [tho You can enable ValidationLayers    ( andWe do plan on making our own ValLayers) ]                
+ * RULE-II: so, if you call same (enum_PhysicalDevs() or even benchMark_PD().... stuffs like that)     its gonna do force_load/calc again....
  * 
- * REUSE_PHYSICAL_DEVICE: macro [amVK::CreateDevice] - sometimes to use different qFamilies, different LogicalDevices might be created
+ * HEART: [static amVK_CX *heart]   THE One & Only HEART....   [cz Multi-instance isn't officially supported yet, tho you can \see CreateInstance impl. and use under the hood functions]
  */
 class amVK_CX {
  public:
-  static amVK_CX *heart;                                               //As multi-Instance is not officially supported yet    [set by CreateInstance]
-  static VkInstance instance;                                          //Multiple Instance is not officially supported yet    [but you can still use, just copy amVK_CX::instance before calling 2nd CreateInstance]
-  static VkApplicationInfo vk_appInfo;                                 //Value-Initialized in amVK.cpp [change value directly or see func below]
-  
-  /**
-   * |-----------------------------------------|
-   *            - vkCreateInstance -
-   * |-----------------------------------------|
-   * CAUTION: More than 1 VkInstance is NEVER needed! So if you want to Create Secondary Instance, You can feel free to check out this func's impl
-   *          But we Don't provide a way to store multiple Instance in our ENGINE
-   */
-  bool check_VkSupport(void); //TODO
-  VkInstance CreateInstance(void);
-  /** \param appInfo: if nullptr, set custom info  [otherwise use appInfo to fill in] **/
-  void set_VkApplicationInfo(VkApplicationInfo *appInfo = nullptr);    //Call before CreateInstance
+  static amVK_CX *heart;
+  static VkInstance instance;
+  static VkApplicationInfo vk_appInfo;
+
 
   /**
-   * \return false if   vkEnumerateInstanceExtensions() called but failed      [You should error handle, and not call any amVK_CX functions]
+   *             ┬  ┬┬┌─╔═╗┬─┐┌─┐┌─┐┌┬┐┌─┐╦┌┐┌┌─┐┌┬┐┌─┐┌┐┌┌─┐┌─┐
+   *        ───  └┐┌┘├┴┐║  ├┬┘├┤ ├─┤ │ ├┤ ║│││└─┐ │ ├─┤││││  ├┤   ───
+   *              └┘ ┴ ┴╚═╝┴└─└─┘┴ ┴ ┴ └─┘╩┘└┘└─┘ ┴ ┴ ┴┘└┘└─┘└─┘   vkCreateInstance
+   * |-------------------------------------------------------------------|
+   * CAUTION: More than 1 VkInstance is NEVER needed! [ \see first if-else block of CreateInstance impl.]
+   */
+  VkInstance CreateInstance(void);
+
+  bool check_VkSupport(void); /** \todo */
+  /** \param appInfo: if nullptr, set custom info  [otherwise use appInfo to fill in]    --   Call before CreateInstance */
+  void set_VkApplicationInfo(VkApplicationInfo *appInfo = nullptr);
+
+  /**
+   * \see _iep
+   * 
+   * \return false if   vkEnumerateInstanceExtensions() called but failed
+   *         You should error Handle, and not Call any amVK functions anymore....
    * NOTE: [OUT] You don't have to MALLOC, &
    *       PLEASE: don't change any value in memory of [OUT], if you must, then copy it
    * \param pointer_iec: [OUT] Pointer to Number of Exts. Default: nullptr [see func definition] 
@@ -83,7 +89,7 @@ class amVK_CX {
   bool enum_InstanceExts(bool do_log = true, VkExtensionProperties **pointer_iep = nullptr, int *pointer_iec = nullptr);
 
   /**
-   * NOTE: impl. is BruteForce
+   * NOTE: impl. is BruteForce   based on   iExtName_to_index()
    * \param extName: [that is gonna be enabled]    full list: [https://www.khronos.org/registry/vulkan/]
    * \return true if Added/AddedBefore. false if not Supported on current PC/Device/Computer/System whatever 
    *         [false and AddedBefore has LOG()]
@@ -103,36 +109,49 @@ class amVK_CX {
   
 
 
-  /**
-   * |-----------------------------------------|
-   *             - vkCreateDevice -
-   * |-----------------------------------------|
-   * \return amVK_Device: has the VkDevice as a Member + (All)Most of Device related Functions    ( \see amVK_Device.hh )
-   * NOTE: See functions in the Forbidden Variables section, Currently only the first qFamily will be chosen that means stuffs are HIghly Unstable
-   * \param D: [out] if its a valid pointer,  *(D) = VkDevice we just got
-   * \param surfaceSupport: [mod1] if ::surface_2_support should be a must need
-   * \param init_vma:  [ext1] if true device->init_VMA() is called....   [Deprecated, always CALLED]
-   */
-  amVK_Device *CreateDevice(VkDevice *D = nullptr, bool surfaceSupport = true);
-  
-  /** Was STATIC, if this is static, we need to DEFINE it in amVK.cc that would mean      amVK::create_device() wont work if used i GLOBAL Space of other modules */
-  vec_amVK_device                _device_list{};    //amVK_CX::CreateDevice() will push_back here [impl in amVK_Device.hh]
-  std::vector<VkPhysicalDevice>  _usedPD_list{};    //Is allocated in enum_PhysicalDevs
+
+
 
   /**
+   *               ┬  ┬┬┌─╔═╗┬─┐┌─┐┌─┐┌┬┐┌─┐╔╦╗┌─┐┬  ┬┬┌─┐┌─┐
+   *          ───  └┐┌┘├┴┐║  ├┬┘├┤ ├─┤ │ ├┤  ║║├┤ └┐┌┘││  ├┤   ───        
+   *                └┘ ┴ ┴╚═╝┴└─└─┘┴ ┴ ┴ └─┘═╩╝└─┘ └┘ ┴└─┘└─┘       vkCreateDevice                                                              
+   * |-------------------------------------------------------------------|
+   * 
+   * \return amVK_Device: ( \see amVK_Device.hh )   use amVK_Device._D   for vkDevice
+   * 
+   * \param preset: \see amVK_DevicePreset....   [its more like, when  \param CI is nullptr, we gotta use sm deafault options right....]
+   * \param CI:  since this CI is like 90% stuffs that you would prolly like to MODIFY.... if making smth COOL & Fast.... we dont wanna hide this
+   * 
+   * \param init_vma:  [ext1] if true device->init_VMA() is called....   [Deprecated, \see amVK_Device::init_VMA & \see amVK_Device::CONSTRUCTOR]
+   */
+  amVK_Device *CreateDevice(amVK_TDevicePresetFlags preset, VkDeviceCreateInfo *CI = nullptr);
+  
+  loaded_PD_info_plus_plus    PD{};   /** \ref amVK_Types.hh  - Type not used anywhere else */
+  vec_amVK_device _vkDevice_list{};
+  /** [above ones] Was STATIC, needed to DEFINE it in amVK.cc....  thus amVK::CreateDevice() didnt work if used in GLOBAL Space of other modules outside main function */
+  bool all_PD_inUse = false;
+  /** \see PD.chozen */
+
+  /**
+   * sets into PD (member var)
    * \return true if already/successfully loaded.... false if enum_PhysicalDevs \returns false
    * \param force_load: pretty much sure you get this one ;)
    */
   bool load_PD_info(bool force_load);
   /**
+   * sets into PD (member var)
    * \return false if vkEnumeratePhysicalDevices \returns 0 physical device....
    * \def force_load: by default, force_load even if already loaded....
    */
   bool enum_PhysicalDevs(void);   //Add support for UI kinda choosing
-  bool enum_PD_qFamilies(void);   //pdl_qFamilyp is of TYPE:-    amVK_Array<VkQueueFamilyProperties> *
+  bool enum_PD_qFamilies(void);   //only call after enum_PhysicalDevs()
 
-  void benchMark_PD(void);        //Note that, at this point, you should probably BenchMark on your own. USE The Funcs Below
-  bool auto_choosePD(void);       //return false if using the same GPUs a.k.a Physical Devices
+  /** Mainly Based on VkPhysicalDeviceFeatures currently....    shaderStorageImageExtendedFormats is Prioratized the most */
+  void benchMark_PD(void);
+
+  /** \return false: if all gpu isUsed,  (PD_chozen is set to most powerfull/Strongest one.... in that case) */
+  bool auto_choosePD(void);
 
 
 
@@ -160,12 +179,12 @@ class amVK_CX {
   */
 
   /**
-  * |-----------------------------------------|
-  *           - CreateInstance Vars -
-  * |-----------------------------------------|
-  */
-  std::vector<VkExtensionProperties> _iep;             //'Instance Extensions' Properties     [Available to this System]
-  std::vector<VkExtensionProperties> _req_surface_ep;  // 'Surface Extensions' Properties     [for now we know this will be 2 ; \see filter_SurfaceExts()]
+   *             ╔═╗┬─┐┌─┐┌─┐┌┬┐┌─┐╦┌┐┌┌─┐┌┬┐┌─┐┌┐┌┌─┐┌─┐  ╦  ╦╔═╗╦═╗╔═╗
+   *        ───  ║  ├┬┘├┤ ├─┤ │ ├┤ ║│││└─┐ │ ├─┤││││  ├┤   ╚╗╔╝╠═╣╠╦╝╚═╗  ───
+   *             ╚═╝┴└─└─┘┴ ┴ ┴ └─┘╩┘└┘└─┘ ┴ ┴ ┴┘└┘└─┘└─┘   ╚╝ ╩ ╩╩╚═╚═╝    CreateInstance VARS
+   */
+  std::vector<VkExtensionProperties> _iep;             //'Instance Extension' Properties     [Available to this System]
+  std::vector<VkExtensionProperties> _req_surface_ep;  // 'Surface Extension' Properties     [for now we know this will be 2 ; \see filter_SurfaceExts()]
   std::vector<char *> _iExts;                          //That the instance is gonna use   a.k.a ENABLED ones
   bool      *_isEnabled_iExt;
 
@@ -187,7 +206,7 @@ class amVK_CX {
   }
 
 
-  //---------------- Validation Layers [only in DEBUG BUILD] ----------------
+  //---------------- Validation Layers ----------------
 #ifdef amVK_RELEASE
   const bool enableDebugLayers_LunarG = false;
 #else
@@ -198,21 +217,15 @@ class amVK_CX {
   std::vector<VkLayerProperties> _vLayers_p;
 
 
+
+
   /**
-  * |-----------------------------------------|
-  *            - CreateDevice Vars -
-  * |-----------------------------------------|
-  */
-  bool allPD_inUse = false;
-  VkPhysicalDevice pdChozen = nullptr;                 //Fun fact, VkPhysicalDevice itself is an Pointer 
-  everyInfo_PD PD{};    //[See in amVK_Types.hh]  has the LIST, properties, features & qFamilies of ALL PhysicalDevices
-
-  uint32_t *pd_benchMarks = nullptr;
-  uint32_t *pd_sortedByMark = nullptr;
-
-
-  //Let ppl Use & Choose between Multiple GPUs [USE: load_PD_Features, and there are also many important other pdp info too] [Maybe a way (UI) for USERS (like Blender Artists) to actually see vkDataTypes, Then update enum_InstanceExts too]
-  VkSurfaceKHR surface_2_support;                      //PD SUPPORT VARIABLE 1
+   *        ╔═╗┬─┐┌─┐┌─┐┌┬┐┌─┐╔╦╗┌─┐┬  ┬┬┌─┐┌─┐  ╦  ╦╔═╗╦═╗╔═╗     
+   *   ───  ║  ├┬┘├┤ ├─┤ │ ├┤  ║║├┤ └┐┌┘││  ├┤   ╚╗╔╝╠═╣╠╦╝╚═╗  ───
+   *        ╚═╝┴└─└─┘┴ ┴ ┴ └─┘═╩╝└─┘ └┘ ┴└─┘└─┘   ╚╝ ╩ ╩╩╚═╚═╝   CreateDevice VARS 
+   */
+  
+  /** VkSurfaceKHR surface_2_support  [Deprecated VARIABLE] */
 
   //---------------- DeviceExts ----------------
   char  *req_dExt = "VK_KHR_swapchain";
@@ -221,50 +234,17 @@ class amVK_CX {
   amVK_Array<const char *const *> dExts_Beta;
 
 
-
-  /**
-  * |-----------------------------------------|
-  *         - CreateDevice Functions -
-  * |-----------------------------------------|
-  */
   uint32_t PD_to_index(VkPhysicalDevice pd) {
     for (uint32_t i = 0; i < PD.n; i++) {
       if (pd == PD.list[i]) {
         return i;
       }
     }
-    //Code should never reach here unless \param pd is not available to system
+    /** Code should never reach here unless \param pd is not available to system */
     return 0xFFFFFFFF;
   }
-  inline const    VkPhysicalDeviceProperties *    get_pdp(void)
-  {
-    return const_cast<VkPhysicalDeviceProperties *> (PD.props);
-  }
-  inline bool set_pdChozen(VkPhysicalDevice pd)
-  {
-    pdChozen = pd;
-  }
-  inline const    VkQueueFamilyProperties *       get_PD_qFamilies(VkPhysicalDevice pd)
-  {
-    return const_cast<VkQueueFamilyProperties *> (PD.qFamily_lists[PD_to_index(pd)].data);
-  }
 
-  VkDeviceQueueCreateInfo qCreateInfos(void) {
-    VkDeviceQueueCreateInfo the_info = {};  //TODO maybe make this a param
-    the_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    the_info.pNext = nullptr;
-    the_info.flags = 0;             //currently only 1 option [khr-vk]/1.2-extensions/man/html/VkDeviceQueueCreateFlagBits.html
-    the_info.queueFamilyIndex = 0;  //TODO: Add support for Choices & multiple queueFamilies
-    the_info.queueCount = 1;        //TODO: Add support for choices
-    float qPriorityList = 0.f;      //TODO: QueuePriority
-    the_info.pQueuePriorities = &qPriorityList;
-
-    return the_info;
-  }
-  VkPhysicalDeviceFeatures deviceFeatures(void) {
-    VkPhysicalDeviceFeatures PD_features_must = {};
-    return PD_features_must;
-  }
+  inline const    VkQueueFamilyProperties *       get_PD_qFamilies(VkPhysicalDevice pd) {   return const_cast<VkQueueFamilyProperties *> (PD.qFamily_lists[PD_to_index(pd)].data);   }
 };
 
 #endif //#ifndef amVK_LIB
