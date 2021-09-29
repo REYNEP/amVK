@@ -78,7 +78,7 @@ VkInstance amVK_CX::CreateInstance(void) {
 
 
 
-amVK_Device *amVK_CX::CreateDevice(amVK_TDevicePresetFlags preset, VkDeviceCreateInfo *CI) {
+amVK_Device *amVK_CX::CreateDevice(amVK_DevicePreset_Flags presets, VkDeviceCreateInfo *CI) {
     // ----------- Physical Device Info ------------
     if (PD.chozen == nullptr) {
         amVK_CX::enum_PhysicalDevs();
@@ -93,23 +93,19 @@ amVK_Device *amVK_CX::CreateDevice(amVK_TDevicePresetFlags preset, VkDeviceCreat
         goto finally_CreateDevice;
     }
 
-    VkDeviceCreateInfo the_info;
+    VkDeviceCreateInfo the_info = {};
     CI = &the_info;
         the_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         the_info.pNext = nullptr;
 
-        VkDeviceQueueCreateInfo qCI;
-        qCI = default_qCI_for_PD_chozen();
-        the_info.queueCreateInfoCount = 1;
-        the_info.pQueueCreateInfos = &qCI;
+    amVK_DeviceMods MODS = amVK_DeviceMods(presets, PD.chozen, true);
+        the_info.queueCreateInfoCount = MODS.qCIs.n;
+        the_info.pQueueCreateInfos = MODS.qCIs.data;
 
-        // ----------- DEVICE EXTENSIONS, ENABLED FEATURES, LAYERS ------------
-        the_info.enabledExtensionCount = dExtc_alpha;
-        the_info.ppEnabledExtensionNames = dExts_alpha;
-        VkPhysicalDeviceFeatures info3 = {};
-        the_info.pEnabledFeatures = &info3;
-        the_info.ppEnabledLayerNames = _vLayers.data();
-        the_info.enabledLayerCount = _vLayers.size();
+        // ----------- DEVICE EXTENSIONS, ENABLED FEATURES ------------
+        the_info.enabledExtensionCount = MODS.exts.n;
+        the_info.ppEnabledExtensionNames = MODS.exts.data;
+        the_info.pEnabledFeatures = &MODS.req_ftrs;
 
     
     // ----------- Actually Create the VkDevice ------------

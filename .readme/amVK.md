@@ -264,6 +264,8 @@
 
 - [Maybe a way (UI) for ppl/devs to actually see vkDataTypes [e.g.PhysicalDeviceProps&_otherData], then in a NODE-LIKE way set up Logic....[e.g._IF_RayTracing_Sup] which can be executed by amVK to select stuffs and settings at runtime [e.g._Use_smth_like_JSON_to_READ_and_Match_Required_RayTracingSettings]]
 
+- [a TEST Database.... so many stuffs in VULKAN is just 'NOT DEFINED' [e.g._qFamilies] smtimes there are DEDICATED qFamilies that only support 1 TYPE of QUEUES.... even then there would be ALL-SUPPORTING qFAMs.... So for these HAZY and FADED stuffs. we could create a DATABASE storing all GPUs Perfomance Information.... That has to be Always live.... for RUNTIME support.... more like extended version of that https://vulkan.gpuinfo.org/]
+
 # MODULE_STYLES
 - Functions that are still in BETA/ALPHA stages will have CAMEL-CASE style
 - Use m_var_name for Member Variables [static members doesn't HAVE TO but can]

@@ -5,11 +5,24 @@
 #endif
 
 //We didn't actually need this for small usage. but as I was introduced to qFamilies, Things started looking soo soo nasty and Out of Way.... just ahhhh disgusting as Hell
-// [amVK_types.hh] .... Size of this is always gonna be 12BYTES, Hoping that you never make 'T' anything other than POINTER */
+// [amVK_types.hh]
 template<typename T> 
 struct amVK_Array {
-    T *data;    //Pointer to the first element
-    uint32_t n; //still this struct would use 16BYTES
+    T *data;    //Pointer to the first element [But we dont do/keep_track_of MALLOC, so DUH-Optimizations]
+    uint32_t n;
+
+    uint32_t next_add_where = 0;
+    inline void push_back(T item) {   //if you use like 'memcpy to .data' & also use push_back(), its not gonna work
+#ifndef NDEBUG
+      if (next_add_where >= n) {
+        LOG_EX("amVK_Array FILLED!.... You need to MALLOC manually and set to .data     amVK_Array doesn't support that cz of Memory Optimizations");
+        return;
+      }
+#endif
+
+      data[next_add_where] = item;
+      next_add_where++;
+    }
 
     inline T operator[](uint32_t index) {
       return data[index];
@@ -37,17 +50,34 @@ typedef struct everything_PD__ {
   uint32_t           *index_sortedByMark = nullptr;
 } loaded_PD_info_plus_plus;
 
-typedef enum amVK_TDevicePreset__ {
-  amVK_DevicePreset_Undefined = 0,
-  amVK_DevicePreset_Graphics = 1,
-  amVK_DevicePreset_RayTracing = 2,     // WIP
-  amVK_DevicePreset_Compute = 4,        // WIP
-  amVK_DevicePreset_Encode_Decode = 8,  // WIP
-  amVK_DevicePreset_Image_Shaders = 16, // WIP
-  amVK_DevicePreset_Compositor = 32,    // WIP
-  amVK_DevicePreset_Transfer = 64,      // WIP
-  amVK_DevicePreset_Sparse = 128        // WIP
-} amVK_TDevicePresetFlags;
+/** 
+ * You can use it like    DevicePresets = amVK_DevicePreset_Graphics + amVK_DevicePreset_Compute   [We will create 1 GRAPHICS & 1 COMPUTE Queue]
+ * TODO: Detailed description on what Every option Does
+ * NOTE: Only amVK_DP_GRAPHICS & amVK_DP_COMPUTE is supported for now
+ */
+typedef enum amVK_TDevicePreset_GEN2__ {
+  amVK_DP_UNDEFINED = 0,
+
+  /** Choose at least 1 from the 6 Below */
+  amVK_DP_GRAPHICS = 1,
+  amVK_DP_COMPUTE = 2, 
+  amVK_DP_TRANSFER = 4,
+  amVK_DP_SPARSE = 8,
+  amVK_DP_VIDEO_DECODE = 16,
+  amVK_DP_VIDEO_ENCODE = 32,
+  /** Choose at least 1 from the 6 Above */
+  amVK_DP_PROTECTED_MEM = 64,               //[https://renderdoc.org/vkspec_chunked/chap12.html#memory-protected-memory]
+
+  /** amVK's Secret Formulaes */
+  amVK_DP_3DEngine = 1 + 128,               //GeometryShader & TessellationShader & sampleRateShading   [Ones that are Available.... VkPhysicalDeviceFeatures]
+  amVK_DP_Encode_Decode = 16 + 32 + 256,
+  amVK_DP_Image_Shaders = 512,
+  amVK_DP_Compositor = 1024,
+  amVK_DP_RayTracing = 2048,                //2000 series RTX Cards
+} amVK_DevicePresets;
+typedef uint32_t amVK_DevicePreset_Flags;
+
+
 
 
 /** SWAPCHAIN IMAGE FORMAT DOCS
