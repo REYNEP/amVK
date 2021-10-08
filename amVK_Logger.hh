@@ -90,7 +90,7 @@
 #include <chrono>
 
 typedef struct noob_timer__ {
-  std::chrono::steady_clock::time_point time_now, time_flushPoint;
+  std::chrono::steady_clock::time_point time_start = {}, time_flushPoint = {};
 } noob_timer;
 
 /** Make a array of this STRUCT (like below), then pass the  .time_spent to TIMER_STORE
@@ -107,6 +107,9 @@ typedef struct noob_timer_store__ {
 
 #define TIMER_FLUSH(var) \
   var.time_flushPoint = std::chrono::high_resolution_clock::now();
+
+#define TIMER_INIT(var) \
+  var.time_start = std::chrono::high_resolution_clock::now();
 
 // You can just FLUSH at the Beginning and keep LOGGING, but Logging takes ~0.0006s
 #define TIMER_LOG(var) \

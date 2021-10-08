@@ -1,8 +1,6 @@
 #include "amVK_RenderPass.hh"
 #include "amVK_Device.hh"
 #include "amVK_Logger.hh"
-
-
 /**
  *              █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██████╗ ███████╗███╗   ██╗██████╗ ███████╗██████╗ ██████╗  █████╗ ███████╗███████╗
  *   ▄ ██╗▄    ██╔══██╗████╗ ████║██║   ██║██║ ██╔╝        ██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝
@@ -38,10 +36,11 @@
 */
 
 
-
-
-
-
+/**
+  \│/  ┌┬┐┌─┐┬  ┬  ┌─┐┌─┐
+  ─ ─  │││├─┤│  │  │ ││  
+  /│\  ┴ ┴┴ ┴┴─┘┴─┘└─┘└─┘
+ */
 void amVK_RenderPassMK2::configure_n_malloc(void) {
     if (color_attachment) {attachments.n++; attachment_refs.n++;}
     if (depth_attachment) {attachments.n++; attachment_refs.n++;}
@@ -71,7 +70,7 @@ void amVK_RenderPassMK2::set_attachments(void) {
    * █▀▀ █▀█ █░░ █▀█ █▀█  ▄▀█ ▀█▀ ▀█▀ ▄▀█ █▀▀ █░█ █▀▄▀█ █▀▀ █▄░█ ▀█▀ 
    * █▄▄ █▄█ █▄▄ █▄█ █▀▄  █▀█ ░█░ ░█░ █▀█ █▄▄ █▀█ █░▀░█ ██▄ █░▀█ ░█░ 
      */
-    attachments.push_back({0,   /** [.flags] - not needed for now */
+    amVK_ARRAY_PUSH_BACK(attachments) = {0,   /** [.flags] - not needed for now */
         /** [.format]       - should be linked with/same as swapchainCI.imageFormat */
         image_format,
 
@@ -99,21 +98,21 @@ void amVK_RenderPassMK2::set_attachments(void) {
         VK_IMAGE_LAYOUT_UNDEFINED,
         /** [.finalLayout]     - after the renderpass ends, the image has to be on a layout ready for display */
         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    });
+    };
 
 
     /**
    * █▀▄ █▀▀ █▀█ ▀█▀ █░█  ▄▀█ ▀█▀ ▀█▀ ▄▀█ █▀▀ █░█ █▀▄▀█ █▀▀ █▄░█ ▀█▀ 
    * █▄▀ ██▄ █▀▀ ░█░ █▀█  █▀█ ░█░ ░█░ █▀█ █▄▄ █▀█ █░▀░█ ██▄ █░▀█ ░█░ 
      */
-    if (depth_attachment) { attachments.push_back({0,
+    if (depth_attachment) { amVK_ARRAY_PUSH_BACK(attachments) = {0,
         VK_FORMAT_D32_SFLOAT, samples,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,       /** FOR: depth */
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,   /** FOR: stencil */
 
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-    }); }
+    }; }
 
 
     /**
@@ -139,7 +138,7 @@ void amVK_RenderPassMK2::set_attachment_refs(void) {
    * █▀▀ █▀█ █░░ █▀█ █▀█  ▄▀█ ▀█▀ ▀█▀ ▄▀█ █▀▀ █░█ █▀▄▀█ █▀▀ █▄░█ ▀█▀ 
    * █▄▄ █▄█ █▄▄ █▄█ █▀▄  █▀█ ░█░ ░█░ █▀█ █▄▄ █▀█ █░▀░█ ██▄ █░▀█ ░█░ 
      */
-    attachment_refs.push_back({ 
+    amVK_ARRAY_PUSH_BACK(attachment_refs) = { 
         color_index, /** [.attachment]    - index number of VkRenderPassCreateInfo.pAttachments that this References to */
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         /** 
@@ -149,7 +148,7 @@ void amVK_RenderPassMK2::set_attachment_refs(void) {
          * 3. REF: VUID-VkAttachmentReference-layout-00857
          * 4. Other than that if you keep searching for where to use leftover layouts [& NOT-TO], You'll find those cant atleast be used here....
          */
-    });
+    };
     refs_done++;
 
 
@@ -159,7 +158,7 @@ void amVK_RenderPassMK2::set_attachment_refs(void) {
      */
     if (depth_attachment) {
         depth_index = refs_done;
-        attachment_refs.push_back({depth_index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL});
+        amVK_ARRAY_PUSH_BACK(attachment_refs) = {depth_index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
     }
 }
 
@@ -181,7 +180,7 @@ void amVK_RenderPassMK2::set_subpasses(void) {
         subpass.pDepthStencilAttachment = &attachment_refs[depth_index];
     }
 
-    subpasses.push_back(subpass);
+    amVK_ARRAY_PUSH_BACK(subpasses) = subpass;
 }
 
 

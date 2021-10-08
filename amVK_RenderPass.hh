@@ -69,10 +69,10 @@ class amVK_RenderPassMK2 : public amVK_RenderPass {
     amVK_RenderPassMK2(amVK_Device *D = nullptr) : amVK_RenderPass(D) {amASSERT(!_amVK_D);}
     /** MK2 MODIFY */
     void configure_n_malloc(void);  //Increments attachment.n  and such amVK_Arrays
-    void do_everything(void) {if (attachments.data == nullptr) {configure_n_malloc();}; set_attachments(); set_attachment_refs(); set_subpasses();}
+    void do_everything(void) {/** Do configure_n_malloc() first */ set_attachments(); set_attachment_refs(); set_subpasses();}
 
     VkRenderPass create(void) {
-      if (attachments.data == nullptr) {do_everything();}
+      if (attachments.data == nullptr) {configure_n_malloc(); do_everything();}
       VkRenderPassCreateInfo the_info = {};
         the_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         the_info.attachmentCount = attachments.n;
@@ -81,6 +81,7 @@ class amVK_RenderPassMK2 : public amVK_RenderPass {
         the_info.pSubpasses = subpasses.data;
 
       VkResult res = vkCreateRenderPass(_amVK_D->_D, &the_info, nullptr, &_RP);
+      amASSERT(res != VK_SUCCESS);
       return _RP;
     }
 
@@ -95,6 +96,26 @@ class amVK_RenderPassMK2 : public amVK_RenderPass {
     void set_attachments(void);
     void set_attachment_refs(void); //Note: \see refs_done
     void set_subpasses(void);
+    /** MORE: Automated default stuffs sooooon! */
+
+  /** push_back exts, you should maintain Memory. to determine how many filled, use   \var amVK_Array.next_add_where */
+  public:
+    void add_attachmentGEN2(VkFormat image_format, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
+                                                   VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, 
+                                                 VkAttachmentStoreOp storeOp = VK_ATTACHMENT_STORE_OP_STORE) {
+      amVK_ARRAY_PUSH_BACK(attachments) = {0,
+        image_format, samples,
+        loadOp, storeOp,
+
+        /** [.stencilLoadOp, .stencilStoreOp]  -  This is only used for depth_attachment, \see \fn set_attachments() for DepthStencil */ 
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        finalLayout
+      };
+    }
+    /** USE: push_back for \var attachment_refs */
+    void add_subpass(void) {return;}  /** \todo */
 };
 
 #endif //amVK_RENDERPASS

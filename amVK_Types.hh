@@ -3,41 +3,50 @@
 #ifndef amVK_LIB
   #include "vulkan/vulkan.h"
 #endif
+#ifndef amVK_LOGGER
+  #include "amVK_Logger.hh"
+#endif
 
-
-
+/** Pretty Cool idea, huh? */
 #define UINT32_T_NULL 0xFFFFFFFF
 #define UINT32_T_FALSE 0xFFFFFFFF
 
-//We didn't actually need this for small usage. but as I was introduced to qFamilies, Things started looking soo soo nasty and Out of Way.... just ahhhh disgusting as Hell
-// [amVK_types.hh]
+/** [amVK_types.hh] */
 template<typename T> 
 struct amVK_Array {
     T *data;    //Pointer to the first element [But we dont do/keep_track_of MALLOC, so DUH-Optimizations]
     uint32_t n;
+    uint32_t next_add_where = 0;
 
-    /** CONSTRUCTOR */
+    /** CONSTRUCTOR - More like failsafes.... */
     amVK_Array(T *D, uint32_t N) : data(D), n(N) {if (D == nullptr || N == 0) {LOG_EX("ERROR");}}
     amVK_Array(void) {data = nullptr; n = 0;}
-
-    uint32_t next_add_where = 0;
-    inline void push_back(T item) {   //if you use like 'memcpy to .data' & also use push_back(), its not gonna work
-#ifndef NDEBUG
-      if (next_add_where >= n) {
-        LOG_EX("amVK_Array FILLED!.... You need to MALLOC manually and set to .data     amVK_Array doesn't support that cz of Memory Optimizations");
-        return;
-      }
-#endif
-
-      data[next_add_where] = item;
-      next_add_where++;
-    }
 
     inline T& operator[](uint32_t index) {
       return data[index];
     }
     inline size_t size(void) {return static_cast<size_t>(n);}
 };
+#ifndef amVK_RELEASE
+  #ifdef amVK_CPP
+    void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name, char *type_id_name) { 
+      if (n == 0) { LOG_EX("amVK_Array<> " << var_name << ".n = 0;" << "Did you malloc? amASSERT here" << std::endl << "typeid(" << var_name << ").name() :- " << type_id_name);
+                    amASSERT(true); }
+      LOG_EX("amVK_Array FILLED!.... reUsing last SLOT"); 
+    }  
+  #else
+    void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name, char *type_id_name);
+  #endif
+  /** reUse, cz we dont want it to Crash... and if doesn't have much effect */
+  #define amVK_ARRAY_PUSH_BACK(var) \
+    if (var.next_add_where >= var.n) { \
+      amVK_ARRAY_PUSH_BACK_FILLED_LOG(var.n, #var, (char *)typeid(var).name()); \
+      var.next_add_where--; \
+    } \
+    var.data[var.next_add_where++]
+#else
+  #define amVK_ARRAY_PUSH_BACK(var) var.data[var.next_add_where++]
+#endif
 
 
 //Report this bug to VSCODE, everything looks the same goddamn color

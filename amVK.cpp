@@ -534,7 +534,7 @@ bool amVK_CX::enum_PhysicalDevs() {
 }
 
 bool amVK_CX::enum_PD_qFamilies() {
-    #ifndef NDEBUG
+    #ifndef amVK_RELEASE
         if (PD.list == nullptr) {LOG("call amVK_CX::enum_PhysicalDevs() first");  return false;}
     #endif
 
@@ -566,7 +566,7 @@ bool amVK_CX::enum_PD_qFamilies() {
 }
 
 void amVK_CX::benchMark_PD(void) {
-#ifndef NDEBUG
+#ifndef amVK_RELEASE
     if (PD.list == nullptr) {LOG("call amVK_CX::enum_PhysicalDevs() first");  return;}
 #endif
 
@@ -845,6 +845,9 @@ const char *amVK_DeviceMods::flag_2_strName(amVK_DevicePreset_Flags flag) {
             return "amVK_DP_Compositor";
         case amVK_DP_RayTracing:
             return "amVK_DP_RayTracing";
+
+        default: 
+            return "We gotta Return something DUH!!! [this is amVK_DeviceMods::flag_2_strName]";
     }
 }
 
@@ -943,25 +946,25 @@ void amVK_DeviceMods::set_qCIs(void) {
     {
         if (req_Queues & VK_QUEUE_GRAPHICS_BIT) { //amVK_DevicePreset_Graphics
             if (_graphics_qFAM == 0xFFFFFFFF) {LOG_MODS_NOTSUP("Couldn't Find any GRAPHICS qFamily"); does_PD_sup_mods = false;}
-            qCIs.push_back({
+            amVK_ARRAY_PUSH_BACK(qCIs) = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
                 0,        /** flags */
                 _graphics_qFAM,
                 1,        /** queueCount */
                 &_qPRIORITIES
-            });
+            };
         }
         if (req_Queues & VK_QUEUE_COMPUTE_BIT) {  //amVK_DevicePreset_Compute
             if (!_compute_qFAM == 0xFFFFFFFF) {LOG_MODS_NOTSUP("Couldn't Find any COMPUTE qFamily"); does_PD_sup_mods = false;}
-            qCIs.push_back({
+            amVK_ARRAY_PUSH_BACK(qCIs) = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
                 0,        /** flags */
                 _compute_qFAM,
                 1,        /** queueCount */
                 &_qPRIORITIES
-            });
+            };
         }
     }
 }
@@ -1017,7 +1020,7 @@ void amVK_DeviceMods::set_exts(void) {
     modifications:
     {
         if (req_exts.VK_KHR_SWAPCHAIN) {
-            exts.push_back(const_cast<char *>(amVK_DeviceExtensions[1]));
+            amVK_ARRAY_PUSH_BACK(exts) = const_cast<char *>(amVK_DeviceExtensions[1]);
         }
     }
 }
