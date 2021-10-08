@@ -4,12 +4,21 @@
   #include "vulkan/vulkan.h"
 #endif
 
+
+
+#define UINT32_T_NULL 0xFFFFFFFF
+#define UINT32_T_FALSE 0xFFFFFFFF
+
 //We didn't actually need this for small usage. but as I was introduced to qFamilies, Things started looking soo soo nasty and Out of Way.... just ahhhh disgusting as Hell
 // [amVK_types.hh]
 template<typename T> 
 struct amVK_Array {
     T *data;    //Pointer to the first element [But we dont do/keep_track_of MALLOC, so DUH-Optimizations]
     uint32_t n;
+
+    /** CONSTRUCTOR */
+    amVK_Array(T *D, uint32_t N) : data(D), n(N) {if (D == nullptr || N == 0) {LOG_EX("ERROR");}}
+    amVK_Array(void) {data = nullptr; n = 0;}
 
     uint32_t next_add_where = 0;
     inline void push_back(T item) {   //if you use like 'memcpy to .data' & also use push_back(), its not gonna work
@@ -24,17 +33,16 @@ struct amVK_Array {
       next_add_where++;
     }
 
-    inline T operator[](uint32_t index) {
+    inline T& operator[](uint32_t index) {
       return data[index];
     }
     inline size_t size(void) {return static_cast<size_t>(n);}
 };
 
 
-
 //Report this bug to VSCODE, everything looks the same goddamn color
 //Holds info about multiple PD
-//Only used for amVK_CX::PD... and it was intended
+//Only used for amVK_CX::PD... and it was intended  (Type [should] not [be] used anywhere else)
 typedef struct everything_PD__ {
   VkPhysicalDevice                 *list = nullptr;         //'Physical Devices List'       [will be sorted after sort_physical_devices() is called]
   VkPhysicalDeviceProperties      *props = nullptr;         //'Physical Devices Properties' [                        ++                            ]
@@ -43,9 +51,9 @@ typedef struct everything_PD__ {
   amVK_Array<VkQueueFamilyProperties> *qFamily_lists = nullptr;     //'One Physical Devices can have Multiple qFamilies
 
   /** Plus Plus Stuffs */
+  bool                           *isUsed = nullptr;
   VkPhysicalDevice                chozen = nullptr;
   uint32_t                  chozen_index = 0;
-  bool                           *isUsed = nullptr;
   uint32_t                   *benchMarks = nullptr;
   uint32_t           *index_sortedByMark = nullptr;
 } loaded_PD_info_plus_plus;
@@ -53,6 +61,7 @@ typedef struct everything_PD__ {
 /** 
  * You can use it like    DevicePresets = amVK_DevicePreset_Graphics + amVK_DevicePreset_Compute   [We will create 1 GRAPHICS & 1 COMPUTE Queue]
  * TODO: Detailed description on what Every option Does
+ * TODO: GEN3 support Multiple Flag Mixing...   like even though this is names _flags.... this for now supports 1 flag at a TIME
  * NOTE: Only amVK_DP_GRAPHICS & amVK_DP_COMPUTE is supported for now
  */
 typedef enum amVK_TDevicePreset_GEN2__ {
@@ -78,6 +87,50 @@ typedef enum amVK_TDevicePreset_GEN2__ {
 typedef uint32_t amVK_DevicePreset_Flags;
 
 
+
+
+/**
+ *  ╻ ╻   ╻ ╻╺┳╸╻╻  
+ *  ╺╋╸   ┃ ┃ ┃ ┃┃  
+ *  ╹ ╹   ┗━┛ ╹ ╹┗━╸
+ * I just wanted to access amVK_CX::_device_list with _device_list[(VkDevice)D]
+ * NOTE: if it was std::vector<amVK_Device> then if sm1 changes a amVK_Device, that won't be change in the VECTOR ONE
+ *       So we gotta store only the REference or ratherMore pointers
+ * IMPL: \see amVK_Device.cpp
+ */
+#if defined(amVK_DEVICE_CPP) || defined(VEC_amVK_DEVICE)
+  #include <vector>
+  #ifndef amVK_DEVICE_H
+    class amVK_Device;
+  #endif
+
+  class vec_amVK_Device : public std::vector<amVK_Device *> {
+   public:
+    vec_amVK_Device(uint32_t n) : std::vector<amVK_Device *> (n) {}
+    vec_amVK_Device(void) : std::vector<amVK_Device *>() {}
+    ~vec_amVK_Device() {}
+
+    //amVK Stores a lot of different kinda data like this. Maybe enable a option to store these in HDD as cache
+    amVK_Device *operator[](VkDevice D);
+  };
+
+  #ifdef IMPL_VEC_amVK_DEVICE
+    #ifndef amVK_LOGGER
+      #include "amVK_Logger.hh"
+    #endif
+    amVK_Device *vec_amVK_Device::operator[](VkDevice D) {
+      amVK_Device **data = this->data();
+      for (int i = 0, lim = this->size(); i < lim; i++) {
+        if (data[i]->_D == D) {
+          return data[i];
+        }
+      }
+      LOG_EX("LogicalDevice doesn't Exist");
+      amASSERT(true);
+      return nullptr;
+    }
+  #endif //IMPL_VEC_amVK_DEVICE
+#endif //amVK_DEVICE_CPP || VEC_amVK_DEVICE
 
 
 /** SWAPCHAIN IMAGE FORMAT DOCS

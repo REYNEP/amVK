@@ -18,7 +18,10 @@ else()
 endif()
 
 if(WIN32)
-    add_compile_definitions(amVK_BUILD_WIN32)
+  add_compile_definitions(amVK_BUILD_WIN32)
+
+  add_compile_definitions(amVK_LOGGER_BLI_ASSERT)
+  set(PLATFORM_LINKLIBS dbghelp shlwapi kernel32 Version)
 endif()
 
 #USE #define VMA_IMPLEMENTATION in one of CPP File
@@ -43,6 +46,9 @@ find_program (glslc-exe
 message("\n${glslc-exe}\n")
 
 
-add_library(lib-amVK amVK.cpp amVK_WI.cpp amVK_Device.cpp amVK_Pipeline.cpp amVK_ImgMemBuf.cpp)
+add_library(lib-amVK amVK.cpp amVK_Device.cpp amVK_WI.cpp amVK_RenderPass.cpp amVK_Pipeline.cpp amVK_ImgMemBuf.cpp)
+if (WIN32)
+  target_link_libraries(lib-amVK ${PLATFORM_LINKLIBS})
+endif()
 install(TARGETS lib-amVK 
         DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})

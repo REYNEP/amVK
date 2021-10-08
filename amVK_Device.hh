@@ -1,9 +1,6 @@
 #ifndef amVK_DEVICE_H
 #define amVK_DEVICE_H
 #include "vulkan/vulkan.h"
-#include <vector>
-#include <fstream> //CreateShaderModule() function
-#include "amVK_Logger.hh"
 
 /** We use VMA for now    [VMA_IMPLIMENTATION used in this Translation Unit] */
 #include "vk_mem_alloc.h"   //includes vulkan/vulkan.h   [//Vulkan Includes "windows.h" on WIN     [? DEFINE  WIN32_LEAN_AND_MEAN ]]
@@ -14,25 +11,50 @@
   class amVK_CmdPool; //Cyclic_Dep  [amVK_CmdPool.hh included in cpp]
 #endif
 
+class amVK_DeviceMods; //Cyclic_Dep [amVK.hh,   so we include in amVK_Device.cpp]
+
+
+
+
 /**
- * LOGICAL DEVICE Implimentation, [That one thing that you get calling vkCreateDevice....]
- * All functions that require Device as Parameter should be Here
- * You can also Find all Logical Device related Info here, Query for them or Purge them from Memory [happy Empire-Giri on your GPU]
+     █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██████╗ ███████╗██╗   ██╗██╗ ██████╗███████╗
+    ██╔══██╗████╗ ████║██║   ██║██║ ██╔╝        ██╔══██╗██╔════╝██║   ██║██║██╔════╝██╔════╝
+    ███████║██╔████╔██║██║   ██║█████╔╝         ██║  ██║█████╗  ██║   ██║██║██║     █████╗  
+    ██╔══██║██║╚██╔╝██║╚██╗ ██╔╝██╔═██╗         ██║  ██║██╔══╝  ╚██╗ ██╔╝██║██║     ██╔══╝  
+    ██║  ██║██║ ╚═╝ ██║ ╚████╔╝ ██║  ██╗███████╗██████╔╝███████╗ ╚████╔╝ ██║╚██████╗███████╗
+    ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚══════╝╚═════╝ ╚══════╝  ╚═══╝  ╚═╝ ╚═════╝╚══════╝
+
+ * \brief
+ * Initiate CommandPool, [Create & Begin] CommandBuffer, RenderPass, Fence & Semaphore, Initiate VMA [VulkanMemoryAllocator by AMD]
+ * BASE: All functions that require Device as Parameter should be Here
  * 
- * SHORT: has the VkDevice as a Member + (All)Most of Device related Functions [Only exceptions are like amVK_WSI.hh and such]
- * TODO: Queues & qFamily Support?
+ * since we dont have a amVK_PhysicalDevice class, Physical Device related stuffa are mostly in amVK_CX, But you can find sm stuffs here too like the USED Internally section
+ * \todo doc this in the MAIN DOC
  */
 class amVK_Device {
  public:
   VkDevice _D;
   VkPhysicalDevice _PD;
+  amVK_DeviceMods *_MODS; /** qFamily, Extensions, Features */
   VkCommandPool _CmdPool; /** TODO: But you could create Multiple CmdBufs on different Threads [NOTE: vkQueueSubmit is not thread-safe, only one thread can push the commands at a time.] */
   VmaAllocator _allocator;    /** as per VkDevice    [ \see init_VMA()]     TODO: Make this option & init_VMA optional or at least a way for other VMA alt APIs*/
     
-  /** You shouldn't care about init_VMA() if you haven't reached BUFFER related stuffs yet */
-  amVK_Device(VkDevice D, VkPhysicalDevice PD) : _D(D), _PD(PD) {this->init_VMA();}
-  ~amVK_Device() {}
+  /** \param MODS: can be nullptr, */
+  amVK_Device(VkDevice D, VkPhysicalDevice PD, amVK_DeviceMods *MODS) : _D(D), _PD(PD), _MODS(MODS) {this->init_VMA();}
+  ~amVK_Device() {if (_MODS != nullptr) delete _MODS; /** \see amVK_CX::CreateDevice() */}
 
+  /** used internally
+    ╻ ╻   ╻ ╻┏━┓┏━╸╺┳┓   ╻┏┓╻╺┳╸┏━╸┏━┓┏┓╻┏━┓╻  ╻  ╻ ╻   
+     ╋╸   ┃ ┃┗━┓┣╸  ┃┃   ┃┃┗┫ ┃ ┣╸ ┣┳┛┃┗┫┣━┫┃  ┃  ┗┳┛   
+    ╹ ╹   ┗━┛┗━┛┗━╸╺┻┛   ╹╹ ╹ ╹ ┗━╸╹┗╸╹ ╹╹ ╹┗━╸┗━╸ ╹ 
+   */
+    uint32_t present_qFamily = 0xFFFFFFFF;         //See present_qFam
+    bool found_present_qFamily = false;
+    uint32_t _present_qFam(VkSurfaceKHR S);       /** \see amVK_WI::is_present_sup() & amVK_WI::amVK_WI() [Constructor] */
+
+  /** only \if you used  amVK_DevicePreset_Flags */
+    uint32_t get_graphics_qFamily(void);          //_MODS->_graphics_qFAM;
+    VkQueue  get_graphics_queue(void);            //vkGetDeviceQueue(_D, _MODS->_graphics_qFAM, 0, &Q);
   
   /**
    * TODO: Add support for Multi-Threaded CommandPool    [Start Here: https://stackoverflow.com/questions/53438692/creating-multiple-command-pools-per-thread-in-vulkan]
@@ -67,14 +89,6 @@ class amVK_Device {
    */
   void begin_cmdBuf(VkCommandBuffer cmdBuf, bool oneTime = true);
 
-
-  /**
-   *   ╻ ╻   ┏━┓┏━╸┏┓╻╺┳┓┏━╸┏━┓┏━┓┏━┓┏━┓┏━┓
-   *   ╺╋╸   ┣┳┛┣╸ ┃┗┫ ┃┃┣╸ ┣┳┛┣━┛┣━┫┗━┓┗━┓
-   *   ╹ ╹   ╹┗╸┗━╸╹ ╹╺┻┛┗━╸╹┗╸╹  ╹ ╹┗━┛┗━┛
-   */
-  VkRenderPass  init_renderPass(void);
-
     
   /** Every fench only waits for SINGLE vkCmd** command [Reset the fench before using again ref: https://vkguide.dev/docs/chapter-1/vulkan_mainloop_code/] */
   VkFence create_fence(void);
@@ -89,43 +103,8 @@ class amVK_Device {
    *  needs INSTANCE, DEVICE & PD    [Instance is the deafault GLOBAL amVK_CX::instance]
    * \return VmaAllocator: _allocator member variable
    * CALLED-IN: CONSTRUCTOR
+   * You shouldn't care about init_VMA() if you haven't reached BUFFER related stuffs yet 
    */
   VmaAllocator init_VMA(void);
-};
-
-
-
-
-
-
-
-
-
-
-/**
- *  ╻ ╻   ╻ ╻╺┳╸╻╻  
- *  ╺╋╸   ┃ ┃ ┃ ┃┃  
- *  ╹ ╹   ┗━┛ ╹ ╹┗━╸
- * I just wanted to access amVK_CX::_device_list with _device_list[(VkDevice)D]
- * NOTE: if it was std::vector<amVK_Device> then if sm1 changes a amVK_Device, that won't be change in the VECTOR ONE
- *       So we gotta store only the REference or ratherMore pointers
- */
-class vec_amVK_device : public std::vector<amVK_Device *> {
- public:
-  vec_amVK_device(uint32_t n) : std::vector<amVK_Device *> (n) {}
-  vec_amVK_device(void) : std::vector<amVK_Device *>() {}
-  ~vec_amVK_device() {}
-
-  //amVK Stores a lot of different kinda data like this. Maybe enable a option to store these in HDD as cache
-  amVK_Device *operator[](VkDevice D) {
-    amVK_Device **data = this->data();
-    for (int i = 0, lim = this->size(); i < lim; i++) {
-      if (data[i]->_D == D) {
-        return data[i];
-      }
-    }
-    LOG_EX("LogicalDevice doesn't Exist"); //TODO: Better error Handle
-    return nullptr;
-  }
 };
 #endif //#ifndef amVK_DEVICE_H

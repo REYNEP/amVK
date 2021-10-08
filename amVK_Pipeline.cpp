@@ -1,5 +1,7 @@
+#include <fstream> //CreateShaderModule() function
 #include "amVK_Pipeline.hh"
 #include "amVK_Device.hh"
+#include "amVK_Logger.hh"
 
 VkPipeline amVK_GraphicsPipe::build_Pipeline(void) {
 
@@ -416,16 +418,16 @@ VkShaderModule amVK_Pipeline::load_ShaderModule(std::string &spvPath) {
  *      descriptor sets
  * but at the time we won’t need it, so we are going to create an empty pipeline layout for our Pipeline
  */
-VkPipelineLayout amVK_Pipeline::new_PipelineLayout(uint32_t pushConstant_n, VkPushConstantRange *pushConstant_ranges) {
+VkPipelineLayout amVK_Pipeline::new_PipelineLayout(uint32_t pushConstant_n, VkPushConstantRange *pushConstant_ranges, uint32_t descriptorSet_n, VkDescriptorSetLayout * descriptorSet_layouts) {
     /** TrianglePipeLineLayout, May be needed in So many other Vulkan Functions */
     VkPipelineLayoutCreateInfo pipeline_layout_info{};
         pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipeline_layout_info.pNext = nullptr;
     /** empty defaults */
         pipeline_layout_info.flags = 0;
-        pipeline_layout_info.setLayoutCount = 0;
+        pipeline_layout_info.setLayoutCount = descriptorSet_n;
     /** bcz our shader has no inputs, but we will soon add something to here. */
-        pipeline_layout_info.pSetLayouts = nullptr;
+        pipeline_layout_info.pSetLayouts = descriptorSet_layouts;
         pipeline_layout_info.pushConstantRangeCount = pushConstant_n;
         pipeline_layout_info.pPushConstantRanges = pushConstant_ranges;
 

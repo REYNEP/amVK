@@ -1,146 +1,41 @@
+#ifndef amVK_DEVICE_CPP
+#define amVK_DEVICE_CPP
 #ifdef amVK_AMD_VMA_SUP
     #define VMA_IMPLEMENTATION
 #endif
 #include "amVK_Device.hh"
-#include "amVK_Types.hh"
+#define IMPL_VEC_amVK_DEVICE  /** \see   class vec_amVK_Device   in amVK_Types.hh */
 #include "amVK_Logger.hh"
+#include "amVK_Types.hh"
+#include "amVK.hh"
 
-/**
- * |--------------------------------------------|
- * - SHADER_LOADING & PIPELINE in amVK_Pipeline -
- * |--------------------------------------------|
-*/
-
-/**
- * |-----------------------------------------|
- *             - RENDER PASSES -
- * |-----------------------------------------|
- * For Now we only impl. 1 Subpass as Desktop GPUs
- * 
- * [MOTTO: its more about the SubPasses and not about'RenderPass' hype that you get from hearing the name]
- * 
- * [vblanco20-1] [from: https://vkguide.dev/docs/chapter-1/vulkan_renderpass/]
- *     In Vulkan, all of the rendering happens inside a VkRenderPass. 
- *     It is not possible to do rendering commands outside of a renderpass, 
- *     but it is possible to do   Compute commands without them.
- * 
- * MUST-READ: https://gpuopen.com/learn/vulkan-renderpasses/      [They explain whats actually goin on, Explains SubPasses]
- * 
- *     The renderpass is a concept that only exists in Vulkan. 
- *     It’s there because it allows the driver to know more about the state of the images you render.  
- *     [HOW? Bcz of SubPasses, (thats only if... you do use them)]
- * 
- * \see create_framebuffers in amVK_WI
-*/
-VkRenderPass amVK_Device::init_renderPass(void) {
-    /** the renderpass will use this color attachment.   [Actually not the Renderpass exactly in a sense, rather the ONE and ONLY Subpass we gonna Create] **/
-	VkAttachmentDescription color_attachment = {};
-    /** the attachment will have the format needed by the swapchain */
-        color_attachment.format             = amVK_SWAPCHAIN_IMAGE_FORMAT;
-    /** 1 sample, we won't be doing MSAA */
-        color_attachment.samples            = VK_SAMPLE_COUNT_1_BIT;
-    /** we Clear when this attachment is loaded */
-        color_attachment.loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    /** we keep the attachment stored when the renderpass ends */
-        color_attachment.storeOp            = VK_ATTACHMENT_STORE_OP_STORE;
-    /** we don't care about stencil */
-        color_attachment.stencilLoadOp      = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        color_attachment.stencilStoreOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-    /** we don't know or care about the starting layout of the attachment */
-        color_attachment.initialLayout      = VK_IMAGE_LAYOUT_UNDEFINED;
-    /** after the renderpass ends, the image has to be on a layout ready for display */
-        color_attachment.finalLayout        = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentReference color_attachment_ref = {};
-	/** attachment number will index into the pAttachments array in the parent renderpass itself */
-	    color_attachment_ref.attachment = 0;
-	    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        /** 
-         * Seems like you could not use any other format.... cz 
-         * 1. swapchainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT   that matches with the Layout above
-         * 2. VUID-VkAttachmentReference-layout-00857
-         * 3. Other than that if you keep searching for where to use & NOT-TO the leftover layouts, You'll find it can't be used here
-         * 4. VkImageLayout docs says VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL should be used for images created with   [point 1]
-         */
-
-
-
-
-    //Chapter 4 - Depth Attachment
-    VkAttachmentDescription depth_attachment = {};
-        // Depth attachment
-        depth_attachment.flags = 0;
-        depth_attachment.format = VK_FORMAT_D32_SFLOAT;
-        depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference depth_attachment_ref = {};
-        depth_attachment_ref.attachment = 1;
-        depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-
-
-
-
-    /**
-     * Now that our main image target is defined, we need to add a subpass that will render into it.
-	 * we are going to create 1 subpass, which is the minimum you can do
-     */
-	VkSubpassDescription subpass = {};
-    /** Only Ray Tracing and Compute Bind points is Left */
-	    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	    subpass.colorAttachmentCount = 1;
-	    subpass.pColorAttachments = &color_attachment_ref;
-        //depth attachment
-	    subpass.pDepthStencilAttachment = &depth_attachment_ref;
-
-    /**
-     * The image life will go something like this:
-     *    UNDEFINED -> RenderPass Begins -> Subpass 0 begins (Transition to Attachment Optimal) 
-     * -> Subpass 0 renders -> Subpass 0 ends -> Renderpass Ends (Transitions to Present Source)
-    */
-
-    /**
-     * NOTE NOTE NOTE: IMPORTANT:
-     * The Vulkan driver will perform the layout transitions for us when using the renderpass. 
-     * If we weren’t using a renderpass (drawing from compute shaders) we would need to do the same transitions explicitly.
-    */
-
-    VkAttachmentDescription attachments[2] = { color_attachment,depth_attachment };
-    /** Finally Create the RenderPass - TIME TRAVEL ! */
-    VkRenderPassCreateInfo render_pass_info = {};
-	    render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-
-	/** connect the color attachment to the info */
-	    render_pass_info.attachmentCount = 2;
-	    render_pass_info.pAttachments = attachments;
-	/** connect the subpass to the info */
-	    render_pass_info.subpassCount = 1;
-	    render_pass_info.pSubpasses = &subpass;
-
-    VkRenderPass renderPass;
-    VkResult res = vkCreateRenderPass(_D, &render_pass_info, nullptr, &renderPass);
-
-    VK_CHECK(res, nullptr);
-    return renderPass;
-}
-
-
-
-
-
-
-
-
-
-
-
+/** Used INTERNALLY amVK_WI::is_present_sup() only for now */
+uint32_t amVK_Device::_present_qFam(VkSurfaceKHR S) {
+    //if (!found_present_qFamily || (present_qFamily == 0xFFFFFFFF)) {
+    // dif window, (has) dif surface can have same device   but checking sup for 1 surface  gives  'Validation Error: [ VUID-VkSwapchainCreateInfoKHR-surface-01270 ]'    
+        int32_t PD_index = HEART->PD_to_index(_PD);
+        amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
+    //
+        VkBool32 res = false;
+        for (int i = 0, lim = qFAM_list.n; i < lim; i++) {
+            vkGetPhysicalDeviceSurfaceSupportKHR(_PD, i, S, &res);
+    //
+            if (res == true) {
+                present_qFamily = i; 
+                found_present_qFamily = true;
+            }
+        }
+    //}
+    //
+    if (present_qFamily == 0xFFFFFFFF) {
+        LOG_EX("Couldn't Find any qFamily on PhysicalDevice that supports Presentation to given surface....");
+    }
+    //
+    return present_qFamily;
+}   //
+/** VALID: only \if you used  amVK_DevicePreset_Flags */
+uint32_t amVK_Device::get_graphics_qFamily(void) {amASSERT(!_MODS); return _MODS->_graphics_qFAM;}
+VkQueue amVK_Device::get_graphics_queue(void) {amASSERT(!_MODS); VkQueue Q = nullptr; vkGetDeviceQueue(_D, _MODS->_graphics_qFAM, 0, &Q); return Q;}
 
 
 
@@ -298,3 +193,5 @@ VmaAllocator amVK_Device::init_VMA(void) {
 
     return _allocator;
 }
+
+#endif //#ifndef amVK_DEVICE_CPP

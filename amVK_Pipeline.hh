@@ -3,7 +3,6 @@
 
 /** Think of this CLASS/es as    a NAMESPACE with bunch of MODIFY-able GLOBAL OPTIONS....      SO Only create 1 Object of these, and store those VARYING Options (like _vert, _frag) locally in your MESH-CLASS */
 
-#include <vector>
 #include <string>
 #include "vulkan/vulkan.h"
 #include "amVK_Types.hh"    //amVK_Array
@@ -50,7 +49,7 @@ class amVK_Pipeline {
    *      push-constants &
    *      descriptor sets
    */
-  VkPipelineLayout new_PipelineLayout(uint32_t pushConstant_n, VkPushConstantRange *pushConstant_ranges);
+  VkPipelineLayout new_PipelineLayout(uint32_t pushConstant_n, VkPushConstantRange *pushConstant_ranges, uint32_t descriptorSet_n, VkDescriptorSetLayout * descriptorSet_layouts);
 };
 
 

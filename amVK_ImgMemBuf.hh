@@ -20,6 +20,7 @@ class amVK_Buffer
 	/** \param device is needed for    device->allocator     however you can think of BUFFERs as per Device.... so this param is not that bad idea*/
 	void upload_new_gpu(amVK_Device *device, size_t buf_size, VkBufferUsageFlags buf_usage, void *buf_data);
 	void destroy(amVK_Device *device);
+	bool alloc_GPU(amVK_Device *device, size_t buf_size, VkBufferUsageFlags buf_usage);	//CPU_TO_GPU
 };
 
 #endif amVK_IMG_MEM_BUF

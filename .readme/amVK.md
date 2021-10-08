@@ -71,12 +71,109 @@
  *             THIS: https://github.com/vblanco20-1/VkEngine/blob/master/src/vulkan_init.cpp
  *             This Guy also Worked on THIS: https://github.com/godotengine/godot/issues/23998#issuecomment-497951825
  * 
+ * 
+ * 
+ * 
+ * 
+ *   .oldSwapchain: Setting oldSwapChain to the saved handle of the previous swapchain aids in resource reuse and makes sure that we can still present already acquired images   
+ *                      - [- Sascha Williems] 
+
  *  TBA: APIs Without Secrets update coming soon to Swapchain
- * 
- * 
- * 
- * 
+ *       This guy seems really afraid of NO-SYNC or rathermore NO-FReAKING InPUT LaG....    so only tests  BuFFErING....
+ *           https://github.com/KhronosGroup/Vulkan-Samples/blob/master/samples/performance/swapchain_images/swapchain_images_tutorial.md
+
  *  D: RenderPass    [MOTTO: its more about the SubPasses and not about'RenderPass' hype that you get from hearing the name]
+ *        The renderpass is a concept that only exists in Vulkan. It’s there because it allows the driver to know more about the state of the images you render.
+ *         A Renderpass will render into a Framebuffer. The framebuffer links to the images you will render to, and it’s used when starting a renderpass to set the target images for rendering.
+ *         So a framebuffer and RENDERPASS is tied together throught the ATTACHMENTs  [VkRenderPassCreateInfo.pAttachments] & [VkFramebufferCreateInfo.pAttachments]
+You can think of attachments as VkImages.... while the RenderPassCI will hold the AttachmentDescription Information only
+and the actual Framebuffer will have VkImageViews as Attachment....    [Now VkImageView vs VkImage is a Different story, I personally think of this like GPU views the image through the ImageView..... like ImageView is a Portal & sm Description]
+
+Its like what FasterThanLife said,
+" The VkRenderPass is definitely something that takes some getting used to.  Essentially the renderpass is an orchestration of image data.  It helps the GPU better understand when you'll be drawing, what you'll be drawing to, and what it should do between render passes. I promise after hearing that, and looking at the code, things will start to make sense. "
+[https://www.fasterthan.life/blog/2017/7/12/i-am-graphics-and-so-can-you-part-3-breaking-ground]
+
+
+
+
+ *
+ *         The general use of a renderpass when encoding commands is like this:
+
+            vkBeginCommandBuffer(cmd, ...);
+
+            vkCmdBeginRenderPass(cmd, ...);
+
+            //rendering commands go here
+
+            vkCmdEndRenderPass(cmd);
+
+            vkEndCommandBuffer(cmd)
+            When beginning a renderpass, you set the target framebuffer, and the clear color (if available). In this first chapter, we will change the clear color dynamically over time.
+
+
+
+
+
+
+
+            https://docs.unity3d.com/2018.1/Documentation/ScriptReference/Experimental.Rendering.RenderPass.html
+
+
+
+ * A Intro to RENDERPASS BY GPUOPEN: 
+ " Among the features proposed by our mobile members was the renderpass — an object designed to allow an application to communicate the high-level structure of a frame to the driver. Tiling GPU drivers can use this information to determine when to bring data on and off chip, whether or not to flush data out to memory or discard the content of tile buffers and even to do things like size memory allocations used for binning and other internal operations. This is a feature that Mantle did not have, and is not part of Direct3D® 12 either. "
+
+
+ There is also smth called DEFFERRED REndering for which people uses multiple Subpasses.... ever since Vulkan Came out
+ But originally it was an Idea of Mobile Graphics Devs. For Tiles GPUs. Prolly cz smtimes too many attachments cant just fit into the L2 cache and there you have a huge Perf Penalty
+ But Subpasses can be Interesting on Non-Tiled or rather    NEWER [after 2016 i think] Nvidia AND AMD GCN cards....
+
+ But smtimes for Shadow Mapping or sm Post COMP Effects you will Need Multiple RENDER PASS [not MultiPass, that one is 'Multiple Subpasses']
+ SRC: https://www.reddit.com/r/vulkan/comments/ime12i/multiple_renderpass/
+ In OpenGL: https://www.reddit.com/r/vulkan/comments/81d126/comment/dv2d1t0/?utm_source=share&utm_medium=web2x&context=3
+
+
+ *
+ *
+
+   [OCT2 - a Good Presentation: https://on-demand.gputechconf.com/gtc/2016/events/vulkanday/Vulkan_Overview.pdf]
+
+
+
+
+
+
+   MSAA [If you are confused about how the MSAA ties to RENDERPASS]
+   https://www.youtube.com/watch?v=pFKalA-fd34    [OpenGL MSAA ++ \brief of other AA like FXAA, SMAA]
+   A Cool Intro https://on-demand.gputechconf.com/gtc/2016/events/vulkanday/Vulkan_Overview.pdf    And Other 2016 GTC VulkanDAY [Vulkan Training Day SLIDES]
+   https://developer.apple.com/videos/play/tech-talks/606/    [Mantle on A11 chip]
+   
+   So, vkCreateSwapchain creates the Images.... and we dont plug in our RenderPass to that, But we need 4X more Buffer/Memory for MSAA x4 [ref: ]
+   How do we plug in this whole MSAA stuff? Do we need to create More framebuffer?   No
+   Then we Need to Create Images?   But how?   and even where do we Plug it in?
+   Well, We can create with vkCreateImage & vkCreateImageView     [yes imageView, cz we gonna plug that into FrameBuffer attachments]
+   here goes a Thread;    [https://www.reddit.com/r/vulkan/comments/5yrzac/comment/destacc/]       This guy was also Confused like me....
+   At Vulkan Everyone mostly is Confused, cz Smtimes under the hood implementation can be smth entirely Different..... say for smone just invents a Holy fuking new GPU
+   That Can do MSAA 8x like Calculations without the need for Multiple Buffers....   [yes, MSAA is part of Rasterization that Happens before Fragment SHading stage]
+   Then the Under the hood implementation would just Ignore your Newly created    imageViews & Images that you have created..... 
+   I mean yes, it would just ignore it and not make use of it..... as a VULKAN Dev you yourself would have to KNow about it..... or smone from the DRIVER dev can come up with a cool new Extension Providing Information about their card and Support  ;-)    But thats on them and how much they care about the Open Source Community
+
+   Anyway... Other than Plugging in that image into Framebuffer, as you are Plugging it in as an Attachment you also have to let the RenderPass know that you are Plugging in MSAA Image Attachment Stuffs....
+   so there is VkSubpassDescription.pResolveAttachments     [as you can Also see in that Reddit Thread....]
+
+   Whatever So much of a Big talk. Its completely Fine and OK if you dont agree.... I mean i am just a Kid who is just trying to find his way into the Big League.... so....
+
+   ARM Recommended Settings on MSAA: https://developer.arm.com/documentation/101897/0200/fragment-shading/multisampling-for-vulkan
+
+
+
+   And as Always Peace.... And Vulkan Tutorial is really much much much CONFUSING.... (Just check VkGuide on Multisampling or MultiPass.... that is Truely better)
+
+
+  also you will need this for MultiSampling: https://github.com/SaschaWillems/Vulkan/blob/master/examples/multisampling/multisampling.cpp#L257
+
+
+
  *     In Vulkan, all of the rendering happens inside a VkRenderPass. 
  *     It is not possible to do rendering commands outside of a renderpass, 
  *     but it is possible to do   Compute commands without them.
@@ -198,6 +295,10 @@
  * 
  *    D: PIPELINE - Intro1
  *       -VkPipelineLayout is a must [even created (vkCreatePipelineLayout)  with   null/0   is okay....]
+ *
+ *        Having MANY amVK_GraphicsPipe would consume hell lot of Memory that we wont actually ever need.... mostly 99% stuffs will be COMMON between MESHES/OBJECTS 
+ *        So, we create a BasePipe.... Change stuffs that varies, outside that 99% zone (e.g. vert, frag).... Those 1% stuffs can be stored   locally in these MESHES/OBJECT
+ *        METAPHORE: you can think of amVK_GraphicsPipe   like a STORE of PIPES.... you take PIPE/s from there to build_pipeline() 
  * 
  * 
  * 
@@ -227,6 +328,18 @@
  *    D: PUSH-CONSTANTS:
  *      https://stackoverflow.com/a/50956855
  *      Brendan Galea 09 - Push Constants
+ *
+ *
+ *    D: Descriptor Sets:
+ *       TODO
+
+
+ D: STORAGE BUFFERS:
+ Uniform buffers are great for small, read only data. But what if you want data you don’t know the size of in the shader? Or data that can be writeable. You use Storage buffers for that. Storage buffers are usually slightly slower than uniform buffers, but they can be much, much bigger. If you want to stuff your entire scene into one buffer, you have to use them. Make sure to profile it to know the performance.
+
+ With storage buffers, you can have an unsized array in a shader with whatever data you want. A common use for them is to store the data of all the objects in the scene.
+
+ We are going to use them to remove the usage of push-constants for the object matrices, which will let us upload the matrices at the beginning of the frame in bulk, and then we no longer need to do individual push constant calls every draw. This also will mean that we will hold all the object matrices into one array, which can be used for interesting things in compute shaders.
  * ---------------------
  * UNDER-THE-HOOD in a GLANCE
  */
@@ -247,6 +360,7 @@
 - TODO: Once you finish these Stuffs. Go Live. and Try to explain whats actually going on....
 - TODO: REALTIME Viewport Comp https://www.youtube.com/watch?v=Cy8dopYFTqY with EEVEE
 - TODO: Cleanup (like vkDestroyInstance)
+- TODO: TURN  `[isn't nullptr]`   error loggings into   Memory Errors....   Introducing Types of ERROR
 
 # !2ND_PRIORITY
 - Add support for Multiple DEVICE [PRIORITY, Always Better to make use of All those Hardware Just Sitting there] & Instances [Even if it's NEVER Needed anyway]
