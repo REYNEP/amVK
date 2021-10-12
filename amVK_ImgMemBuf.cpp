@@ -1,5 +1,4 @@
 #include "amVK_ImgMemBuf.hh"
-#include "amVK_Logger.hh"
 
 /** TODO: INVESTIGATE: What did AMD show us as 256MB here? https://www.youtube.com/watch?v=zSG6dPq57P8&t=308s
  *  TODO: have size and usage as member variables of class   [maybe even buf_data?]
@@ -71,4 +70,31 @@ bool amVK_Buffer::alloc_GPU(amVK_Device *device, size_t buf_size, VkBufferUsageF
 
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vmaCreateBuffer failed. inside upload_new_gpu. This is a WIP"); return false;}
     return true;
+}
+
+
+
+
+
+
+
+
+imgBuf new_image(amVK_Device *D, VkImageCreateInfo *dImage_CI) {
+    imgBuf smth = {};
+    /** the depth image will be an image with the format we selected and Depth Attachment usage flag */
+    //for the depth image, we want to allocate it from GPU local memory
+        VmaAllocationCreateInfo dimg_allocinfo = {};
+
+    /** To allocate the image, we are using VMA in almost the same way as the vertex buffers before. 
+     * But this time we use VMA_MEMORY_USAGE_GPU_ONLY to make sure that the image is allocated on fast VRAM. 
+     * This is critical for something like an image we are rendering to. Rendering into an image stored in cpu ram might not even be doable. 
+     * To make absolutely sure that VMA really allocates the image into VRAM, we give it VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT on required flags. 
+     * This forces VMA library to allocate the image on VRAM no matter what. (The Memory Usage part is more like a hint) -VBlanco20-1*/
+        dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+        dimg_allocinfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    //allocate and create the image
+        VkResult res = vmaCreateImage(D->_allocator, dImage_CI, &dimg_allocinfo, &smth._img, &smth.allocation, nullptr);
+
+        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vmaCreateImagefailed [amASSERT, WIP]"); amASSERT(true);}
+    return smth;
 }

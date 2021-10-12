@@ -1,8 +1,18 @@
-#ifndef amVK_IMG_MEM_BUF
-#define amVK_IMG_MEM_BUF
+#ifndef amVK_IMG_MEM_BUF_H
+#define amVK_IMG_MEM_BUF_H
 
 #include "vulkan/vulkan.h"
 #include "amVK_Device.hh"
+#include "amVK_Common.hh"
+
+
+typedef struct amVK_Image {
+    VkImage             _img;
+    VkImageView     _imgView;
+    VmaAllocation allocation;
+} imgBuf;
+
+imgBuf new_image(amVK_Device *D, VkImageCreateInfo *dImage_CI);
 
 /** 
  * NOTE: We didn't want to exclusively add any member such as  'amVK_Device', 'size' or 'usage' or 'data'
@@ -13,14 +23,14 @@
 class amVK_Buffer
 {
   public:
-	VkBuffer _buffer          = nullptr;
-	VmaAllocation _allocation = nullptr;
+    VkBuffer _buffer          = nullptr;
+    VmaAllocation _allocation = nullptr;
 
-	/** Create/Allocate NEW Buffer on GPU (CPU_TO_GPU)    & Upload/memcpy data into it */
-	/** \param device is needed for    device->allocator     however you can think of BUFFERs as per Device.... so this param is not that bad idea*/
-	void upload_new_gpu(amVK_Device *device, size_t buf_size, VkBufferUsageFlags buf_usage, void *buf_data);
-	void destroy(amVK_Device *device);
-	bool alloc_GPU(amVK_Device *device, size_t buf_size, VkBufferUsageFlags buf_usage);	//CPU_TO_GPU
+    /** Create/Allocate NEW Buffer on GPU (CPU_TO_GPU)    & Upload/memcpy data into it */
+    /** \param device is needed for    device->allocator     however you can think of BUFFERs as per Device.... so this param is not that bad idea*/
+    void upload_new_gpu(amVK_Device *device, size_t buf_size, VkBufferUsageFlags buf_usage, void *buf_data);
+    void destroy(amVK_Device *device);
+    bool alloc_GPU(amVK_Device *device, size_t buf_size, VkBufferUsageFlags buf_usage);	//CPU_TO_GPU
 };
 
-#endif amVK_IMG_MEM_BUF
+#endif //amVK_IMG_MEM_BUF_H

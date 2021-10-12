@@ -27,34 +27,19 @@
 #else 
   #error A amVK Build OS must be Specified [amVK_BUILD_WIN32/X11/WAYLAND/COCOA] by defining One of the Macros from inside amVK.hh .... use CMAKE for such
 #endif
-#include "vulkan/vulkan.h"  // Vulkan Includes "windows.h" on WIN     [? DEFINE  WIN32_LEAN_AND_MEAN ]
-#include <cstring>          // strcmp()
-#include <cstdlib>          // calloc() & malloc()
-#include <sstream>          // std::stringstream
+#include "vulkan/vulkan.h"  // Vulkan Includes "windows.h" on WIN     [? DEFINE  WIN32_LEAN_AND_MEAN  + possibly (https://github.com/achalpandeyy/VolumeRenderer/blob/30996789d819dba59db683e8d996b03eee456fdd/Source/Core/Win32.h)]
+#include <cstring>          // strcmp()     [cstdlib in .cpp]
 #include <vector>
 
+
 #ifdef amVK_CPP   //inside amVK.cpp file
-  #define amVK_LOGGER_IMPLIMENTATION  // amASSERT()
+  #define amVK_LOGGER_IMPLIMENTATION  // amASSERT() impl.
 #endif
-#include "amVK_Device.hh"
-#include "amVK_Logger.hh"
-#include "amVK_Utils.hh"    // mergeSort() & vulkan_result_msg()
-#define VEC_amVK_DEVICE
-#include "amVK_Types.hh"
-
-
-#define HEART amVK_CX::heart
-#define LOG_activeD_nullptr() LOG_EX("Either pass a valid amVK_Device (created with amVK_CX::CreateDevice/MK2) as param,    or see amVK_CX::activeD & amVK_CX::activate_device()")
-
-/** Used in ALL [mostly] CLASS Constructors.... \see LOG in amVK_Logger.h, LOG_EX is prints an extra FIRST-LINE giving __func__, __line__*/
-#define amVK_CHECK_DEVICE(PARAM_D, VAR_D) \
-  if (PARAM_D && !HEART->D_list[PARAM_D->_D]) { \
-    LOG_EX("\u0027param amVK_Device *" << #PARAM_D << "\u0027 doesn't exist in 'amVK_CX::heart->D_list'"); \
-  } else { VAR_D = PARAM_D; }
-
-#define amVK_SET_activeD(VAR_D) \
-  if           (!HEART->activeD){ LOG_activeD_nullptr(); } \
-  else { VAR_D = HEART->activeD; }
+#include "amVK_Common.hh"   // amVK_IN, #define HEART, HEART_CX,   amVK_Logger.hh, amVK_Types.hh, amVK_Utils.hh
+#ifndef amVK_DEVICE_HH
+  class amVK_Device;
+  class amVK_DeviceMods;    // defined below amVK_CX class
+#endif
 
 
 
@@ -74,7 +59,7 @@
  * \fn CreateDevice         [ \see       load_PD_info() & amVK_DeviceMods()     for under the Hood modifications    based on amVK_DevicePreset_Flags]
  * MODS: \see amVK_DeviceMods() & amVK_DevicePreset_Flags
  * \see CreateDeviceMK2()
- *  MK2: lets you Modify DeviceMods, after DeviceMods does PresetModifications 
+ *  MK2: lets you Modify DeviceMods, after DeviceMods does PresetModifications \todo FIX DOCS about MK2 here...
  *       \fn CreateDeviceMK2() 
  *       \fn DeviceModsMK2()
  * 
@@ -96,8 +81,16 @@
  * 
  * RULE-VII: Here at amVK, we try to Minimize as much IMPLICIT behavior we can.... "EXPLICIT is Better than IMPLICIT" - [PEP20]
  * 
+ * RULE-IX: Memory overWrites on amVK can Crash your program.... I am looking at Memory protected allocation ways, tho
+ * 
+ * RULE-X: smtimes funcs like vkGetPDSurfaceFormats, calling them for the 2nd time [actually 4th time, cz of query-ing for 'n' first]   wont work.... like it will give you null data
+ *         But internally we may need to use these.... then how would you call those vk*** funcs youtself? so we store everything we vkEnum/vkGet in member vars....
+ *            for example.... we store the data in `amVK_CX::PD` struct
+ *         that sure does do some damage of easiness and all that
+ *            so we also try to, like minimize that
+ * 
  * \brief VARS:
- * HEART: [static amVK_CX *heart]   THE One & Only HEART....   [cz Multi-instance isn't officially supported yet, tho you can \see CreateInstance impl. and use under the hood functions]
+ * HEART: [static amVK_IN *heart]   THE One & Only HEART....   [cz Multi-instance isn't officially supported yet, tho you can \see CreateInstance impl. and use under the hood functions]
  * activeD: [We dont want to Introduce this if you are really NEW to Vulkan], soon as you realize that lots of stuff in VULKAN will be linked by the VkDevice
  *          e.g. RenderPass-Swapchain-FrameBuffers, Attachments, Pipeline, CommandPool-CmdBuf-Queue    REF: [VUID-vkQueueSubmit-pCommandBuffers-00074], [VUID-VkRenderPassBeginInfo-commonparent]
  *          So We introduce this.... this will reduce the Multi Device Hazard in Future when we Introduce Multi VkDevice & SLI/Crossfire (DeviceGroup) Support
@@ -112,15 +105,20 @@
  * 
  *        TODO: Do MALLOC once??? [https://softwareengineering.stackexchange.com/questions/191231/how-many-malloc-calls-is-too-many-if-any]
  */
-class amVK_CX {
+class amVK_CX : public amVK_IN {
  public:
-  static amVK_CX *heart;
-  static amVK_Device *activeD;
-  static VkInstance instance;
-  static VkApplicationInfo vk_appInfo;
+  /** \see in amVK_Internel / amVK_IN   [Separated, to make no other file dependant on this one]
+    static amVK_IN *heart;
+    static amVK_Device *activeD;
+    static VkInstance instance;
+    static VkApplicationInfo vk_appInfo;
+
+    vec_amVK_Device         D_list{};   /** std::vector<amVK_Device *>      yes, [pointer], respect amVK_Device as an INDIVIDUAL 'BIG SMTH' */
+    /** [above one] Was STATIC, needed to DEFINE it in amVK.cc....  thus amVK::CreateDevice() didnt work if used in GLOBAL Space of other modules outside main function
+  */
 
   /** Only way to set activeD, not internally used.... this should be explicit */
-  void activate_device(amVK_Device *D) {if (D_list[D->_D]) {activeD = D;}}
+  void activate_device(amVK_Device *D) {if (D_list.doesExist(D)) {activeD = D;}}
 
   bool check_VkSupport(void); /** \todo */
   void set_VkApplicationInfo(VkApplicationInfo *appInfo = nullptr);
@@ -151,6 +149,9 @@ class amVK_CX {
 #else
   const bool enableDebugLayers_LunarG = true;
 #endif
+
+  amVK_CX(void) : amVK_IN() {}
+  ~amVK_CX() {}
 
 
   /**
@@ -190,8 +191,6 @@ class amVK_CX {
    *  ▀▄▀ █▀█ █▀▄ ▄█
    */
   loaded_PD_info_plus_plus    PD{};   /** \ref amVK_Types.hh */
-  vec_amVK_Device         D_list{};   /** std::vector<amVK_Device *>      yes, [pointer], respect amVK_Device as an INDIVIDUAL 'BIG SMTH' */
-  /** [above ones] Was STATIC, needed to DEFINE it in amVK.cc....  thus amVK::CreateDevice() didnt work if used in GLOBAL Space of other modules outside main function */
   bool all_PD_inUse = false;
   /** \see PD.chozen */
 
@@ -352,10 +351,12 @@ typedef struct amVK_BExtensions__ {
 
 
 
+
+#include <sstream>          // std::stringstream
 // uses _flag & _PD
 #define LOG_MODS_ONCE() \
   std::stringstream log_device_name; \
-  log_device_name << "Physical Device [" << _PD << "] :- \u0027" << HEART->PD.props[HEART->PD_to_index(_PD)].deviceName << "\u0027 "; \
+  log_device_name << "Physical Device [" << _PD << "] :- \u0027" << HEART_CX->PD.props[HEART_CX->PD_to_index(_PD)].deviceName << "\u0027 "; \
   LOG("amVK_DeviceMods(" << flag_2_strName(_flag) << ", " << "\u0027" << log_device_name.str() << "\u0027)"); \
 
 #define LOG_MODS_NOTSUP(x) \

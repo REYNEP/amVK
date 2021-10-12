@@ -1,6 +1,7 @@
+#define amVK_RENDERPASS_CPP
 #include "amVK_RenderPass.hh"
 #include "amVK_Device.hh"
-#include "amVK_Logger.hh"
+
 /**
  *              █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██████╗ ███████╗███╗   ██╗██████╗ ███████╗██████╗ ██████╗  █████╗ ███████╗███████╗
  *   ▄ ██╗▄    ██╔══██╗████╗ ████║██║   ██║██║ ██╔╝        ██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝
@@ -35,28 +36,48 @@
  *                           make sure that this->_amVK_D matches with the    amVK_WI->_amVK_D
 */
 
-
 /**
   \│/  ┌┬┐┌─┐┬  ┬  ┌─┐┌─┐
   ─ ─  │││├─┤│  │  │ ││  
   /│\  ┴ ┴┴ ┴┴─┘┴─┘└─┘└─┘
  */
 void amVK_RenderPassMK2::configure_n_malloc(void) {
-    if (color_attachment) {attachments.n++; attachment_refs.n++;}
-    if (depth_attachment) {attachments.n++; attachment_refs.n++;}
+    if (color_attachment) {attachment_descs.n++; attachment_refs.n++;}
+    if (depth_attachment) {attachment_descs.n++; attachment_refs.n++;}
     if (single_subpass) {subpasses.n++;}
 
     memory_allocation_malloc:
     {
-        if (attachments.data != nullptr) {free(attachments.data);}
+        if (attachment_descs.data != nullptr) {free(attachment_descs.data);}
 
-        void *test = malloc(attachments.n * sizeof(VkAttachmentDescription)
+        void *test = malloc(attachment_descs.n * sizeof(VkAttachmentDescription)
                            +attachment_refs.n * sizeof(VkAttachmentReference)
                            +subpasses.n *sizeof(VkSubpassDescription));
 
-            attachments.data = static_cast   <VkAttachmentDescription *> (test);
-        attachment_refs.data = reinterpret_cast<VkAttachmentReference *> (    attachments.data + attachments.n);
-              subpasses.data = reinterpret_cast <VkSubpassDescription *> (attachment_refs.data + attachment_refs.n);
+       attachment_descs.data = static_cast   <VkAttachmentDescription *> (test);
+        attachment_refs.data = reinterpret_cast<VkAttachmentReference *> (attachment_descs.data + attachment_descs.n);
+              subpasses.data = reinterpret_cast <VkSubpassDescription *> ( attachment_refs.data + attachment_refs.n);
+    }
+}
+
+/**
+  \│/  ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐╔═╗┌─┐┬─┐┌┬┐┌─┐┌┬┐
+  ─ ─  └─┐│ │├┬┘├┤ ├─┤│  ├┤ ╠╣ │ │├┬┘│││├─┤ │ 
+  /│\  └─┘└─┘┴└─└  ┴ ┴└─┘└─┘╚  └─┘┴└─┴ ┴┴ ┴ ┴ 
+ */
+#include "amVK_WI.hh"
+void amVK_RenderPassMK2::set_surfaceFormat(void) {
+    demoSurfaceExt->get_SurfaceFormats();
+    amVK_Array<VkSurfaceFormatKHR> surfaceFormats = demoSurfaceExt->surface_formats;
+    for (int i = 0; i < surfaceFormats.n; i++) {
+        bool found_it = false;
+        for (int i = 0; i < surfaceFormats.n; i++) {
+            if ((surfaceFormats.data[i].format == final_imageFormat)&&
+                (surfaceFormats.data[i].colorSpace == final_imageColorSpace)) {
+                found_it = true;
+                break;
+            }
+        }
     }
 }
 
@@ -70,9 +91,9 @@ void amVK_RenderPassMK2::set_attachments(void) {
    * █▀▀ █▀█ █░░ █▀█ █▀█  ▄▀█ ▀█▀ ▀█▀ ▄▀█ █▀▀ █░█ █▀▄▀█ █▀▀ █▄░█ ▀█▀ 
    * █▄▄ █▄█ █▄▄ █▄█ █▀▄  █▀█ ░█░ ░█░ █▀█ █▄▄ █▀█ █░▀░█ ██▄ █░▀█ ░█░ 
      */
-    amVK_ARRAY_PUSH_BACK(attachments) = {0,   /** [.flags] - not needed for now */
+    amVK_ARRAY_PUSH_BACK(attachment_descs) = {0,   /** [.flags] - not needed for now */
         /** [.format]       - should be linked with/same as swapchainCI.imageFormat */
-        image_format,
+        final_imageFormat,
 
         /** [.samples]
          * OVERALL MultiSample Count... e.g. MSAA x8 MSAA x4    from your good ol' games 
@@ -105,7 +126,7 @@ void amVK_RenderPassMK2::set_attachments(void) {
    * █▀▄ █▀▀ █▀█ ▀█▀ █░█  ▄▀█ ▀█▀ ▀█▀ ▄▀█ █▀▀ █░█ █▀▄▀█ █▀▀ █▄░█ ▀█▀ 
    * █▄▀ ██▄ █▀▀ ░█░ █▀█  █▀█ ░█░ ░█░ █▀█ █▄▄ █▀█ █░▀░█ ██▄ █░▀█ ░█░ 
      */
-    if (depth_attachment) { amVK_ARRAY_PUSH_BACK(attachments) = {0,
+    if (depth_attachment) { amVK_ARRAY_PUSH_BACK(attachment_descs) = {0,
         VK_FORMAT_D32_SFLOAT, samples,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,       /** FOR: depth */
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,   /** FOR: stencil */

@@ -53,6 +53,7 @@ class amVK_Device {
     uint32_t _present_qFam(VkSurfaceKHR S);       /** \see amVK_WI::is_present_sup() & amVK_WI::amVK_WI() [Constructor] */
 
   /** only \if you used  amVK_DevicePreset_Flags */
+    uint32_t qIndex_MK2 = 0;  //in amVK_DeviceMods.... we only asked for 1 queue
     uint32_t get_graphics_qFamily(void);          //_MODS->_graphics_qFAM;
     VkQueue  get_graphics_queue(void);            //vkGetDeviceQueue(_D, _MODS->_graphics_qFAM, 0, &Q);
   

@@ -5,7 +5,7 @@
 
 #include <string>
 #include "vulkan/vulkan.h"
-#include "amVK_Types.hh"    //amVK_Array
+#include "amVK_Common.hh"
 
 class amVK_Device; // Cyclic Dependency, [Header included in] 😃
 
@@ -30,6 +30,7 @@ class amVK_Pipeline {
   //VkPipelineCreateFlags _flags;  WIP
 
   amVK_Pipeline(amVK_Device *D) : _amVK_D(D) {}
+  amVK_Pipeline(void) {}
   ~amVK_Pipeline() {}
 
   /** 
@@ -94,6 +95,7 @@ class amVK_GraphicsPipe : public amVK_Pipeline {
 
   /** CONSTRUCTOR */
   amVK_GraphicsPipe(amVK_Device *D, VkRenderPass RP = nullptr) : amVK_Pipeline(D), _renderPass(RP) {}
+  amVK_GraphicsPipe(void) {}
   ~amVK_GraphicsPipe() {}
 };
 

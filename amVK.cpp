@@ -1,6 +1,8 @@
 #define amVK_CPP
 #define am_DEV
+#include "amVK_Device.hh"
 #include "amVK.hh"
+#include <cstdlib>          // calloc() & malloc()  [Needed in .cpp only]
 
 
 /**
@@ -12,7 +14,7 @@
  */
 
 //---------------- THE ULTIMATE GOAL WE'RE WORKING TOWARDS ----------------
-amVK_CX                       *amVK_CX::heart = nullptr;
+amVK_IN                       *amVK_CX::heart = nullptr;
 amVK_Device                   *amVK_CX::activeD = nullptr;
 VkInstance                     amVK_CX::instance{};         //Multiple Instance is not supported yet officially
 VkApplicationInfo              amVK_CX::vk_appInfo{};
@@ -74,7 +76,6 @@ VkInstance amVK_CX::CreateInstance(void) {
      */
 
     amVK_CX::instance = instance;   LOG("VkInstance Created!");
-    amVK_CX::heart = this;          LOG("amVK_CX::heart set! \n\n");
     return instance;
 }
 
@@ -911,8 +912,8 @@ void amVK_DeviceMods::configure_n_malloc(void) {
    * 1 Queue per TYPE/PRESET [Graphics/Compute/Transfer/Sparse/ENC_DEC]   only ENC_DEC has 2 queue 
 */
 void amVK_DeviceMods::set_qCIs(void) {
-    uint32_t PD_index = amVK_CX::heart->PD_to_index(_PD);
-    amVK_Array<VkQueueFamilyProperties> qFAM_list = amVK_CX::heart->PD.qFamily_lists[PD_index];
+    uint32_t PD_index = HEART_CX->PD_to_index(_PD);
+    amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART_CX->PD.qFamily_lists[PD_index];
 
 
 
@@ -1032,8 +1033,8 @@ void amVK_DeviceMods::set_exts(void) {
     /│\  └  └─┘┴ ┴ ┴ └─┘┴└─└─┘└─┘
 */
 void amVK_DeviceMods::set_ftrs(void) {
-    uint32_t PD_index = amVK_CX::heart->PD_to_index(_PD);
-    VkPhysicalDeviceFeatures sup_ftrs = amVK_CX::heart->PD.features[PD_index];
+    uint32_t PD_index = HEART_CX->PD_to_index(_PD);
+    VkPhysicalDeviceFeatures sup_ftrs = HEART_CX->PD.features[PD_index];
 
     // ----------- Main MODs ------------
     modifications:

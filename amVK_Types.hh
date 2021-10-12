@@ -37,6 +37,8 @@ struct amVK_Array {
   #else
     void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name, char *type_id_name);
   #endif
+
+  #include <typeinfo>
   /** reUse, cz we dont want it to Crash... and if doesn't have much effect */
   #define amVK_ARRAY_PUSH_BACK(var) \
     if (var.next_add_where >= var.n) { \
@@ -121,9 +123,10 @@ typedef uint32_t amVK_DevicePreset_Flags;
 
     //amVK Stores a lot of different kinda data like this. Maybe enable a option to store these in HDD as cache
     amVK_Device *operator[](VkDevice D);
+    bool doesExist(amVK_Device *amVK_D);  /** cz, VkDevice is inside amVK_Device class, that means the need to include amVK_Device.hh in every single file*/
   };
 
-  #ifdef IMPL_VEC_amVK_DEVICE
+  #ifdef IMPL_VEC_amVK_DEVICE   //Used in amVK_Device.cpp
     #ifndef amVK_LOGGER
       #include "amVK_Logger.hh"
     #endif
@@ -135,8 +138,19 @@ typedef uint32_t amVK_DevicePreset_Flags;
         }
       }
       LOG_EX("LogicalDevice doesn't Exist");
-      amASSERT(true);
       return nullptr;
+    }
+
+
+    #include <typeinfo>
+    bool vec_amVK_Device::doesExist(amVK_Device *amVK_D) {
+      amVK_Device **data = this->data();
+      for (int i = 0, lim = this->size(); i < lim; i++) {
+        if (data[i] == amVK_D) {
+          return true;
+        }
+      }
+      LOG_EX("amVK_Device doesn't Exist in " << typeid(this).name());
     }
   #endif //IMPL_VEC_amVK_DEVICE
 #endif //amVK_DEVICE_CPP || VEC_amVK_DEVICE

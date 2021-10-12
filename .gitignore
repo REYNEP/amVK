@@ -7,4 +7,5 @@ shaders
 assets
 *.png
 lib-amVK.lib
+rtc.exe
 rtr.exe

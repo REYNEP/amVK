@@ -5,16 +5,15 @@
 #endif
 #include "amVK_Device.hh"
 #define IMPL_VEC_amVK_DEVICE  /** \see   class vec_amVK_Device   in amVK_Types.hh */
-#include "amVK_Logger.hh"
-#include "amVK_Types.hh"
+#include "amVK_Common.hh"
 #include "amVK.hh"
 
 /** Used INTERNALLY amVK_WI::is_present_sup() only for now */
 uint32_t amVK_Device::_present_qFam(VkSurfaceKHR S) {
     //if (!found_present_qFamily || (present_qFamily == 0xFFFFFFFF)) {
     // dif window, (has) dif surface can have same device   but checking sup for 1 surface  gives  'Validation Error: [ VUID-VkSwapchainCreateInfoKHR-surface-01270 ]'    
-        int32_t PD_index = HEART->PD_to_index(_PD);
-        amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
+        int32_t PD_index = HEART_CX->PD_to_index(_PD);
+        amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART_CX->PD.qFamily_lists[PD_index];
     //
         VkBool32 res = false;
         for (int i = 0, lim = qFAM_list.n; i < lim; i++) {
@@ -35,7 +34,7 @@ uint32_t amVK_Device::_present_qFam(VkSurfaceKHR S) {
 }   //
 /** VALID: only \if you used  amVK_DevicePreset_Flags */
 uint32_t amVK_Device::get_graphics_qFamily(void) {amASSERT(!_MODS); return _MODS->_graphics_qFAM;}
-VkQueue amVK_Device::get_graphics_queue(void) {amASSERT(!_MODS); VkQueue Q = nullptr; vkGetDeviceQueue(_D, _MODS->_graphics_qFAM, 0, &Q); return Q;}
+VkQueue amVK_Device::get_graphics_queue(void) {amASSERT(!_MODS); VkQueue Q = nullptr; vkGetDeviceQueue(_D, _MODS->_graphics_qFAM, qIndex_MK2, &Q); return Q;}
 
 
 
@@ -70,7 +69,7 @@ VkCommandPool amVK_Device::init_commandpool(uint32_t qFamily) {
 	    cmdPool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     VkResult res = vkCreateCommandPool(_D, &cmdPool_info, nullptr, &_CmdPool);
-    VK_CHECK(res, nullptr);
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
     return _CmdPool;
 }
 
@@ -93,7 +92,7 @@ VkCommandBuffer *amVK_Device::alloc_cmdBuf(uint32_t n) {
 
     VkCommandBuffer *cmdBuffer = static_cast<VkCommandBuffer *> (calloc(n, sizeof(VkCommandBuffer)));
     VkResult res = vkAllocateCommandBuffers(_D, &cmdAllocInfo, cmdBuffer);
-    VK_CHECK(res, nullptr);
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
     return cmdBuffer;
 }
 
@@ -118,7 +117,7 @@ void amVK_Device::begin_cmdBuf(VkCommandBuffer cmdBuf, bool oneTime) {
     }
 
     VkResult res = vkBeginCommandBuffer(cmdBuf, &cmdBeginInfo);
-    VK_CHECK(res, );
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return;}
 }
 
 
@@ -153,7 +152,7 @@ VkFence amVK_Device::create_fence(void) {
 
     VkFence fence;
 	VkResult res = vkCreateFence(_D, &fenceCreateInfo, nullptr, &fence);
-    VK_CHECK(res, nullptr);
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
     return fence;
 }
 
@@ -166,7 +165,7 @@ VkSemaphore amVK_Device::create_semaphore(void) {
 
     VkSemaphore sema;
 	VkResult res = vkCreateSemaphore(_D, &semaphoreCreateInfo, nullptr, &sema);
-    VK_CHECK(res, nullptr);
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
     return sema;
 }
 

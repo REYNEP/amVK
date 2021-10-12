@@ -1,5 +1,6 @@
 #ifndef amVK_LOGGER
 #define amVK_LOGGER
+// This file should be fully independant of any amVK Headers
 //Include Guard & USAGE INFO
 // Sm sections have   #ifdef amVK_LOGGER_MACRO ....     I use them like, declaring at the TOP-LEVEL CMakeLists.txt or Makefile or Waf Wscript
 //        But beware of amVK_LOGGER_IMPLIMENTATION.... for sm sections, you might need to DEFINE this in ONLY 1 of your CPP files
@@ -40,7 +41,6 @@
 // MSVC Has Got a Huge amount of Predefined Macros:- https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
 #define LOG_MANGLED_MSVC(x) LOG_EX(x << " MANGLED NAME: " << __FUNCDNAME__)
 
-
 //am_DEV should be defined by the developer if they want to debug..
 #if defined(am_DEV)
   #define amLOG(x) LOG(x)
@@ -77,16 +77,30 @@
   #define amABBORT(sec)
 #endif //amVK_ABBORT_SUPPORT
 
-#include "amVK_Utils.hh"
-#define VK_CHECK(res, return_err) \
-    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return return_err;}
+
+#endif  //#ifndef amVK_LOGGER
 
 
 
 
 
+
+
+
+
+
+/**
+ *             ██╗  ██╗████████╗██████╗  █████╗ 
+ *   ▄ ██╗▄    ╚██╗██╔╝╚══██╔══╝██╔══██╗██╔══██╗
+ *    ████╗     ╚███╔╝    ██║   ██████╔╝███████║
+ *   ▀╚██╔▀     ██╔██╗    ██║   ██╔══██╗██╔══██║
+ *     ╚═╝     ██╔╝ ██╗   ██║   ██║  ██║██║  ██║
+ *             ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝
+ */
 //TIMER
 #ifdef INCLUDE_TIMER
+#ifndef amVK_TIMER
+#define amVK_TIMER
 #include <chrono>
 
 typedef struct noob_timer__ {
@@ -122,6 +136,7 @@ typedef struct noob_timer_store__ {
   var.time_now = std::chrono::high_resolution_clock::now(); \
   x = ((std::chrono::duration<double>)(var.time_now - var.time_flushPoint)).count();
 
+#endif    // amVK_TIMER
 #endif    //#ifdef INCLUDE_TIMER
 
 
@@ -176,9 +191,12 @@ typedef struct noob_timer_store__ {
  *      BUT macOS SEGFAULT SystemTrace info is really COOL [https://github.com/obsproject/obs-studio/issues/4112]
  */
 #ifdef amVK_LOGGER_BLI_ASSERT
+#ifndef amVK_ASSERT
+#define amVK_ASSERT
     
 #if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
   void BLI_system_backtrace(FILE *fp);   //There are Other Cool usable BLI_*_* functions too inside #ifdef amVK_LOGGER_IMPLIMENTATION
+  /** \todo impliment only stack trace till certain levels.... and not ABBORT.... */
   #define amASSERT(x) if(x) BLI_system_backtrace(stderr)
 #else
   #error "amASSERT is only currently available for _WIN32 || __linux__ || __APPLE__"
@@ -632,7 +650,6 @@ typedef struct noob_timer_store__ {
     /* end BLI_system_backtrace */
   #endif  //WIN32 || __linux__
 #endif    //amVK_LOGGER_IMPLIMENTATION
+
+#endif    //amVK_ASSERT
 #endif    //amVK_LOGGER_BLI_ASSERT
-
-
-#endif  //#ifndef amVK_LOGGER

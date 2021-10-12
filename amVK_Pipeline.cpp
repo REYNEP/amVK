@@ -1,7 +1,6 @@
 #include <fstream> //CreateShaderModule() function
 #include "amVK_Pipeline.hh"
 #include "amVK_Device.hh"
-#include "amVK_Logger.hh"
 
 VkPipeline amVK_GraphicsPipe::build_Pipeline(void) {
 
