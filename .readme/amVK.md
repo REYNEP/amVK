@@ -240,6 +240,19 @@ Its like what FasterThanLife said,
  *    CAN WE USE MUltiple of these? How to sync? When to Use even Multiple? WTF does exactly RenderPass Represent?
  *    https://renderdoc.org/vkspec_chunked/chap8.html#synchronization-semaphores-waiting has got something usefull about RENDERPASS, Seems like what I thought Exactly
  * 
+ *
+ *  D: Image Views
+ *     When it came out in DX11.2 https://blogs.windows.com/windowsexperience/2014/01/30/directx-11-2-tiled-resources-enables-optimized-pc-gaming-experiences/
+ *     They Called it Tiled Resources: https://channel9.msdn.com/Events/Build/2013/4-063
+ *      This page has Quite Good Links: https://en.wikipedia.org/wiki/Texture_filtering
+ *      Unless you are making a GAME-ENGINE, you wouldn't really need to care about this one
+ *      TODO: [IDK-WHEN] Maybe ask Nvidia Devs about How they did the Optimizations
+ * 
+ *      Well, basically put together, an Image under the Hood doesn't have to laid out like UNCOMPRESSED PNG [linear-tiling]
+ *      There is something called OPTIMAL_TILING bcz of which image's pixels and rgb channels can be laid out differently     [is this Bcz of GPU Multi-Threading? IDK]
+ *      Also there is MultiLayer images (stereoScope3d, VR ig.) and we might want/need to render to specific LAYER
+ *      Also there is this Theory of TEXELS.... & mip Levels
+ *      Thats why imageView exists, describing how to READ/WRITE, how bits & bytes are distributed
  * 
  *  D: FRAMEBUFFERS
  *     This actually will just hold the Information about actual vkImages from the Swapchain and the RENDER-PASS together

@@ -7,49 +7,6 @@
 #include "amVK_Device.hh"
 
 
-typedef enum amVK_SurfaceFormat_BitsPerChannel {
-  ERROR_BIT = 0,
-
-  // WEIRD SHITS!
-  BIT_4 = 4,    //VK_FORMAT_R4G4B4A4_UNORM_PACK16
-  BIT_5 = 5,    //VK_FORMAT_R5G5B5A1_UNORM_PACK16, VK_FORMAT_R5G6B5_UNORM_PACK16
-  BIT_11 = 11,  //VK_FORMAT_B10G11R11_UFLOAT_PACK32
-
-  BIT_8 = 8,
-  BIT_10 = 10,  //Not many Nvidia Supports this
-  BIT_12 = 12,  //A lot of AMD Cards support this
-  BIT_16 = 16   //I dont know of any such GPU
-} amVK_SurfaceFormat_Bit;
-typedef amVK_SurfaceFormat_Bit amVK_SurfaceFormat_BPC;
-
-typedef enum amVK_SurfaceFormat_Channels {
-  RGB = 1,
-  RGBA = 2,
-  BGR = 3,
-  BGRA = 4
-} amVK_SurfaceFormat_Channel;
-
-typedef enum amVK_SurfaceFormat_BitDepth_Total_AllChannels {
-  BIT_DEPTH_16 = 16,
-  BIT_DEPTH_24 = 24,
-  BIT_DEPTH_32 = 32,
-  BIT_DEPTH_48 = 48
-} amVK_SurfaceFormat_BitDepth;
-
-/** https://stackoverflow.com/a/59630187 */
-typedef enum amVK_SurfaceFormat_Encoding {
-  ENC_SRGB = 1,
-  ENC_UNORM = 2,
-  ENC_UINT = 3,
-  ENC_SINT = 4,
-  ENC_UFLOAT = 5,
-  ENC_SFLOAT = 6,
-  ENC_USCALED = 7,  // 1 would be enc as 1.0f, 255 would be 255.0f, 0 would be 0.0f
-  ENC_SSCALED = 8   // singned version of above
-} amVK_SurfaceFormat_Enc;
-
-
-
 /**
  *              █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██████╗ ███████╗███╗   ██╗██████╗ ███████╗██████╗ ██████╗  █████╗ ███████╗███████╗
  *   ▄ ██╗▄    ██╔══██╗████╗ ████║██║   ██║██║ ██╔╝        ██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝
@@ -82,6 +39,11 @@ class amVK_RenderPassMK1 { /** TREAT this like a STRUCT, that you will have to P
 
     // depth_format = VK_FORMAT_D32_SFLOAT;
 };
+
+
+
+
+
 
 struct amVK_SurfaceMK2;
 #define amVK_RenderPass amVK_RenderPassMK2

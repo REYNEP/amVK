@@ -6,54 +6,18 @@
 #ifndef amVK_LOGGER
   #include "amVK_Logger.hh"
 #endif
+#ifndef amVK_UTILS_H
+  #include "amVK_Utils.hh"
+#endif
 
 /** Pretty Cool idea, huh? */
 #define UINT32_T_NULL 0xFFFFFFFF
 #define UINT32_T_FALSE 0xFFFFFFFF
 
-/** [amVK_types.hh] */
-template<typename T> 
-struct amVK_Array {
-    T *data;    //Pointer to the first element [But we dont do/keep_track_of MALLOC, so DUH-Optimizations]
-    uint32_t n;
-    uint32_t next_add_where = 0;
 
-    /** CONSTRUCTOR - More like failsafes.... */
-    amVK_Array(T *D, uint32_t N) : data(D), n(N) {if (D == nullptr || N == 0) {LOG_EX("ERROR");}}
-    amVK_Array(void) {data = nullptr; n = 0;}
+//Report this bug to VSCODE, uint32/size_t etc. looks the same goddamn color,
 
-    inline T& operator[](uint32_t index) {
-      return data[index];
-    }
-    inline size_t size(void) {return static_cast<size_t>(n);}
-};
-#ifndef amVK_RELEASE
-  #ifdef amVK_CPP
-    void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name, char *type_id_name) { 
-      if (n == 0) { LOG_EX("amVK_Array<> " << var_name << ".n = 0;" << "Did you malloc? amASSERT here" << std::endl << "typeid(" << var_name << ").name() :- " << type_id_name);
-                    amASSERT(true); }
-      LOG_EX("amVK_Array FILLED!.... reUsing last SLOT"); 
-    }  
-  #else
-    void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name, char *type_id_name);
-  #endif
-
-  #include <typeinfo>
-  /** reUse, cz we dont want it to Crash... and if doesn't have much effect */
-  #define amVK_ARRAY_PUSH_BACK(var) \
-    if (var.next_add_where >= var.n) { \
-      amVK_ARRAY_PUSH_BACK_FILLED_LOG(var.n, #var, (char *)typeid(var).name()); \
-      var.next_add_where--; \
-    } \
-    var.data[var.next_add_where++]
-#else
-  #define amVK_ARRAY_PUSH_BACK(var) var.data[var.next_add_where++]
-#endif
-
-
-//Report this bug to VSCODE, everything looks the same goddamn color
-//Holds info about multiple PD
-//Only used for amVK_CX::PD... and it was intended  (Type [should] not [be] used anywhere else)
+//Only used for amVK_CX::PD... and it was intended  ([should] not [be] used anywhere else)
 typedef struct everything_PD__ {
   VkPhysicalDevice                 *list = nullptr;         //'Physical Devices List'       [will be sorted after sort_physical_devices() is called]
   VkPhysicalDeviceProperties      *props = nullptr;         //'Physical Devices Properties' [                        ++                            ]
@@ -70,7 +34,7 @@ typedef struct everything_PD__ {
 } loaded_PD_info_plus_plus;
 
 /** 
- * You can use it like    DevicePresets = amVK_DevicePreset_Graphics + amVK_DevicePreset_Compute   [We will create 1 GRAPHICS & 1 COMPUTE Queue]
+ * TODO: You can use it like    DevicePresets = amVK_DevicePreset_Graphics + amVK_DevicePreset_Compute   [We will create 1 GRAPHICS & 1 COMPUTE Queue]
  * TODO: Detailed description on what Every option Does
  * TODO: GEN3 support Multiple Flag Mixing...   like even though this is names _flags.... this for now supports 1 flag at a TIME
  * NOTE: Only amVK_DP_GRAPHICS & amVK_DP_COMPUTE is supported for now
@@ -100,63 +64,17 @@ typedef uint32_t amVK_DevicePreset_Flags;
 
 
 
-/**
- *  ╻ ╻   ╻ ╻╺┳╸╻╻  
- *  ╺╋╸   ┃ ┃ ┃ ┃┃  
- *  ╹ ╹   ┗━┛ ╹ ╹┗━╸
- * I just wanted to access amVK_CX::_device_list with _device_list[(VkDevice)D]
- * NOTE: if it was std::vector<amVK_Device> then if sm1 changes a amVK_Device, that won't be change in the VECTOR ONE
- *       So we gotta store only the REference or ratherMore pointers
- * IMPL: \see amVK_Device.cpp
- */
-#if defined(amVK_DEVICE_CPP) || defined(VEC_amVK_DEVICE)
-  #include <vector>
-  #ifndef amVK_DEVICE_H
-    class amVK_Device;
-  #endif
-
-  class vec_amVK_Device : public std::vector<amVK_Device *> {
-   public:
-    vec_amVK_Device(uint32_t n) : std::vector<amVK_Device *> (n) {}
-    vec_amVK_Device(void) : std::vector<amVK_Device *>() {}
-    ~vec_amVK_Device() {}
-
-    //amVK Stores a lot of different kinda data like this. Maybe enable a option to store these in HDD as cache
-    amVK_Device *operator[](VkDevice D);
-    bool doesExist(amVK_Device *amVK_D);  /** cz, VkDevice is inside amVK_Device class, that means the need to include amVK_Device.hh in every single file*/
-  };
-
-  #ifdef IMPL_VEC_amVK_DEVICE   //Used in amVK_Device.cpp
-    #ifndef amVK_LOGGER
-      #include "amVK_Logger.hh"
-    #endif
-    amVK_Device *vec_amVK_Device::operator[](VkDevice D) {
-      amVK_Device **data = this->data();
-      for (int i = 0, lim = this->size(); i < lim; i++) {
-        if (data[i]->_D == D) {
-          return data[i];
-        }
-      }
-      LOG_EX("LogicalDevice doesn't Exist");
-      return nullptr;
-    }
 
 
-    #include <typeinfo>
-    bool vec_amVK_Device::doesExist(amVK_Device *amVK_D) {
-      amVK_Device **data = this->data();
-      for (int i = 0, lim = this->size(); i < lim; i++) {
-        if (data[i] == amVK_D) {
-          return true;
-        }
-      }
-      LOG_EX("amVK_Device doesn't Exist in " << typeid(this).name());
-    }
-  #endif //IMPL_VEC_amVK_DEVICE
-#endif //amVK_DEVICE_CPP || VEC_amVK_DEVICE
 
 
-/** SWAPCHAIN IMAGE FORMAT DOCS
+
+/** 
+  \│/  ╦┌┬┐┌─┐┌─┐┌─┐╔═╗┌─┐┬─┐┌┬┐┌─┐┌┬┐   ┬   ╔═╗┌─┐┬  ┌─┐┬─┐╔═╗┌─┐┌─┐┌─┐┌─┐
+  ─ ─  ║│││├─┤│ ┬├┤ ╠╣ │ │├┬┘│││├─┤ │   ┌┼─  ║  │ ││  │ │├┬┘╚═╗├─┘├─┤│  ├┤ 
+  /│\  ╩┴ ┴┴ ┴└─┘└─┘╚  └─┘┴└─┴ ┴┴ ┴ ┴   └┘   ╚═╝└─┘┴─┘└─┘┴└─╚═╝┴  ┴ ┴└─┘└─┘
+
+ * SWAPCHAIN IMAGE FORMAT DOCS, also Surface Format [vkSurfaceFormatKHR] docs 
   hey, so, if anyone really knows smth about the whole VK_FORMAT_B8G8R8A8_SRGB and why not R8G8B8A8   [is reported by NVIDIA]
   I reall wish you share the intel/story with me ;) .... would really love to hear
 
@@ -226,5 +144,175 @@ Also See the SLO-MO Guys video about Monitor, You will see that Monitor is Refre
 
 //See The docs in amVK_Types.hh
 #define amVK_SWAPCHAIN_IMAGE_COLORSPACE VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+
+
+/** 
+  \│/  ┌─┐┌┬┐╦  ╦╦╔═    ╔═╗┌─┐┬  ┌─┐┬─┐╔═╗┌─┐┌─┐┌─┐┌─┐
+  ─ ─  ├─┤│││╚╗╔╝╠╩╗    ║  │ ││  │ │├┬┘╚═╗├─┘├─┤│  ├┤ 
+  /│\  ┴ ┴┴ ┴ ╚╝ ╩ ╩ ───╚═╝└─┘┴─┘└─┘┴└─╚═╝┴  ┴ ┴└─┘└─┘
+ * 
+ * \note
+ * [You dont need to Need it rn if you are really new to VULKAN and didn't come here to make a COMPOSITOR or color sensitive stuffs
+ * just Collapse this DOC and the STRUCT....]
+ * 
+ * \page
+ * This time the doc is OK: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkColorSpaceKHR.html
+ * & https://www.khronos.org/registry/vulkan/specs/1.2-extensions/html/vkspec.html#data-format
+ * But again for smone who doesn't know shit about COLORSPACE already, its a SHIT
+ * 
+ * In older versions of this extension VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT was misnamed VK_COLOR_SPACE_DCI_P3_LINEAR_EXT.
+ * 
+ * VK_EXT_swapchain_colorspace - '_EXT'    
+ * VK_AMD_display_native_hdr   - '_AMD'
+ * 
+ * I think, 
+ * LINEAR EOTF can be different for colorspace with different WhitePoint / ColorGamut
+ *    But still that would be a LINEAR SLOPE....
+ * 
+ * The first one is VK_COLOR_SPACE_SRGB_NONLINEAR_KHR  -  amVK_SRGB
+ * If a GPU has Presentation Support, it will have Support for this TOO   - by me
+ * 
+ * in the VKSpecs page, DCI-P3 is marked as Name	
+ *    Red Primary {1.000, 0.000},	Green Primary	{0.000, 1.000},  Blue Primary {0.000, 0.000}, White-point {0.3333, 0.3333}
+ *
+ * 
+ * 
+ * 
+ * Now if you see the wiki, thats not DCI-P3 Primaries.... so whats happening here??? 
+ *  The fact is all colorspaces are encoded in RGB.... while DCI-P3 is encoded in XYZ values....
+ *    what that means is, in RGB encoded spaces, RGB(0, 0, 1.0f) is gonna be like    at {0.150, 0.060} in XYZ....
+ *      so that {0.150, 0.060} is like a MAX blue it can be.  [in XYZ]
+ *    just like that, RGB encoded ones simply have a BOUND, binded to them, which we see as COLOR-PRIMARIES....
+ *      but for encoding we would have to write {0, 0, 1.0}.... right?
+ *      if it was in XYZ, we would instead have to write {0.150, 0.060}, 
+ * 
+ *    but hmmm... 🤔, what are those values relative to.... those {0.150, 0.060}???
+ *      yeees, right, those values, {0.150, 0.060} are relative to that gamut-graphs that you have seen... that CIE XYZ ColorSpace, 
+ *        and the entire colors in that Graph fits in 🛆{(0,0), (1,0), (0,1)}
+ *        so, simply, XYZ encoded values are BOUND by or rathermore Relative to that Graph-Coordinates.... 😅
+ * 
+ *  Here the main fact is WHAT's RELATIVE to WHAT?
+ *    and all RGB ColorSpaces are relative to a smaller XYZ-triangle, & is encoded relative to that smaller Triangle inside that Graph
+ *    but not DCI-P3, as its encoded in XYZ, its encoded values are relative to the GRAPH-Coordinates....
+ *    Now that is why VulkanSpecs indicated by those Primary-Values....
+ * 
+ * 
+ * 
+ * 
+ * RESC: to get you started
+ * start here: https://www.youtube.com/watch?v=m9AT7H4GGrA & https://www.youtube.com/watch?v=4nYGJI0r2-0
+ *    Check Sobotka's Files out for FILMIC Blender.... the OCIO ones.... OCIO is cool, it was developed by Sony Pictures ImageWorks,
+ *    the First Blender Filmic: https://github.com/sobotka/filmic-blender
+ *    This summerizes, sm difference stuffs: http://www.wesleyknapp.com/blog/hdr
+ * 
+ * Search for how the Camera does it, a bit about its history. get familiar with EOTF, OETF [Optical-Electronic Transfer Function]..... For better Dynamic range after Encoding at lower bits, the idea of OETF was created
+ *      Its like, Our eyes are SENSITIVE to Darker Shades.... our eyes can tell slightest difference in color, but for SunLit Bright ares in Midday, its bit less precise.... the more the light, the less our eyes can differentiate
+ *      . now to give more BITS to the darker low Luminosity ares, OETF is used, 
+ * 
+ * Then check these ones out:
+ *    https://hg2dc.com/      [The hitchhiker's guide to digital colour]
+ *    https://chrisbrejon.com/articles/ocio-display-transforms-and-misconceptions/  [OCIO, Display Transforms, Misconceptions - Chris Brejon]
+ *    https://developer.nvidia.com/sites/default/files/akamai/gameworks/hdr/UHDColorForGames.pdf [ got from: https://stackoverflow.com/q/49082820]
+ * 
+ *    and if you would like to give sm JUICE to your HEAD: https://www.khronos.org/registry/DataFormat/specs/1.3/dataformat.1.3.pdf   --  Start at Chapter 12 or 5.8
+ *    KarenTheDorf provided this: Vulkan Discord: https://discord.com/channels/427551838099996672/427951526967902218/896415963950485524
+ * 
+ * if you are really Interested in this Topic, ColorSpace.... 
+ *    [Not everyone has to be, like you can just go ahead and tell the vk To use what the DRIVER Supports.... 
+ *      or just USE amVK, let amVK dooo all the stuffs under the HOOD.... \todo SOON UI Integrations....]
+ *    you have to co-operate with Other ColorScientists.... 🙂😉
+ *    
+ * But If you are confused about anything, hit me up.... or if you really wonder about SOBOTKA at this point, let me know, [I shouldn't be telling you to knock him, but you actually prolly can]
+ */
+typedef enum VkColorSpaceKHR_amVKPort {
+  amVK_sRGB = 0,    /** no EOFT??? [My guess is, a SRGB EOFT.... cz i dont think the vkSpecs talks about a SOFTWARE LAYER of EOTF functions, it references to the DISPLAY's intended EOTF, i think]
+                        But VK_FORMAT_B8G8R8A8_SRGB   kinda feels like....   was made for no SRGB EOTF */
+
+  amVK_displayP3 = VK_COLOR_SPACE_DISPLAY_P3_NONLINEAR_EXT,         //sRGB-like EOTF applied (should be) to this before present [like amVK_EXTENDED_SRGB]
+  amVK_displayP3_LINEAR = VK_COLOR_SPACE_DISPLAY_P3_LINEAR_EXT,     //   linear EOTF
+
+  amVK_bt709 =        VK_COLOR_SPACE_BT709_NONLINEAR_EXT,           //SMPTE 170M EOTF
+  amVK_bt709_LINEAR = VK_COLOR_SPACE_BT709_LINEAR_EXT,              //    linear EOTF
+
+  // COOLEST Ones.... [Hope that ACES stuffs comes out in future too!]
+  amVK_DCI_P3 = VK_COLOR_SPACE_DCI_P3_NONLINEAR_EXT,                /** DCI-P3 EOTF. Note that values in such an image are interpreted as XYZ encoded color data by the presentation engine.
+                                                                        CZ This gamut it pretty DIfferent.... Check it out 😉 [Gamut is also in the DOC Spec page] */
+  
+  // HDR ONES
+  amVK_bt2020_LINEAR = VK_COLOR_SPACE_BT2020_LINEAR_EXT,            // linear EOTF.
+  amVK_DOLBYVISION_DV = VK_COLOR_SPACE_DOLBYVISION_EXT,             // [Dolby Vision (BT2020) ] SMPTE ST2084 EOTF.
+  amVK_HDR10_ST2084 = VK_COLOR_SPACE_HDR10_ST2084_EXT,              // [ HDR10 (BT2020) ] SMPTE ST2084 Perceptual Quantizer (PQ) EOTF.
+  amVK_HDR10_HLG = VK_COLOR_SPACE_HDR10_HLG_EXT,                    // [ HDR10 (BT2020) ] Hybrid Log Gamma (HLG) EOTF.
+
+  // SHIT-Theory ONES
+  amVK_scRGB = VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT,          //  sRGB EOTF  [Modified for ranged beyond 0-1, see the DataFormat specs 1.3]
+  amVK_scRGB_LINEAR = VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT,      //Linear EOTF
+
+  amVK_adobeRGB = VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT,            //    LINEAR EOTF
+  amVK_adobeRGB_LINEAR = VK_COLOR_SPACE_ADOBERGB_LINEAR_EXT,        // Gamma 2.2 EOTF.
+
+
+  // COOL!
+  amVK_COLOR_SPACE_PASS_THROUGH = VK_COLOR_SPACE_PASS_THROUGH_EXT,
+  amVK_DISPLAY_NATIVE_AMD = VK_COLOR_SPACE_DISPLAY_NATIVE_AMD   /** display’s native color space. This matches the color space expectations of AMD’s FreeSync2 standard, for displays supporting it. 
+                                                                    Wow This COOL, coming from AMD */
+} amVK_ColorSpace;
+
+
+
+char *VkFormat_2_String(VkFormat F);
+
+typedef enum amVK_SurfaceFormat_BitsPerChannel {
+  ERROR_BIT = 0,
+
+  // WEIRD SHITS!
+  BIT_4 = 4,    //VK_FORMAT_R4G4B4A4_UNORM_PACK16
+  BIT_5 = 5,    //VK_FORMAT_R5G5B5A1_UNORM_PACK16, VK_FORMAT_R5G6B5_UNORM_PACK16
+  BIT_11 = 11,  //VK_FORMAT_B10G11R11_UFLOAT_PACK32
+
+  BIT_8 = 8,
+  BIT_10 = 10,  //Not many Nvidia Supports this
+  BIT_12 = 12,  //A lot of AMD Cards support this
+  BIT_16 = 16   //I dont know of any such GPU
+} amVK_SurfaceFormat_Bit;
+typedef amVK_SurfaceFormat_Bit amVK_SurfaceFormat_BPC;
+
+typedef enum amVK_SurfaceFormat_Channels_n_Order {
+  RGB = 1,
+  RGBA = 2,
+  BGR = 3,
+  BGRA = 4
+} amVK_SurfaceFormat_Channel;
+
+/** R8G8B8A8 = BIT_DEPTH_32 */
+typedef enum amVK_SurfaceFormat_BitDepth_Total_AllChannels {
+  BIT_DEPTH_16 = 16,
+  BIT_DEPTH_24 = 24,
+  BIT_DEPTH_32 = 32,
+  BIT_DEPTH_48 = 48
+} amVK_SurfaceFormat_BitDepth;
+
+/** 
+ * Those formats listed as sRGB-encoded have in-memory representations of R, G and B components which are nonlinearly-encoded as R', G', and B'; any alpha component is unchanged. 
+ * As part of filtering, the nonlinear R', G', and B' values are converted to linear R, G, and B components; 
+ * The conversion between linear and nonlinear encoding is performed as described in the “KHR_DF_TRANSFER_SRGB” section of the Khronos Data Format Specification.
+ * 
+ * Appendix C: Compressed Image Formats 1.2.198
+ *      Chunked: https://vulkan.lunarg.com/doc/view/1.2.189.0/windows/chunked_spec/chap48.html
+ * 
+ * there will always be UNORM, and SNORM is just.... -_-   APPLE Doesn't report it back....
+ * 
+ * https://stackoverflow.com/a/59630187 
+ */
+typedef enum amVK_SurfaceFormat_Encoding {
+  ENC_SRGB = 1,
+  ENC_UNORM = 2,
+  ENC_UINT = 3,
+  ENC_SINT = 4,
+  ENC_UFLOAT = 5,
+  ENC_SFLOAT = 6,
+  ENC_USCALED = 7,  // 1 would be enc as 1.0f, 255 would be 255.0f, 0 would be 0.0f
+  ENC_SSCALED = 8   // singned version of above
+} amVK_SurfaceFormat_Enc;
 
 #endif //#ifndef amVK_TYPES_H

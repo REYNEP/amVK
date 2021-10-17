@@ -83,11 +83,9 @@
  * 
  * RULE-IX: Memory overWrites on amVK can Crash your program.... I am looking at Memory protected allocation ways, tho
  * 
- * RULE-X: smtimes funcs like vkGetPDSurfaceFormats, calling them for the 2nd time [actually 4th time, cz of query-ing for 'n' first]   wont work.... like it will give you null data
+ * RULE-X: smtimes funcs like vkGetPDSurfaceFormats, vkGetSwapchainImagesKHR  calling them for the 2nd time [actually 4th time, cz of query-ing for 'n' first]   wont work.... like it will give you null data
  *         But internally we may need to use these.... then how would you call those vk*** funcs youtself? so we store everything we vkEnum/vkGet in member vars....
  *            for example.... we store the data in `amVK_CX::PD` struct
- *         that sure does do some damage of easiness and all that
- *            so we also try to, like minimize that
  * 
  * \brief VARS:
  * HEART: [static amVK_IN *heart]   THE One & Only HEART....   [cz Multi-instance isn't officially supported yet, tho you can \see CreateInstance impl. and use under the hood functions]
@@ -113,7 +111,7 @@ class amVK_CX : public amVK_IN {
     static VkInstance instance;
     static VkApplicationInfo vk_appInfo;
 
-    vec_amVK_Device         D_list{};   /** std::vector<amVK_Device *>      yes, [pointer], respect amVK_Device as an INDIVIDUAL 'BIG SMTH' */
+    amVK_Utils::vec_amVK_Device         D_list{};   /** std::vector<amVK_Device *>      yes, [pointer], respect amVK_Device as an INDIVIDUAL 'BIG SMTH' */
     /** [above one] Was STATIC, needed to DEFINE it in amVK.cc....  thus amVK::CreateDevice() didnt work if used in GLOBAL Space of other modules outside main function
   */
 

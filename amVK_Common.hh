@@ -3,8 +3,8 @@
 //Includes all the common & preprocessors for all amVK headers/files/modules
 #define amVK_LOGGER_BLI_ASSERT  /** \todo there are other modules inside amVK_Logger.hh.... */
 #include "amVK_Logger.hh"
-#include "amVK_Utils.hh"
 #define VEC_amVK_DEVICE
+#include "amVK_Utils.hh"
 #include "amVK_Types.hh"
 
 #define HEART amVK_IN::heart
@@ -43,7 +43,7 @@ class amVK_IN {
     ~amVK_IN() {}
 
     /** HEART->D_list.doesExist() used to check if Device exists or not */
-    vec_amVK_Device         D_list{};
+    amVK_Utils::vec_amVK_Device         D_list{};
 };
 
 #endif //amVK_COMMON_H

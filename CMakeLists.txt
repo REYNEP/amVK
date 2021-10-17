@@ -46,7 +46,7 @@ find_program (glslc-exe
 message("\n${glslc-exe}\n")
 
 
-add_library(lib-amVK amVK.cpp amVK_Device.cpp amVK_WI.cpp amVK_RenderPass.cpp amVK_Pipeline.cpp amVK_ImgMemBuf.cpp)
+add_library(lib-amVK amVK.cpp amVK_WI.cpp amVK_RenderPass.cpp amVK_Types.cpp amVK_Device.cpp amVK_Pipeline.cpp amVK_ImgMemBuf.cpp)
 if (WIN32)
   target_link_libraries(lib-amVK ${PLATFORM_LINKLIBS})
 endif()

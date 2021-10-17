@@ -3,7 +3,7 @@
 #include "amVK_ImgMemBuf.hh"
 
 
-amVK_WI::amVK_WI(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_Device *D) : _window(window), _amVK_D(D), _surfaceExt(S), _surface(S->_S), _amVK_RP(RP) {
+amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_Device *D) : _window(window), _amVK_D(D), _surfaceExt(S), _surface(S->_S), _amVK_RP(RP) {
     if           (D == nullptr) { LOG_EX("param amVK_Device *D is nullptr...... " << "it has to be valid"); }
     else if (D->_PD == nullptr) { LOG_EX("param amVK_Device *D->_PD is nullptr.." << "it has to be valid"); }
          if (     S == nullptr) { LOG_EX("param S  is nullptr.......  " << "it has to be valid"); }
@@ -72,7 +72,7 @@ void amVK_SurfaceMK2::get_SurfaceFormats(void) {
 }
 
 
-VkSwapchainKHR amVK_WI::createSwapchain(bool call_the_info_defaults) {
+VkSwapchainKHR amVK_WI_MK2::createSwapchain(bool call_the_info_defaults) {
     VkSurfaceCapabilitiesKHR surfaceCaps;
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_amVK_D->_PD, _surface, &surfaceCaps);
     /** maxImageExtent is not How much GPU can support, its more like HOW MUCH the SURFACE actually Needs  [even tho it says CAPABILITIES]*/
@@ -120,22 +120,22 @@ VkSwapchainKHR amVK_WI::createSwapchain(bool call_the_info_defaults) {
         if (!found_it) {
             LOG_EX("seems that .the_info.imageFormat & .the_info.imageColorSpace is set to something that ain't supported." << std::endl
                 << "[Note that these 2 should also match with RenderPass's ImageFormat/ColorSpace....  so you need to configure using amVK_RenderPassMK2 stuffs]");
-            if (found_r8g8b8a8) {LOG("Using \u2022" << VkFormat_Display_2_String(VK_FORMAT_R8G8B8A8_SRGB) << "\u2022 as the_info.imageFormat"); the_info.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;}
-            else                {LOG("Using \u2022" << VkFormat_Display_2_String(VK_FORMAT_B8G8R8A8_SRGB) << "\u2022 as the_info.imageFormat"); the_info.imageFormat = VK_FORMAT_B8G8R8A8_SRGB;}
+            if (found_r8g8b8a8) {LOG("Using \u2022" << VkFormat_2_String(VK_FORMAT_R8G8B8A8_SRGB) << "\u2022 as the_info.imageFormat"); the_info.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;}
+            else                {LOG("Using \u2022" << VkFormat_2_String(VK_FORMAT_B8G8R8A8_SRGB) << "\u2022 as the_info.imageFormat"); the_info.imageFormat = VK_FORMAT_B8G8R8A8_SRGB;}
                                     LOG("Using \u2022" << VK_COLOR_SPACE_SRGB_NONLINEAR_KHR <<"\u2022 as the_info.imageColorSpace"); the_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
         }
         if (the_info.imageFormat != _amVK_RP->final_imageFormat) {
-            LOG("amVK_WI.the_info.imageFormat != _amVK_RP->final_imageFormat" << std::endl << "will result in wrong colors" << "Window: " << _window);
+            LOG("amVK_WI_MK2.the_info.imageFormat != _amVK_RP->final_imageFormat" << std::endl << "will result in wrong colors" << "Window: " << _window);
         }
         if (the_info.imageColorSpace != _amVK_RP->final_imageColorSpace) {
-            LOG("amVK_WI.the_info.imageColorSpace != _amVK_RP->final_imageColorSpace" << std::endl << "will result in wrong colors" << "Window: " << _window);
+            LOG("amVK_WI_MK2.the_info.imageColorSpace != _amVK_RP->final_imageColorSpace" << std::endl << "will result in wrong colors" << "Window: " << _window);
         }
         
         // ----------- IMAGE COUNT SUPPORTED ------------
         the_info.minImageCount = the_info.minImageCount + surfaceCaps.minImageCount;
         if (the_info.minImageCount > surfaceCaps.maxImageCount) {
             LOG("the_info.minImageCount:- " << the_info.minImageCount << " > " << surfaceCaps.maxImageCount << "  [surfaceCaps.maxImageCount]");
-            LOG("you asked for " << the_info.minImageCount - surfaceCaps.minImageCount << " images   [why this happens? see amVK_WI::the_info_defaults()]");
+            LOG("you asked for " << the_info.minImageCount - surfaceCaps.minImageCount << " images   [why this happens? see amVK_WI_MK2::the_info_defaults()]");
             LOG("setting: " << "the_info.minImageCount = surfaceCaps.minImageCount");
             the_info.minImageCount = surfaceCaps.minImageCount;
         }
@@ -151,12 +151,26 @@ VkSwapchainKHR amVK_WI::createSwapchain(bool call_the_info_defaults) {
         VkResult res = vkCreateSwapchainKHR(_amVK_D->_D, &the_info, nullptr, &_swapchain);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateSwapchainKHR() failed"); amASSERT(true); return nullptr;}
 
+        /** \todo what if someone suddenly turns off imageless_framebuffer or increases the_info.minImageCount */
+        if (!IMGs.alloc_called) {
+            malloc_n_get_IMGs();
+        } 
+        else {
+            uint32_t x = 0;
+            vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &x, nullptr);
+            if (x > 0) {
+                vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &x, IMGs.ptr_swap_imgs());
+                IMGs.n = static_cast<uint8_t>(x);
+            }
+        }
+        create_SwapImageViews();
+
         return _swapchain;
     }
 }
 
 /** More like EXTENDED FEATURES.... */
-void amVK_WI::swapchain_CI_generic_mods(void) {
+void amVK_WI_MK2::swapchain_CI_generic_mods(void) {
     the_info.sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     the_info.pNext                  = nullptr;
 /** check VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR if using DEVICEgroup */
@@ -201,17 +215,7 @@ void amVK_WI::swapchain_CI_generic_mods(void) {
  * 
  * \param renderPass: Rendering is done in renderPasses.... So RenderPass uses FrameBuffer's Images
  */
-void amVK_WI_MK2::create_framebufs(void) {
-    if (!IMGs.alloc_called) {
-        malloc_n_get_IMGs();
-    } 
-    else {uint32_t x = static_cast<uint32_t>(IMGs.n); vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &x, IMGs.ptr_swap_imgs()); create_imageviews();}
-
-    if (*(IMGs.ptr_swap_attach(0)) == nullptr) {   //IMGs data was calloc-ed
-        LOG("Creating Swapchain ImageViews....");
-        create_imageviews();
-    }
-
+void amVK_WI_MK2::create_Attachments_n_FrameBuf(void) {
     // ----------- CREATE ATTACHMENT/IMGVIEWS FOR RENDERPASS ------------
     /** \see amVK_RenderPassMK2::color_index.... For now, we create Color Attachment anyway 
     for (int i = 0; i < color_index; i++) {
@@ -304,7 +308,7 @@ void amVK_WI_MK2::create_framebufs(void) {
 }
 
 /** \todo let modify options */
-void amVK_WI_MK2::create_imageviews(void) {
+void amVK_WI_MK2::create_SwapImageViews(void) {
     VkImageViewCreateInfo CI = {};
         CI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         CI.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -331,70 +335,4 @@ void amVK_WI_MK2::create_imageviews(void) {
         if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res);}
         LOG("IMGs.attachments[" << (((uint64_t)IMGs.ptr_swap_attach(i) - (uint64_t)IMGs.ptr_swap_attach(0)) / (uint64_t)8) << "]");
     }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * Those formats listed as sRGB-encoded have in-memory representations of R, G and B components which are nonlinearly-encoded as R', G', and B'; any alpha component is unchanged. 
- * As part of filtering, the nonlinear R', G', and B' values are converted to linear R, G, and B components; 
- * The conversion between linear and nonlinear encoding is performed as described in the “KHR_DF_TRANSFER_SRGB” section of the Khronos Data Format Specification.
- * 
- * Appendix C: Compressed Image Formats 1.2.198
- *      Chunked: https://vulkan.lunarg.com/doc/view/1.2.189.0/windows/chunked_spec/chap48.html
- */
-char *VkFormat_Display_2_String(VkFormat F) {
-  switch (F) {
-    //100% on MAC & Android [100% from the ones that Support VULKAN]
-    case VK_FORMAT_R8G8B8A8_SRGB:  return "VK_FORMAT_R8G8B8A8_SRGB";
-    case VK_FORMAT_R8G8B8A8_UNORM: return "VK_FORMAT_R8G8B8A8_UNORM";
-    //100% on Windows
-    case VK_FORMAT_B8G8R8A8_SRGB:  return "VK_FORMAT_B8G8R8A8_SRGB";
-    case VK_FORMAT_B8G8R8A8_UNORM: return "VK_FORMAT_R8G8B8A8_UNORM";
-
-    case VK_FORMAT_A8B8G8R8_SRGB_PACK32:
-      return "VK_FORMAT_A8B8G8R8_SRGB_PACK32";
-    case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
-      return "VK_FORMAT_A8B8G8R8_UNORM_PACK32";
-
-    /** 10Bit & 12Bit if any GPU & OS Combination supports it */
-    case VK_FORMAT_A2R10G10B10_UNORM_PACK32: return "VK_FORMAT_A2R10G10B10_UNORM_PACK32";
-    case VK_FORMAT_A2B10G10R10_UNORM_PACK32: return "VK_FORMAT_A2B10G10R10_UNORM_PACK32";
-    case VK_FORMAT_R16G16B16A16_SFLOAT:      return "VK_FORMAT_R16G16B16A16_SFLOAT";
-    case VK_FORMAT_R16G16B16A16_UNORM:       return "VK_FORMAT_R16G16B16A16_UNORM";
-
-    // WEIRD-SHITS!
-    case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
-      return "VK_FORMAT_B10G11R11_UFLOAT_PACK32";
-
-    // SHITS!
-    case VK_FORMAT_B4G4R4A4_UNORM_PACK16:    return "VK_FORMAT_B4G4R4A4_UNORM_PACK16";
-    case VK_FORMAT_R4G4B4A4_UNORM_PACK16:    return "VK_FORMAT_R4G4B4A4_UNORM_PACK16";
-    case VK_FORMAT_R5G5B5A1_UNORM_PACK16:    return "VK_FORMAT_R5G5B5A1_UNORM_PACK16";
-    case VK_FORMAT_B5G5R5A1_UNORM_PACK16:    return "VK_FORMAT_B5G5R5A1_UNORM_PACK16";
-
-    case VK_FORMAT_R5G6B5_UNORM_PACK16:      return "VK_FORMAT_R5G6B5_UNORM_PACK16";   //Mobile has this one
-    case VK_FORMAT_B5G6R5_UNORM_PACK16:      return "VK_FORMAT_B5G6R5_UNORM_PACK16";   //Mobile doesn't have this one
-
-    default: 
-      return "well, i guess the format you are thinking about must be really stellar....";
-  }
 }

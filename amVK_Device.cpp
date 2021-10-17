@@ -4,7 +4,7 @@
     #define VMA_IMPLEMENTATION
 #endif
 #include "amVK_Device.hh"
-#define IMPL_VEC_amVK_DEVICE  /** \see   class vec_amVK_Device   in amVK_Types.hh */
+#define IMPL_VEC_amVK_DEVICE  /** \see   class vec_amVK_Device   in amVK_Utils.hh */
 #include "amVK_Common.hh"
 #include "amVK.hh"
 
