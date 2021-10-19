@@ -1,5 +1,31 @@
 #ifndef amVK_COMMON_H
 #define amVK_COMMON_H
+
+/** 
+   ╻ ╻   ┏━┓┏━┓┏━╸┏━┓┏━┓┏━┓┏━╸┏━╸┏━┓┏━┓┏━┓┏━┓┏━┓
+   ╺╋╸   ┣━┛┣┳┛┣╸ ┣━┛┣┳┛┃ ┃┃  ┣╸ ┗━┓┗━┓┃ ┃┣┳┛┗━┓
+   ╹ ╹   ╹  ╹┗╸┗━╸╹  ╹┗╸┗━┛┗━╸┗━╸┗━┛┗━┛┗━┛╹┗╸┗━┛
+ * If you are searching on GITHUB, it Has a problem, Sometimes it won't show stuffs from BIG files when you search like vkCreateInstnace in trampoline.c
+ * If U R using VSCode /w C/C++ Ext (for VSCode), BeAware it will cause 1 ERROR by not being able to find any of the Macros Below and then Reporting that #error (below #else) statement as an ERROR
+ * Solve this with CMake-Tools For VSCode Ext, or add one of the Macros MANUALLY in the 'defines' list (C/C++ Ext SETTINGS, Just search 'defines' [UR 1stTime? then hit 'edit in settings.json']) 
+ */
+#ifdef amVK_BUILD_WIN32   /** \todo properly doc about this VK MACROS.... \see vulkan/vulkan.h amGHOST needs this cz of VkSurfaceKHR creation.... */
+  #define VK_USE_PLATFORM_WIN32_KHR
+#elif defined(amVK_BUILD_X11)
+  #define VK_USE_PLATFORM_XCB_KHR
+  #define VK_USE_PLATFORM_XLIB_KHR
+#elif defined(amVK_BUILD_WAYLAND)
+  #define VK_USE_PLATFORM_WAYLAND_KHR
+#elif defined(amVK_BUILD_COCOA)
+  #define VK_USE_PLATFORM_METAL_EXT
+  #define VK_USE_PLATFORM_MACOS_MVK
+#else 
+  #error A amVK Build OS must be Specified [amVK_BUILD_WIN32/X11/WAYLAND/COCOA] by defining One of the Macros from inside amVK.hh .... use CMAKE for such
+#endif
+#include "vulkan/vulkan.h"  // Vulkan Includes "windows.h" on WIN     [? DEFINE  WIN32_LEAN_AND_MEAN  + possibly (https://github.com/achalpandeyy/VolumeRenderer/blob/30996789d819dba59db683e8d996b03eee456fdd/Source/Core/Win32.h)]
+
+#include <cstdint>
+#include <cstddef>
 //Includes all the common & preprocessors for all amVK headers/files/modules
 #define amVK_LOGGER_BLI_ASSERT  /** \todo there are other modules inside amVK_Logger.hh.... */
 #include "amVK_Logger.hh"

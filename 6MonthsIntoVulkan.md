@@ -40,3 +40,25 @@ LEVEL-II [INTERMEDIATE]:
     A Colorfull 2^2^2 page [List](https://www.khronos.org/files/vulkan11-reference-guide.pdf) of VK1.1 Functions
     ['Resources' Resource](https://inexor-vulkan-renderer.readthedocs.io/en/latest/links/main.html)
     another ['Resources' Resource](https://wiki.nikitavoloboev.xyz/computer-graphics/vulkan)
+
+
+Git Commands:
+```shell
+    git add .   #'Stage' changes
+    git restore --staged .   #revert Staged changes
+
+    git commit  #'Commit' Locally
+    git reset HEAD~1 --soft  #reverse of commit,  still changed will be in Staged state
+
+    git commit --amend       #add the newly Staged changed to this commit that wasn't pushed
+
+    git push    #github.com/REYNEP/amVK.git will be updated/downgraded by commits
+    git pull    #your repo will be updated/downgraded by commits
+
+    git log
+    git status
+    git diff
+    git show
+
+    #smth about git https://github.blog/2020-12-17-commits-are-snapshots-not-diffs/
+```

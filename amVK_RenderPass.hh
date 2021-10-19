@@ -77,11 +77,11 @@ class amVK_RenderPassMK2 : public amVK_RenderPassMK1 {
     amVK_SurfaceMK2 *demoSurfaceExt = nullptr;
     amVK_RenderPassMK2(amVK_SurfaceMK2 *S, amVK_Device *D = nullptr) : amVK_RenderPassMK1(D), demoSurfaceExt(S) {amASSERT(!_amVK_D); amASSERT(!S);}
     /** MK2 MODIFY */
-    void configure_n_malloc(void);  //Increments attachment.n  and such amVK_Arrays
-    void do_everything(void) {/** Do configure_n_malloc() first */set_surfaceFormat(); set_attachments(); set_attachment_refs(); set_subpasses();}
+    void calc_n_malloc(void);  //Increments attachment.n  and such amVK_Arrays
+    void konfigurieren(void) {/** Do calc_n_malloc() first */set_surfaceFormat(); set_attachments(); set_attachment_refs(); set_subpasses();}
 
     VkRenderPass create(void) {
-      if (attachment_descs.data == nullptr) {configure_n_malloc(); do_everything();}
+      if (attachment_descs.data == nullptr) {calc_n_malloc(); konfigurieren();}
       VkRenderPassCreateInfo the_info = {};
         the_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         the_info.attachmentCount = attachment_descs.n;
@@ -96,11 +96,11 @@ class amVK_RenderPassMK2 : public amVK_RenderPassMK1 {
 
     /** CLEAN-UP  [DESTRUCTOR] */
     ~amVK_RenderPassMK2() {}
-    bool clean_mods(void) {return true;} /** TODO: +  use in configure_n_malloc */
+    bool clean_mods(void) {return true;} /** TODO: +  use in calc_n_malloc */
 
-  /** Only call these functions once.... by calling do_everything these can do the basic Setup for you.
+  /** Only call these functions once.... by calling konfigurieren() these can do the basic Setup for you.
    * then you need to PUSH_BACK or MODIFY yourself. thats What MK2 is all about 
-   * but you would need to   set values to    'amVK_Array' like attachment_descs.n   before calling do_everything().... cz theres a MALLOC happens at first */
+   * but you would need to   set values to    'amVK_Array' like attachment_descs.n   before calling konfigurieren().... cz theres a MALLOC happens at first */
   private:
     void set_surfaceFormat(void);   /** validate/fallback-set   \var final_image_format & final_image_colorSpace   from the ones supported for \var demo_surface */
     void set_attachments(void);

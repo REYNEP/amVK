@@ -16,7 +16,11 @@
  *  ╻ ╻   ┏━┓┏┳┓╻ ╻╻┏    ┏━┓┏━┓┏━┓┏━┓╻ ╻
  *  ╺╋╸   ┣━┫┃┃┃┃┏┛┣┻┓   ┣━┫┣┳┛┣┳┛┣━┫┗┳┛
  *  ╹ ╹   ╹ ╹╹ ╹┗┛ ╹ ╹╺━╸╹ ╹╹┗╸╹┗╸╹ ╹ ╹ 
+ * 
+ * \note if you use PUSH_BACK macro.... remember to set .data & .n first
  */
+#include <cstring>
+#include <initializer_list>
 /** [amVK_types.hh] */
 template<typename T> 
 struct amVK_Array {
@@ -25,12 +29,55 @@ struct amVK_Array {
     uint32_t next_add_where = 0;
 
     /** CONSTRUCTOR - More like failsafes.... */
-    amVK_Array(T *D, uint32_t N) : data(D), n(N) {if (D == nullptr || N == 0) {LOG_EX("ERROR");}}
+    amVK_Array(T *D, uint32_t N) : data(D), n(N) {}
     amVK_Array(void) {data = nullptr; n = 0;}
 
-    inline T& operator[](uint32_t index) {
+    inline T& operator[](uint32_t index) {    //inline hugely optimizes it, [the next inline copy-assignment func below too!]
       return data[index];
     }
+    /** Default IMPLICIT copy-operator given by the compiler, TRY GodBolt */
+    inline amVK_Array<T>& operator=(const amVK_Array<T>& otherArray) { //why const? https://www.cplusplus.com/articles/y8hv0pDG/  #Const correctness
+      data = otherArray.data;
+      n = otherArray.n;
+      next_add_where = otherArray.next_add_where;
+      return *this;
+    }
+
+    /** [MemCpy based] Allows amVK_Array<T> smth = {1, 2, 3, ...};     and    amVK_Array<T> smth{1, 2, 3 };      why this [and not operator=] https://stackoverflow.com/q/16935295 */
+    amVK_Array(std::initializer_list<T> ilist) {  
+      n = ilist.size();
+      /** if (n > 0) {  Not really needed: [https://stackoverflow.com/q/1087042], tho we must delete... */
+        data = new T[n];                            //do remember to delete[] yourself
+        memcpy(data, ilist.begin(), n * sizeof(T));
+        next_add_where = n;
+    }
+    /** For Optimization Purposes....  when called in 2 lines amVK_Array<T> smth; smth = {1, 2, 3}; */
+    amVK_Array<T>& operator=(std::initializer_list<T> ilist) {
+      n = ilist.size();
+        data = new T[n];
+        memcpy(data, ilist.begin(), n * sizeof(T));
+        next_add_where = n;
+
+      return *this;
+      /** \todo maybe impl. a safe DEBUG impl. like in https://www.cplusplus.com/articles/y8hv0pDG/ */
+    }
+
+    /** GodBolt Test
+    int main(void) {
+      // Calls CONSTRUCTOR with initializer list
+        amVK_Array<double> bunch_of_doubles2 = {100.0, 200.0};
+
+      // Calls default constructor
+        amVK_Array<double> bunch_of_doubles;
+      // Calls operator=
+        bunch_of_doubles = {0.0, 1.0, 2.0, 3.0};
+      // So combining both of these actually saves CPU time
+
+        amVK_Array<double> another_bunch_of_doubles = bunch_of_doubles;
+        return 0;
+    }
+    */
+
     inline size_t size(void) {return static_cast<size_t>(n);}
 };
 #ifndef amVK_RELEASE
@@ -55,6 +102,12 @@ struct amVK_Array {
 #else
   #define amVK_ARRAY_PUSH_BACK(var) var.data[var.next_add_where++]
 #endif
+
+
+
+
+
+
 
 
 

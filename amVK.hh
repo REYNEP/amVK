@@ -5,32 +5,8 @@
 #ifndef amVK_LIB
 #define amVK_LIB
 
-
-/** 
-   ╻ ╻   ┏━┓┏━┓┏━╸┏━┓┏━┓┏━┓┏━╸┏━╸┏━┓┏━┓┏━┓┏━┓┏━┓
-   ╺╋╸   ┣━┛┣┳┛┣╸ ┣━┛┣┳┛┃ ┃┃  ┣╸ ┗━┓┗━┓┃ ┃┣┳┛┗━┓
-   ╹ ╹   ╹  ╹┗╸┗━╸╹  ╹┗╸┗━┛┗━╸┗━╸┗━┛┗━┛┗━┛╹┗╸┗━┛
- * If you are searching on GITHUB, it Has a problem, Sometimes it won't show stuffs from BIG files when you search like vkCreateInstnace in trampoline.c
- * If U R using VSCode /w C/C++ Ext (for VSCode), BeAware it will cause 1 ERROR by not being able to find any of the Macros Below and then Reporting that #error (below #else) statement as an ERROR
- * Solve this with CMake-Tools For VSCode Ext, or add one of the Macros MANUALLY in the 'defines' list (C/C++ Ext SETTINGS, Just search 'defines' [UR 1stTime? then hit 'edit in settings.json']) 
- */
-#ifdef amVK_BUILD_WIN32   /** \todo properly doc about this VK MACROS.... \see vulkan/vulkan.h amGHOST needs this cz of VkSurfaceKHR creation.... */
-  #define VK_USE_PLATFORM_WIN32_KHR
-#elif defined(amVK_BUILD_X11)
-  #define VK_USE_PLATFORM_XCB_KHR
-  #define VK_USE_PLATFORM_XLIB_KHR
-#elif defined(amVK_BUILD_WAYLAND)
-  #define VK_USE_PLATFORM_WAYLAND_KHR
-#elif defined(amVK_BUILD_COCOA)
-  #define VK_USE_PLATFORM_METAL_EXT
-  #define VK_USE_PLATFORM_MACOS_MVK
-#else 
-  #error A amVK Build OS must be Specified [amVK_BUILD_WIN32/X11/WAYLAND/COCOA] by defining One of the Macros from inside amVK.hh .... use CMAKE for such
-#endif
-#include "vulkan/vulkan.h"  // Vulkan Includes "windows.h" on WIN     [? DEFINE  WIN32_LEAN_AND_MEAN  + possibly (https://github.com/achalpandeyy/VolumeRenderer/blob/30996789d819dba59db683e8d996b03eee456fdd/Source/Core/Win32.h)]
 #include <cstring>          // strcmp()     [cstdlib in .cpp]
 #include <vector>
-
 
 #ifdef amVK_CPP   //inside amVK.cpp file
   #define amVK_LOGGER_IMPLIMENTATION  // amASSERT() impl.
@@ -87,6 +63,26 @@
  *         But internally we may need to use these.... then how would you call those vk*** funcs youtself? so we store everything we vkEnum/vkGet in member vars....
  *            for example.... we store the data in `amVK_CX::PD` struct
  * 
+ * RUKE-XI: Another thing about amVK is that, we try to not think of any of the STRUCTs or FUNCs or NAMEs in vulkan as like NEW CONCEPTs or OBJECTs or IDEAs
+ *          cz, soon it will start feeling like.... 'Whooo, thats a lot of stuffs to remember'
+ *            instead we try to think of these things like, 'just sm functions'
+ *            How do we find these then? or rathermore relate these?   well we just need to understand the base concepts like RenderPass-FrameBuffer-Swapchain, Pipeline, MemoryManagement
+ *                and soon as we see smth, it will come together on its own to form a better idea....
+ * 
+ * 
+ * NAMING-CONVENTIONS: 
+ *    FUNCS: mostly will have create_/load_/build_/get_/set_ prefix.... and the latters are like load_ShaderModule, build_Pipeline
+ *     VARS: \internal type members are like _amVK_D, _amVK_RP etc.
+ *           \private vars are like _pushConst, _descSet, 
+ *                    will have '_' prefix.
+ *                    \if not related to vulkan struct/type/CI [createInfo]  maybe be 'python_snake_case'
+ *           \vars decl. inside funcs are like 'python_snake_case' mostly, but can be 'camelCase' or anything, doesn't matter really!  
+ * 
+ *           \public vars are like 'camelCase' always
+ *           mods vars are like shaderInputs, vert, frag, VIBindings, vertTopo, viewportCount
+ *              VIBindings is dif. cz, VI is short_form.... such smtimes can apply to things like amVK_WI_MK2::IMGs....
+ *              \exception the_info, OG, OG.MemberName
+ * 
  * \brief VARS:
  * HEART: [static amVK_IN *heart]   THE One & Only HEART....   [cz Multi-instance isn't officially supported yet, tho you can \see CreateInstance impl. and use under the hood functions]
  * activeD: [We dont want to Introduce this if you are really NEW to Vulkan], soon as you realize that lots of stuff in VULKAN will be linked by the VkDevice
@@ -95,6 +91,7 @@
  *          \see \fn active_device()    &    Note that, you can freely make it into NOT: STATIC, cz we used HEART->activeD everywhere
  * 
  *    Under the HOOD: [VARS:]
+ *        CI: CreateInfo
  *        PD: associated with \fn load_PD_info() stores all the info related to all available VkPhysicalDevice
  *        IEP: well, what we get     from vkEnumInstanceExtensionProperties
  *        vLayerP: ValidationLayer   from vkEnumerateInstanceLayerProperties
@@ -177,7 +174,7 @@ class amVK_CX : public amVK_IN {
    */
   amVK_Device *CreateDeviceMK2(amVK_DeviceMods *MODS);
   /** Dont do    new amVK_DeviceMods()    cz that class \requires amVK_CX::PD to have the data 
-   * \see amVK_DeviceMods::configure_n_malloc() first....
+   * \see amVK_DeviceMods::calc_n_malloc() first....
    * \param ur_exts_n: USE: MODS->exts.push_back()    upto that number of times
    * \param ur_qCIs_n: USE: MODS->qCIs.push_back()    upto that number of times
    * \for reset of the Modification Vars, \see amVK_DeviceMods class at the end of this File
@@ -386,12 +383,12 @@ class amVK_DeviceMods {
  public:
   amVK_DevicePreset_Flags _flag = amVK_DP_UNDEFINED;
   VkPhysicalDevice _PD = nullptr;
-  bool does_PD_sup_mods = true;    //Whats not Supported is LOGGED too.... to stdout/stderr as do_everything() calls every function anyway
+  bool does_PD_sup_mods = true;    //Whats not Supported is LOGGED too.... to stdout/stderr as konfigurieren() calls every function anyway
 
   /** CONSTRUCTOR */
-  amVK_DeviceMods(amVK_DevicePreset_Flags DevicePreset, VkPhysicalDevice PD, bool DoEverything = true) : _flag(DevicePreset), _PD(PD) {if (DoEverything) do_everything();}
+  amVK_DeviceMods(amVK_DevicePreset_Flags DevicePreset, VkPhysicalDevice PD, bool DoKonfiguration = true) : _flag(DevicePreset), _PD(PD) {if (DoKonfiguration) konfigurieren();}
   /** INITIALIZE */
-  void do_everything(void) {LOG_MODS_ONCE(); configure_n_malloc(); set_qCIs(); set_exts(); set_ftrs();}
+  void konfigurieren(void) {LOG_MODS_ONCE(); calc_n_malloc(); set_qCIs(); set_exts(); set_ftrs();}
 
 
   /**
@@ -420,7 +417,7 @@ class amVK_DeviceMods {
     const char *flag_2_strName(amVK_DevicePreset_Flags flag);
  private:
   /** CONFIGURE - relies on amVK_CX::PD [USE: load_PD_info()] */
-  void configure_n_malloc(void);
+  void calc_n_malloc(void);
   void set_qCIs(void);
   void set_exts(void);
   void set_ftrs(void);

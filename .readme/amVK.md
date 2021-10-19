@@ -312,6 +312,71 @@ Its like what FasterThanLife said,
  *        Having MANY amVK_GraphicsPipe would consume hell lot of Memory that we wont actually ever need.... mostly 99% stuffs will be COMMON between MESHES/OBJECTS 
  *        So, we create a BasePipe.... Change stuffs that varies, outside that 99% zone (e.g. vert, frag).... Those 1% stuffs can be stored   locally in these MESHES/OBJECT
  *        METAPHORE: you can think of amVK_GraphicsPipe   like a STORE of PIPES.... you take PIPE/s from there to build_pipeline() 
+
+ * https://vkguide.dev/docs/chapter-2/vulkan_render_pipeline/
+ * https://vkguide.dev/docs/chapter-2/triangle_walkthrough/
+ * This one and Brendan Galea GraphicsPipeLine video is the BEst, Fuck Vulkan-Tutorial Confusing since the beginning of time 
+ * https://vkguide.dev/docs/chapter-2/pipeline_walkthrough/ [Best Info so far]
+ *
+ *    D: PipelineLayout: [contain the information about shader inputs of a given pipeline. ]
+          Alongside of all the State structs, we will need a VkPipelineLayout object for our pipeline. 
+ * Unlike the other state structs, this one is an actual full Vulkan object, and needs to be created separately from the pipeline.    -vkGuide
+
+
+      D: VAO
+
+      D: VertexinputAssembly
+
+      D: DynamicViewport & MultiViewport
+          https://github.com/ocornut/imgui/issues/3669
+          https://github.com/ocornut/imgui/issues/1542
+
+          i searched for 'Multi-Viewport Vulkan' on github issues
+          https://www.saschawillems.de/blog/2018/06/08/multiview-rendering-in-vulkan-using-vk_khr_multiview/
+
+          it feels like with multiViewport, you can render OBJECTS tied to a Pipeline in multiple viewport before switching the pipeline.... 
+          hmm, 'without switching the pipeline' tho using more SubPasses in RenderPass could give you such behavior too.... then where does the optimization happen?
+                maybe a single big piece of Attachment?
+
+      D: Rasterization of DE Pipeline
+          /** [Rasterization] : In here is where we do backface culling, set line width [a.k.a wireframe drawing], or DepthBias   \see amVK.md for now \todo DOCS */ 
+            *      : [DepthClamp] - https://renderdoc.org/vkspec_chunked/chap28.html#fragops-depth   [28. Fragment Operations -> 28.10 Depth Test   v1.2.196.0]
+            *      : [polygonMode, lineWidth]:  toggle between wireframe and solid drawing    - vkGuide
+            *      : [BackFace Culling]: if they really use the equation from here, thats a lot of unnecessary calc. https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkFrontFace.html
+            *                            my trick would be to only test the FIRST CONE/ANGLE.... 1 angle can tell us if POLYGON is CLOCKWISE or NOT
+            *      : [DepthBias] - (INTERESTING) 🤔  https://developer.download.nvidia.com/cg/DepthBias.html
+            *              [See images on Google]
+            *                https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glPolygonOffset.xhtml
+            *                https://docs.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-output-merger-stage-depth-bias
+            *              
+            * 
+            * [rasterizerDiscardEnable] : seems like an interesting feature 🤔
+            *    if enabled, discards all primitives (triangles in our case) before the rasterization stage.... which we don't want
+            *    means the triangles would never get drawn to the screen. You might enable this, e.g.
+            *    if you’re only interested in the side effects of the vertex processing stages, such as writing to a buffer which you later read from. 
+            *    But in our case we’re interested in drawing the triangle, so we leave it disabled. 
+            */
+
+
+      D: DepthStencil
+         /** depthTestEnable holds if we should do any z-culling at all. Set to VK_FALSE to draw on top of everything, and VK_TRUE to not draw on top of other objects. 
+         * depthWriteEnable allows the depth to be written. While DepthTest and DepthWrite will both be true most of the time, 
+         * there are cases where you might want to do depth write, but without doing depthtesting; it’s sometimes used for some special effects. */
+          [we are talking about VkPipelineDepthStencilStateCreateInfo.depthTestEnable & depthWriteEnable  here ]
+
+      D: ColorBlend
+     * even if the blending is just "no blend", we still do have to write to the color attachment....
+     and this ColorAttachment is not like the attachments from RenderPass-Framebuffers.... thesse are Different i think
+     \todo MORE SOON
+          THERE is SMTH called LOGIC_OP between ATTACHMENTS 'https://www.khronos.org/opengl/wiki/Logical_Operation
+            \see VkLogicOp of VkPipelineColorBlendStateCreateInfo
+            https://www.glprogramming.com/red/chapter10.html
+            \serch for 'logic operation Color Blending'
+            https://docs.unity3d.com/430/Documentation/Components/SL-Blend.html
+            https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkLogicOp.html
+            https://vulkan.lunarg.com/doc/view/1.2.189.2/windows/chunked_spec/chap29.html#framebuffer-logicop
+
+
  * 
  * 
  * 
@@ -363,8 +428,9 @@ Its like what FasterThanLife said,
 
 
 
-
+  Random searches on Google and Github Issues can end up giving you interesting results, special keywords helps like: 'multiviewport vulkan perf'
   ADDITIONAL RESOURCES: github.com/jcoder58/VulkanResources
+  file:///X:/Downloads/80-nb295-7_a-adreno_vulkan_developer_guide.pdf
 -->
 
 
@@ -380,6 +446,7 @@ Its like what FasterThanLife said,
 - Add a Basic Template for Vulkan Layer [Has to Be Fun] & User VulkanLayers
 - Add Support for User-Specified Exts & amGHOST_Presets     [InstanceExts_&_DeviceExts....] (e.g. Vulkan3D Preset, RT_Preset, ENC/DEC_Preset)
 - Add support for user Choosing Device Features and ETC
+- Docs on How much a thing is used/created/init e.g. swapchain, renderpass, pipelineLayout, pushConstant, Descriptor sets etc. [a.k.a_AllKindsOfStuffs]
 
 # COOL_FEATURES
 - Add docs for VULKAN Structs and CREATEInfos In particular
@@ -416,4 +483,4 @@ Its like what FasterThanLife said,
 
 - We calloc most of the Stuffs here, Prolly all VulkanStruct Pointers, REMEMBER TO FREE.... just wanted something BETTER THAN FUCKING VECTOR
 - DISCUSS WHICH FORBIDDEN STUFFS SHOULD BE EXPOSED to PUBLIC API
--- Decide Wheather we should Expose some of FORBIDDEN VARIABLES in the CLASS as public/private.... maybe make some of these STATIC?
+- Decide Wheather we should Expose some of FORBIDDEN VARIABLES in the CLASS as public/private.... maybe make some of these STATIC?

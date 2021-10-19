@@ -162,7 +162,7 @@ amVK_DeviceMods *amVK_CX::DeviceModsMK2(amVK_DevicePreset_Flags presets, uint32_
     amVK_DeviceMods *MODS = new amVK_DeviceMods(presets, PD.chozen, false);
         MODS->qCIs.n = ur_qCIs_n;
         MODS->exts.n = ur_exts_n;
-        MODS->do_everything();
+        MODS->konfigurieren();
 
     return MODS;
 }
@@ -871,7 +871,7 @@ static const char *amVK_DeviceExtensions[9] = {
 
 
 
-void amVK_DeviceMods::configure_n_malloc(void) {
+void amVK_DeviceMods::calc_n_malloc(void) {
     // ----------- PreMod Settings [a.k.a Configurations] ------------
     configure_preMod_settings_based_on_presets:
     {
