@@ -10,17 +10,19 @@
   #include "amVK_Utils.hh"
 #endif
 
-/** Pretty Cool idea, huh? */
+/** Types or Stucts that are Important or Cool but doesn't have any amVK_<Module>.hh dedicated for itself.... are here, so that they catch your eye!
+ *      some may have a great amout to deal to the Graphics World.... e.g. ImageFormat, ColorSpace
+ *      some may just be as simple as the UINT32_T_NULL preprocessor below 😉 */
+
+/** Pretty Cool idea, huh? ... or is it a bad one? */
 #define UINT32_T_NULL 0xFFFFFFFF
 #define UINT32_T_FALSE 0xFFFFFFFF
 
 
-//Report this bug to VSCODE, uint32/size_t etc. looks the same goddamn color,
-
-//Only used for amVK_CX::PD... and it was intended  ([should] not [be] used anywhere else)
+/** Only used for amVK_CX::PD... and it was intended  ([should] not [be] used anywhere else) */
 typedef struct everything_PD__ {
-  VkPhysicalDevice                 *list = nullptr;         //'Physical Devices List'       [will be sorted after sort_physical_devices() is called]
-  VkPhysicalDeviceProperties      *props = nullptr;         //'Physical Devices Properties' [                        ++                            ]
+  VkPhysicalDevice                 *list = nullptr;         //'Physical Devices List'
+  VkPhysicalDeviceProperties      *props = nullptr;         //'Physical Devices Properties'
   VkPhysicalDeviceFeatures     *features = nullptr;         //'Physical Devices Features'
   uint32_t                             n = 0;               //'Physical Devices Count'
   amVK_Array<VkQueueFamilyProperties> *qFamily_lists = nullptr;     //'One Physical Devices can have Multiple qFamilies
@@ -172,8 +174,8 @@ Also See the SLO-MO Guys video about Monitor, You will see that Monitor is Refre
  * The first one is VK_COLOR_SPACE_SRGB_NONLINEAR_KHR  -  amVK_SRGB
  * If a GPU has Presentation Support, it will have Support for this TOO   - by me
  * 
- * in the VKSpecs page, DCI-P3 is marked as Name	
- *    Red Primary {1.000, 0.000},	Green Primary	{0.000, 1.000},  Blue Primary {0.000, 0.000}, White-point {0.3333, 0.3333}
+ * in the VKSpecs page, DCI-P3 is marked as Name
+ *    Red Primary {1.000, 0.000}, Green Primary {0.000, 1.000},  Blue Primary {0.000, 0.000}, White-point {0.3333, 0.3333}
  *
  * 
  * 

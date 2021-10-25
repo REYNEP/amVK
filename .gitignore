@@ -1,11 +1,15 @@
 extern
+test/extern
 build-x64
 build
 
 .vscode
-shaders
-assets
+/shaders
+/assets
+
+*.spv
 *.png
+
 lib-amVK.lib
 rtc.exe
 rtr.exe

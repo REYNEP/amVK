@@ -1,40 +1,40 @@
 #include "amVK_Pipeline.hh"
 #include "amVK_Device.hh"
 
-/** //GIT_DIFF_FIX
+/**
  *   █▀ █░█ ▄▀█ █▀▄ █▀▀ █▀█   █▀▄▀█ █▀█ █▀▄ █░█ █░░ █▀▀
  *   ▄█ █▀█ █▀█ █▄▀ ██▄ █▀▄   █░▀░█ █▄█ █▄▀ █▄█ █▄▄ ██▄
- */ //GIT_DIFF_FIX
+ */
 #include <fstream>
 VkShaderModule amVK_PipeStoreMK2::load_ShaderModule(std::string &spvPath) {
     //spvCode
     uint64_t size; char *spvCode;
- //GIT_DIFF_FIX
+
     //READ
     if (spvPath.size() > 0) {
         /** open the file. With cursor at the end     TODO: Erorr Checking in DEBUG */
         std::ifstream spvFile(spvPath, std::ios::ate | std::ios::binary);
- //GIT_DIFF_FIX
+
         if (!spvFile.is_open()) {
             LOG("FAILED to OPEN .spv FILE: " << spvPath);
         }
- //GIT_DIFF_FIX
+
         size = static_cast<uint64_t> (spvFile.tellg());    //Works cz of std::ios::ate
         spvCode = static_cast<char *> (calloc(size, 1));
- //GIT_DIFF_FIX
+
         spvFile.seekg(0);
         spvFile.read(spvCode, size);
         spvFile.close();
     } else {LOG("spvPath's Size isn't more than 0"); return nullptr;}
- //GIT_DIFF_FIX
+
     //Create Shader module
     VkShaderModuleCreateInfo CI = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, 0,     /** .flags: Reserved for Future, [Who knows what they will unveil in TIME] */
         size, reinterpret_cast<uint32_t *>(spvCode)
     };
- //GIT_DIFF_FIX
+
     VkShaderModule A_module;
     VkResult res = vkCreateShaderModule(_amVK_D->_D, &CI, nullptr, &A_module);
- //GIT_DIFF_FIX
+
     if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res); LOG_EX("vkCreateShaderModule() failed"); return nullptr;}
     return A_module;
 }
@@ -48,9 +48,12 @@ VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
      * 1 CreateInfo per ShaderStage for the Pipeline    [Don't think Multiple same SHADER can be used]
      */
     if (vert == nullptr) {
-        LOG("amVK_GraphicsPipe:- No Vertex Shader was Provided");
+        LOG("amVK_GraphicsPipe:- No Vertex Shader.");
     } else if (frag == nullptr) {
-        LOG("amVK_GraphicsPipe:- No Fragment Shader was Provided");
+        LOG("amVK_GraphicsPipe:- No Fragment Shader.");
+    } else if (shaderInputs == nullptr) {
+        LOG_EX("amVK_GraphicsPipe::shaderInputs == nullptr;  No shaderInputs [a.k.a PipelineLayout]. \n" << 
+               "create & assign 'new' ShaderInputsMK2 to it & create_PipelineLayout [before build_pipeline]");
     }
 
                  amVK_Array<VkPipelineShaderStageCreateInfo> ShaderStages = {};  ShaderStages.n = 2;
@@ -64,6 +67,7 @@ VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
         nullptr
     };
 
+    
 
     the_info.stageCount = ShaderStages.n;
     the_info.pStages = ShaderStages.data;
@@ -71,17 +75,17 @@ VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
     the_info.renderPass = _amVK_RP->_RP;
     the_info.subpass = 0;
     the_info.basePipelineHandle = VK_NULL_HANDLE;
- //GIT_DIFF_FIX
+
     /** it's easy to error out on create graphics pipeline, so we handle it a bit better than the common VK_CHECK case */
-	VkPipeline newPipeline;
-	if (vkCreateGraphicsPipelines(_amVK_D->_D, VK_NULL_HANDLE, 1, &the_info, nullptr, &newPipeline) != VK_SUCCESS) {
-		LOG("failed to create pipeline\n");
-		return nullptr; /** TODO: Better Error Handling */
-	}
-	else
-	{
-		return newPipeline;
-	}
+    VkPipeline newPipeline;
+    if (vkCreateGraphicsPipelines(_amVK_D->_D, VK_NULL_HANDLE, 1, &the_info, nullptr, &newPipeline) != VK_SUCCESS) {
+        LOG("failed to create pipeline\n");
+        return nullptr; /** TODO: Better Error Handling */
+    }
+    else
+    {
+        return newPipeline;
+    }
 }
  
 void amVK_GraphicsPipes::konfigurieren(void) {
@@ -182,8 +186,6 @@ void amVK_GraphicsPipes::konfigurieren(void) {
 
 
 
-
-
     the_info = {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, nullptr, 0,
         0, nullptr, /** stageCount, pStages.... \see build_pipeline(); */
         &OG.VAO,
@@ -195,7 +197,7 @@ void amVK_GraphicsPipes::konfigurieren(void) {
         &OG.DepthStencil,
         &OG.ColorBlend,
         &OG.DynamicWhat,
-        shaderInputs->layout,
+        nullptr,    /** .layout, set in build_pipeline(); */
         _amVK_RP->_RP,
         0,          /** .subpass */
         nullptr, 0  /** .basePipelineHandle, .basePipelineIndex */
@@ -216,6 +218,7 @@ void ShaderInputsMK2::create_PipelineLayout(amVK_Device *amVK_D) {
     /** empty defaults */
       CI.flags = 0;
 
+    /** ref_PushConsts() might return {valid_address, 0},    but bcz n is 0, valid_address will be ignored */
     amVK_Array<VkPushConstantRange> pushConsts = ref_PushConsts();
     amVK_Array<VkDescriptorSetLayout> descSets = ref_DescSets();
       CI.setLayoutCount = descSets.n;

@@ -15,16 +15,16 @@ class ShaderInputsMK2 {
   virtual amVK_Array<VkPushConstantRange> ref_PushConsts(void) = 0;
   virtual amVK_Array<VkDescriptorSetLayout> ref_DescSets(void) = 0;
 
-  /** //GIT_DIFF_FIX
+  /**
    *   █▀█ █ █▀█ █▀▀ █░░ █ █▄░█ █▀▀  █░░ ▄▀█ █▄█ █▀█ █░█ ▀█▀
    *   █▀▀ █ █▀▀ ██▄ █▄▄ █ █░▀█ ██▄  █▄▄ █▀█ ░█░ █▄█ █▄█ ░█░
-   * //GIT_DIFF_FIX
+   *
    * Uses   \fn ref_pushConsts()   \fn ref_descSets()    and [out]puts into layout */
   void create_PipelineLayout(amVK_Device *amVK_D);
 };
 
 
-/** //GIT_DIFF_FIX
+/**
  *              █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██████╗ ██╗██████╗ ███████╗██╗     ██╗███╗   ██╗███████╗        ███╗   ███╗██╗  ██╗██████╗ 
  *   ▄ ██╗▄    ██╔══██╗████╗ ████║██║   ██║██║ ██╔╝        ██╔══██╗██║██╔══██╗██╔════╝██║     ██║████╗  ██║██╔════╝        ████╗ ████║██║ ██╔╝╚════██╗
  *    ████╗    ███████║██╔████╔██║██║   ██║█████╔╝         ██████╔╝██║██████╔╝█████╗  ██║     ██║██╔██╗ ██║█████╗          ██╔████╔██║█████╔╝  █████╔╝
@@ -37,26 +37,26 @@ class ShaderInputsMK2 {
  * \brief
  * Pipeline [varied by SHADER/INPUTS/LAYOUT or fixed-function stuffs like MSAA, Rasterization, ColorBlending, Viewport & Scissors
  *          INPUTS: VertexInputLayout \todo extended \page on these
- * //GIT_DIFF_FIX
+ *
  * METAPHORE:
  * you have a GraphicePipe or ComputePipe.... which is like a store of pipes and then you build a PIPELINE using the pipes    
  * Only create 1 Object of these, and store those VARYING Options (like _vert, _frag) locally in your MESH-CLASS or whatever
  *    we did this, cz not everything needs to be saved in memory
- * //GIT_DIFF_FIX
- * //GIT_DIFF_FIX
+ *
+ *
  * \todo change LOG_EX to BackTrace
  * \todo fix amVK_Array logics, currently ppl can like set .data to malloced space,   or initialize with a list; which causes 'new' alloc
  * \todo debug and see if amVK_GraphicsPipes ShaderOnly_pipeStore; declaration causes a call to constructor      cz we later do ShaderOnly_pipeStore = amVK_GraphicsPipes(renderPass, device); which means calling the construcotr   we dont wanna waste time
  * \todo see if ShaderOnly_pipeStore = amVK_GraphicsPipes(renderPass, device);   actually called the constructor & copy-constructor..... calling both would waste CPU time
- * TODO: Make a PARTED Docs on PIPELINE [ 😃 Use Good Fonts] //GIT_DIFF_FIX
+ * TODO: Make a PARTED Docs on PIPELINE [ 😃 Use Good Fonts]
  * USE ONE OF THESE:
  * \see amVK_GraphicsPipes
  * \see amVK_ComputePipes  [WIP]
- */ //GIT_DIFF_FIX
+ */
 class amVK_PipeStoreMK2 {
  public:
   amVK_Device *_amVK_D;
-  ShaderInputsMK2 *shaderInputs;/** MUST, you do it EXPLICIT */
+  ShaderInputsMK2 *shaderInputs = nullptr;/** MUST, you do it EXPLICIT */
   VkPipelineCreateFlags flags;  /** :WIP: */
 
   amVK_PipeStoreMK2(amVK_Device *D = nullptr) : _amVK_D(D) { 
@@ -173,7 +173,8 @@ class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
    *   ─ ─  ╠╩╗│ │││   ││    ╠═╝│├─┘├┤ │  ││││├┤   
    *   /│\  ╚═╝└─┘┴┴─┘─┴┘─── ╩  ┴┴  └─┘┴─┘┴┘└┘└─┘  
    */
-  void konfigurieren(void);   //[Re]Write OG
+  /** set Mod vars before this. only vert & frag is set in build_pipeline */
+  void konfigurieren(void);
   VkPipeline build_Pipeline(void);
 };
 

@@ -62,11 +62,11 @@ VkCommandPool amVK_Device::init_commandpool(uint32_t qFamily) {
     VkCommandPoolCreateInfo cmdPool_info = {};
         cmdPool_info.sType =  VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         cmdPool_info.pNext = nullptr;
-	    cmdPool_info.queueFamilyIndex = qFamily;
-	/** we also want the pool to allow for resetting of individual command buffers 
+        cmdPool_info.queueFamilyIndex = qFamily;
+    /** we also want the pool to allow for resetting of individual command buffers 
      *  Lets us use   vkResetCommandBuffer() later On     [ VUID-vkResetCommandBuffer-commandBuffer-00046 ]
      *  */
-	    cmdPool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        cmdPool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
     VkResult res = vkCreateCommandPool(_D, &cmdPool_info, nullptr, &_CmdPool);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
@@ -142,29 +142,29 @@ void amVK_Device::begin_cmdBuf(VkCommandBuffer cmdBuf, bool oneTime) {
  * |-----------------------------------------|
 */
 VkFence amVK_Device::create_fence(void) {
-	VkFenceCreateInfo fenceCreateInfo = {};
-	    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	    fenceCreateInfo.pNext = nullptr;
+    VkFenceCreateInfo fenceCreateInfo = {};
+        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.pNext = nullptr;
 
-	/** so we can wait on it before using it on a GPU command (for the first frame) */
-	    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    /** so we can wait on it before using it on a GPU command (for the first frame) */
+        fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 
     VkFence fence;
-	VkResult res = vkCreateFence(_D, &fenceCreateInfo, nullptr, &fence);
+    VkResult res = vkCreateFence(_D, &fenceCreateInfo, nullptr, &fence);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
     return fence;
 }
 
 VkSemaphore amVK_Device::create_semaphore(void) {
     /** for the semaphores we don't need any flags */
-	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-	    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	    semaphoreCreateInfo.pNext = nullptr;
-	    semaphoreCreateInfo.flags = 0;
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+        semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        semaphoreCreateInfo.pNext = nullptr;
+        semaphoreCreateInfo.flags = 0;
 
     VkSemaphore sema;
-	VkResult res = vkCreateSemaphore(_D, &semaphoreCreateInfo, nullptr, &sema);
+    VkResult res = vkCreateSemaphore(_D, &semaphoreCreateInfo, nullptr, &sema);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
     return sema;
 }

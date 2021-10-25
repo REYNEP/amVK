@@ -42,7 +42,7 @@ def unzip_components(what, where_to):
     with zipfile.ZipFile(what, 'r') as zip_ref:
         zip_ref.extractall(where_to)
 
-def remove_components():
+def remove_zips():
     print("Deleting", extern_zip)
     try: os.remove(extern_zip)
     except FileNotFoundError: print("We just downloaded ", extern_zip, "\nDid your OS delete that on its own?")
@@ -53,7 +53,7 @@ def check_get_components():
         if not os.path.isdir(extern_dir + "/" + lib):
             download_components()
             unzip_components(extern_zip, "./")
-            remove_components()
+            remove_zips()
             return
 
 
@@ -94,7 +94,7 @@ def build_cmake():
 #                ╹ ╹╹ ╹╹╹ ╹
 if __name__ == "__main__":
     check_get_components()
-        
+
     print("Finally calling cmake....\n\n")
     build_cmake()
 

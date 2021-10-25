@@ -61,4 +61,7 @@ Git Commands:
     git show
 
     #smth about git https://github.blog/2020-12-17-commits-are-snapshots-not-diffs/
+    #This is why you cant have manual diffs.... cz commits are snalshots not diffs
+    #when you try to see a diff, it is calculated on your Processor locally, ig....
+    #hell, i even tried this and knowledge from w3modding times https://git-scm.com/book/en/v2/Git-Tools-Interactive-Staging
 ```

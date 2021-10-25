@@ -8,10 +8,10 @@
 #define amVK_DONT_INIT_VMA false
 
 #ifndef amVK_CMDPOOL_H
-  class amVK_CmdPool; //Cyclic_Dep  [amVK_CmdPool.hh included in cpp]
+  class amVK_CmdPool;   //Cyclic_Dep  [amVK_CmdPool.hh included in cpp]
 #endif
 
-class amVK_DeviceMods; //Cyclic_Dep [amVK.hh,   so we include in amVK_Device.cpp]
+class amVK_DeviceMods;  //Cyclic_Dep [amVK.hh,   so we include in amVK_Device.cpp]
 
 
 
@@ -43,7 +43,7 @@ class amVK_Device {
   amVK_Device(VkDevice D, VkPhysicalDevice PD, amVK_DeviceMods *MODS) : _D(D), _PD(PD), _MODS(MODS) {this->init_VMA();}
   ~amVK_Device() {if (_MODS != nullptr) delete _MODS; /** \see amVK_CX::CreateDevice() */}
 
-  /** used internally
+  /**
     ╻ ╻   ╻ ╻┏━┓┏━╸╺┳┓   ╻┏┓╻╺┳╸┏━╸┏━┓┏┓╻┏━┓╻  ╻  ╻ ╻   
      ╋╸   ┃ ┃┗━┓┣╸  ┃┃   ┃┃┗┫ ┃ ┣╸ ┣┳┛┃┗┫┣━┫┃  ┃  ┗┳┛   
     ╹ ╹   ┗━┛┗━┛┗━╸╺┻┛   ╹╹ ╹ ╹ ┗━╸╹┗╸╹ ╹╹ ╹┗━╸┗━╸ ╹ 
