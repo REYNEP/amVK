@@ -57,7 +57,14 @@ void amVK_RenderPassMK2::calc_n_malloc(void) {
        attachment_descs.data = static_cast   <VkAttachmentDescription *> (test);
         attachment_refs.data = reinterpret_cast<VkAttachmentReference *> (attachment_descs.data + attachment_descs.n);
               subpasses.data = reinterpret_cast <VkSubpassDescription *> ( attachment_refs.data + attachment_refs.n);
+
+        _malloced = true;
     }
+}
+
+bool amVK_RenderPassMK2::clean_mods(void) {
+    if(_malloced) {free(attachment_descs.data);}
+    return true;
 }
 
 /**
@@ -67,18 +74,10 @@ void amVK_RenderPassMK2::calc_n_malloc(void) {
  */
 #include "amVK_WI.hh"
 void amVK_RenderPassMK2::set_surfaceFormat(void) {
-    demoSurfaceExt->get_SurfaceFormats();
-    amVK_Array<VkSurfaceFormatKHR> surfaceFormats = demoSurfaceExt->surface_formats;
-    for (int i = 0; i < surfaceFormats.n; i++) {
-        bool found_it = false;
-        for (int i = 0; i < surfaceFormats.n; i++) {
-            if ((surfaceFormats.data[i].format == final_imageFormat)&&
-                (surfaceFormats.data[i].colorSpace == final_imageColorSpace)) {
-                found_it = true;
-                break;
-            }
-        }
-    }
+    VkSurfaceFormatKHR _final = demoSurfaceExt->filter_SurfaceFormat({final_imageFormat, final_imageColorSpace});
+
+    final_imageFormat = _final.format;
+    final_imageColorSpace = _final.colorSpace;
 }
 
 /**

@@ -104,6 +104,15 @@ struct amVK_Array {
 #endif
 
 
+#define amVK_ARRAY_IS_ELEMENT(array, bool_var, match_what) \
+      for (uint32_t i = 0; i < array.n; i++) { \
+        if (array.data[i] == match_what) { \
+          bool_var = true; \
+          break; \
+        } \
+      }
+
+
 
 
 
@@ -225,10 +234,11 @@ bool mergeSort(uint32_t first_index, uint32_t last_index, T *unsorted, uint32_t 
     //amVK Stores a lot of different kinda data like this. Maybe enable a option to store these in HDD as cache
     amVK_Device *operator[](VkDevice D);
     bool doesExist(amVK_Device *amVK_D);  /** cz, VkDevice is inside amVK_Device class, that means the need to include amVK_Device.hh in every single file*/
+    uint32_t index(amVK_Device *D);
   };
 
   #ifdef IMPL_VEC_amVK_DEVICE   //in amVK_Device.cpp
-    #ifndef amVK_LOGGER
+    #ifndef amVK_LOGGER_HH
       #include "amVK_Logger.hh"
     #endif
     amVK_Device *vec_amVK_Device::operator[](VkDevice D) {
@@ -252,6 +262,17 @@ bool mergeSort(uint32_t first_index, uint32_t last_index, T *unsorted, uint32_t 
         }
       }
       LOG_EX("amVK_Device doesn't Exist in " << typeid(this).name());
+    }
+
+    uint32_t vec_amVK_Device::index(amVK_Device *D) {
+      amVK_Device **data = this->data();
+      for (int i = 0, lim = this->size(); i < lim; i++) {
+        if (data[i] == D) {
+          return i;
+        }
+      }
+      LOG_EX("amVK_Device doesn't Exist in " << typeid(this).name());
+      return 0xFFFFFFFF;  //UINT_32T_NULL
     }
   #endif //IMPL_VEC_amVK_DEVICE
 #endif //amVK_DEVICE_CPP || VEC_amVK_DEVICE

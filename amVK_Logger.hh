@@ -1,84 +1,100 @@
-#ifndef amVK_LOGGER
-#define amVK_LOGGER
-// This file should be fully independant of any amVK Headers
-//Include Guard & USAGE INFO
-// Sm sections have   #ifdef amVK_LOGGER_MACRO ....     I use them like, declaring at the TOP-LEVEL CMakeLists.txt or Makefile or Waf Wscript
-//        But beware of amVK_LOGGER_IMPLIMENTATION.... for sm sections, you might need to DEFINE this in ONLY 1 of your CPP files
-// Preprocessor RESC-1: https://sourceforge.net/p/predef/wiki/OperatingSystems/
+/** 
+ * This file should be fully independant of any amVK Headers
+ * Preprocessor RESC-1: https://sourceforge.net/p/predef/wiki/OperatingSystems/ 
+ * MSVC Has Got a Huge amount of Predefined Macros:- https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
+ */
+#ifndef amVK_LOGGER_HH
+#define amVK_LOGGER_HH
 
 #include <iostream>
 #include <bitset>
 
-// LOGGER
-/**
- * \todo LOG LEVELS....    
- *       Simply Indented Logging Support.... you can use smth like     LOG(LEVEL, x)
- *       or use   LOG_GO_IN(LEVEL_N)   & LOG_GO_OUT(LEVEL_N)    both relative to already which LEVEL you'll be at
- */
+/** Basic LOGGER */
 #define LOG(x) std::cout << x << std::endl
 
+#define LOG_INDENTATION "  "
+#define LOG_0() ""
+#define LOG_1() LOG_0() << LOG_INDENTATION
+#define LOG_2() LOG_1() << LOG_INDENTATION
+#define LOG_3() LOG_2() << LOG_INDENTATION
+#define LOG_4() LOG_3() << LOG_INDENTATION
+#define LOG_5() LOG_4() << LOG_INDENTATION
+#define LOG_6() LOG_5() << LOG_INDENTATION
+#define LOG_LVL(LVL, x) LOG(LOG_##LVL << x)
+
+#define LOG_LOOP_TYPE_CAST(x) static_cast<int>(x)
 #define LOG_LOOP(log_heading, iterator_var, loop_limit, log_inside_loop) \
+    LOG(""); \
     LOG(log_heading); \
-    for (int iterator_var = 0, lim = loop_limit; iterator_var < lim; iterator_var++) { \
+    for (int iterator_var = 0, lim = LOG_LOOP_TYPE_CAST(loop_limit); iterator_var < lim; iterator_var++) { \
         LOG(log_inside_loop); \
     } \
-    LOG("\n")
+    LOG("");
 
 
-//See: https://stackoverflow.com/questions/27174929/what-is-a-best-way-to-check-if-compiler-supports-func-etc
-//__FUNCTION__, __func__ are not Macros, rather they are Variables
-//But the reason why LOG_EX Works is because LOG_EX uses another function LOG which doesn't let __LINE__ to be converted directly on this files line 23
+/**
+ * LOGGER MK2
+ * __FUNCTION__, __func__ are not Macros, rather they are Variables that the compiler defines....
+ * But the reason why LOG_DBG Works is because LOG_DBG uses another function LOG which doesn't let __LINE__ to be converted directly on this files line 55
+ * \todo cehck gcc Part: https://gcc.gnu.org/onlinedocs/gcc/Function-Names.html
+ */
+#include <typeinfo>
 #if defined(__GNUC__)
   #define __FUNCINFO__ __FUNCTION__
+  #define __FUNC_MANGLED__ typeid(__FUNCINFO__).name()
 #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901)
   #define __FUNCINFO__ __func__
+  #define __FUNC_MANGLED__ typeid(__FUNCINFO__).name()
 #elif defined(_MSC_VER)
   #define __FUNCINFO__ __func__
+  #define __FUNC_MANGLED__ __FUNCDNAME__
 #else
-  #define __FUNCINFO__ "[FuncInfo not supported by current compiler]"
-#endif
-#define LOG_EX(x) LOG(__FILE__ << " || Function: " << __FUNCINFO__ << "() - Line" << __LINE__ << std::endl << "Log-Message:- "<< x << std::endl)
-// MSVC Has Got a Huge amount of Predefined Macros:- https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
-#define LOG_MANGLED_MSVC(x) LOG_EX(x << " MANGLED NAME: " << __FUNCDNAME__)
-
-//am_DEV should be defined by the developer if they want to debug..
-#if defined(am_DEV)
-  #define amLOG(x) LOG(x)
-  #define amLOG_EX(x) LOG_EX(x)
-#else
-  #define amLOG(x)
-  #define amLOG_EX(x)
+  #define __FUNCINFO__ "[__FUNCTION__ or __func__ not supported by current compiler]"
+  #define __FUNC_MANGLED__ typeid(__FUNCINFO__).name()
 #endif
 
-#define amLOG_LOOP(log_heading, iterator_var, loop_limit, log_inside_loop) \
-    amLOG(log_heading); \
-    for (int iterator_var = 0, lim = loop_limit; iterator_var < lim; iterator_var++) { \
-        amLOG(log_inside_loop); \
-    } \
-    amLOG("\n")
+
+#define LOG_DBG(x) LOG(<< "MANGLED NAME:- " << __FUNC_MANGLED__ << std::endl \
+                       << __FILE__ << " || Function: " << __FUNCINFO__ << "() - Line" << __LINE__ << std::endl \
+                       << " Log-Message:- " << x << std::endl)
+
+/**
+   ╻ ╻   ╻  ┏━┓┏━╸   ┏━╸╻ ╻
+   ╺╋╸   ┃  ┃ ┃┃╺┓   ┣╸ ┏╋┛
+   ╹ ╹   ┗━╸┗━┛┗━┛╺━╸┗━╸╹ ╹
+ */
+#ifdef _WIN32
+  #define LOG_EX(x) LOG(x << "  [stackTrace below]: "); amVK_only_stacktrace(stderr); //Cuttoff from BLI_system_backtrace, only for windows....
+#else
+  #define LOG_EX(x) LOG(x); BLI_system_backtrace(stderr); //linux does better job. and default BLI_system_backtrace is cool too!
+#endif
 
 
 
 
-//amVK_CHK
-#define amVK_CHK(x, y) if(!x){LOG_EX(y);}
 
-//amVK_ABBORT [TODO: Check if it has any BUGS. If its a Bug rel. to ';' then remove the BRACKETS after for() statement, and remove the ';' after sleep_for(1000ms)]
-#ifdef amVK_ABBORT_SUPPORT
-  #include <cstdlib>
-  #include <chrono>
-  #include <thread>
+/** 
+ * Options to turn off parts of LOGGER, support....
+ * Options that should be turned on/off from Makefiles
+ */
+#if defined(amVK_LOG_MK1)
+  #define LOG_MK1(x) LOG(x)
+  #define LOG_LOOP_MK1(log_heading, iterator_var, loop_limit, log_inside_loop) LOG_LOOP(log_heading, iterator_var, loop_limit, log_inside_loop)
+#else
+  #define LOG_MK1(x)
+  #define LOG_LOOP_MK1(log_heading, iterator_var, loop_limit, log_inside_loop)
+#endif
 
-  #define amABBORT(sec) for (int amVK_LOOP_COUNTER = 0; amVK_LOOP_COUNTER < sec; amVK_LOOP_COUNTER++) {\
-                          LOG((sec - amVK_LOOP_COUNTER) << "...");\
-                          std::this_thread::sleep_for(std::chrono::seconds(sec));\
-                        }
-#else 
-  #define amABBORT(sec)
-#endif //amVK_ABBORT_SUPPORT
-
-
-#endif  //#ifndef amVK_LOGGER
+#if defined(amVK_HISTORY)
+  #define amFUNC_HISTORY() LOG(__FUNC_MANGLED__)
+#else
+  #define amFUNC_HISTORY()
+#endif
+#if defined(amVK_HISTORY_INTERNAL)
+  #define amFUNC_HISTORY_INTERNAL() LOG(__FUNC_MANGLED__)
+#else
+  #define amFUNC_HISTORY_INTERNAL()
+#endif
 
 
 
@@ -97,46 +113,45 @@
  *     ╚═╝     ██╔╝ ██╗   ██║   ██║  ██║██║  ██║
  *             ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝
  */
-//TIMER
 #ifdef INCLUDE_TIMER
-#ifndef amVK_TIMER
-#define amVK_TIMER
-#include <chrono>
+  #ifndef amVK_TIMER
+  #define amVK_TIMER
+    #include <chrono>
 
-typedef struct noob_timer__ {
-  std::chrono::steady_clock::time_point time_start = {}, time_flushPoint = {};
-} noob_timer;
+    typedef struct noob_timer__ {
+      std::chrono::steady_clock::time_point time_start = {}, time_flushPoint = {};
+    } noob_timer;
 
-/** Make a array of this STRUCT (like below), then pass the  .time_spent to TIMER_STORE
- *   func_timer all[2] = {
- *     {"amVK_CreateDevice", 0.0},
- *     {"amVK_Pipeline", 0.0}
- *   };
-*/
-typedef struct noob_timer_store__ {
-  char *func_name;
-  double time_spent;
-} noob_timer_store;
+    /** Make a array of this STRUCT (like below), then pass the  .time_spent to TIMER_STORE
+     *   func_timer all[2] = {
+     *     {"amVK_CreateDevice", 0.0},
+     *     {"amVK_Pipeline", 0.0}
+     *   };
+    */
+    typedef struct noob_timer_store__ {
+      char *func_name;
+      double time_spent;
+    } noob_timer_store;
 
 
-#define TIMER_FLUSH(var) \
-  var.time_flushPoint = std::chrono::high_resolution_clock::now();
+    #define TIMER_FLUSH(var) \
+      var.time_flushPoint = std::chrono::high_resolution_clock::now();
 
-#define TIMER_INIT(var) \
-  var.time_start = std::chrono::high_resolution_clock::now();
+    #define TIMER_INIT(var) \
+      var.time_start = std::chrono::high_resolution_clock::now();
 
-// You can just FLUSH at the Beginning and keep LOGGING, but Logging takes ~0.0006s
-#define TIMER_LOG(var) \
-  var.time_flushPoint = std::chrono::high_resolution_clock::now(); \
-  LOG(((std::chrono::duration<double>)(var.time_now - var.time_flushPoint)).count());
+    // You can just FLUSH at the Beginning and keep LOGGING, but Logging takes ~0.0006s
+    #define TIMER_LOG(var) \
+      var.time_flushPoint = std::chrono::high_resolution_clock::now(); \
+      LOG(((std::chrono::duration<double>)(var.time_now - var.time_flushPoint)).count());
 
-  
-// Use something like     arrayDouble[10]     [type of variable must be 'double'  but it can be an array]
-#define TIMER_STORE(var, x) \
-  var.time_now = std::chrono::high_resolution_clock::now(); \
-  x = ((std::chrono::duration<double>)(var.time_now - var.time_flushPoint)).count();
+      
+    // Use something like     arrayDouble[10]     [type of variable must be 'double'  but it can be an array]
+    #define TIMER_STORE(var, x) \
+      var.time_now = std::chrono::high_resolution_clock::now(); \
+      x = ((std::chrono::duration<double>)(var.time_now - var.time_flushPoint)).count();
 
-#endif    // amVK_TIMER
+  #endif    // amVK_TIMER
 #endif    //#ifdef INCLUDE_TIMER
 
 
@@ -197,6 +212,9 @@ typedef struct noob_timer_store__ {
 #if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
   void BLI_system_backtrace(FILE *fp);   //There are Other Cool usable BLI_*_* functions too inside #ifdef amVK_LOGGER_IMPLIMENTATION
   /** \todo impliment only stack trace till certain levels.... and not ABBORT.... */
+  #if defined(_WIN32)
+    void amVK_only_stacktrace(FILE *fp);
+  #endif
   #define amASSERT(x) if(x) BLI_system_backtrace(stderr)
 #else
   #error "amASSERT is only currently available for _WIN32 || __linux__ || __APPLE__"
@@ -597,6 +615,13 @@ typedef struct noob_timer_store__ {
       fflush(stderr);
     }
 
+    void amVK_only_stacktrace(FILE *fp)
+    {
+      SymInitialize(GetCurrentProcess(), NULL, TRUE);
+      bli_load_symbols();
+      BLI_windows_system_backtrace_stack(fp);
+    }
+
 
 
 
@@ -653,3 +678,4 @@ typedef struct noob_timer_store__ {
 
 #endif    //amVK_ASSERT
 #endif    //amVK_LOGGER_BLI_ASSERT
+#endif    //amVK_LOGGER_HH

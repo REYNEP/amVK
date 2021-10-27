@@ -1,4 +1,4 @@
-# [v0.0.2] Well, it builds.... Time Travel! 
+# [v0.0.3a] Well, it builds.... Time Travel! 
 use    `cmake --build . --target install --config release`
 currently.... its a huhe WIP
 

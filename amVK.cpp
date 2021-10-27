@@ -1,9 +1,7 @@
 #define amVK_CPP
-#define am_DEV
 #include "amVK_Device.hh"
 #include "amVK.hh"
 #include <cstdlib>          // calloc() & malloc()  [Needed in .cpp only]
-
 
 /**
  * This file was created on Last week of JUNE 2021     ;)        [Now its SEPT 23, 2021,   v0.0.1 (first GITHUB)]
@@ -13,21 +11,16 @@
  * also ANSI Decorative Fonts: [i am pretty sure the NAME is misused]   \see ASCIIDecorator by helixquar and 'Convert To ASCII Art' by BitBelt... I also se my CUSTOM ONE ;) 
  */
 
-//---------------- THE ULTIMATE GOAL WE'RE WORKING TOWARDS ----------------
-amVK_IN                       *amVK_CX::heart = nullptr;
-amVK_Device                   *amVK_CX::activeD = nullptr;
-VkInstance                     amVK_CX::instance{};         //Multiple Instance is not supported yet officially
-VkApplicationInfo              amVK_CX::vk_appInfo{};
-
-
 VkInstance amVK_CX::CreateInstance(void) {
-    if (amVK_CX::instance != nullptr) {     //But this Function would still work
-        LOG("amVK_CX::instance isn't  nullptr....   maybe you Created an Instance already");
+    amFUNC_HISTORY();
+
+    if (amVK_CX::instance != nullptr) { 
+        LOG_MK1("amVK_CX::instance isn't  nullptr....   maybe you Created an Instance already");
         return nullptr;
     }
 
-    if (amVK_CX::vk_appInfo.engineVersion == NULL) {  //amVK_CX::set_VkApplicationInfo()  sets  engineVersion by default
-        amVK_CX::set_VkApplicationInfo(nullptr);      //this func wasn't called before
+    if (amVK_CX::vk_appInfo.engineVersion == NULL) {
+        amVK_CX::set_VkApplicationInfo(nullptr);
     }
 
 
@@ -38,7 +31,7 @@ VkInstance amVK_CX::CreateInstance(void) {
     amVK_CX::add_InstanceExts(_req_surface_ep[1].extensionName);
     amVK_CX::add_InstanceExts("VK_EXT_debug_report");
     amVK_CX::add_InstanceExts("VK_EXT_debug_utils");
-    LOG_LOOP("Enabled Instance Extensions:- ", i, enabled_iExts.size(), enabled_iExts[i]);
+    LOG_LOOP_MK1("Enabled Instance Extensions:- ", i, enabled_iExts.size(), enabled_iExts[i]);
 
 
     // ----------- CreateInfo for vkCreateInstance ------------
@@ -55,7 +48,7 @@ VkInstance amVK_CX::CreateInstance(void) {
         amVK_CX::enum_ValLayers();
         the_info.enabledLayerCount = static_cast<uint32_t>(enabled_vLayers.size());
         the_info.ppEnabledLayerNames = enabled_vLayers.data();
-        LOG_LOOP("Enabled Validation Layers:- ", i, enabled_vLayers.size(), enabled_vLayers[i]);
+        LOG_LOOP_MK1("Enabled Validation Layers:- ", i, enabled_vLayers.size(), enabled_vLayers[i]);
     }
 
 
@@ -82,6 +75,8 @@ VkInstance amVK_CX::CreateInstance(void) {
 
 
 amVK_Device *amVK_CX::CreateDevice(amVK_DevicePreset_Flags presets, VkDeviceCreateInfo *CI) {
+    amFUNC_HISTORY();
+
     // ----------- Physical Device Info ------------
     if (PD.chozen == nullptr) {
         if (amVK_CX::instance == nullptr) {
@@ -91,7 +86,7 @@ amVK_Device *amVK_CX::CreateDevice(amVK_DevicePreset_Flags presets, VkDeviceCrea
         amVK_CX::enum_PD_qFamilies();
         this->auto_choosePD();
     }
-    LOG("GPU SELECTED:- \u0027"  << PD.props[PD_to_index(PD.chozen)].deviceName << "\u0027 Going in For vkCreateDevice");
+    LOG_MK1("GPU SELECTED:- \u0027"  << PD.props[PD_to_index(PD.chozen)].deviceName << "\u0027 Going in For vkCreateDevice");
 
 
     // ----------- THE CREATE INFO ------------
@@ -145,6 +140,8 @@ amVK_Device *amVK_CX::CreateDevice(amVK_DevicePreset_Flags presets, VkDeviceCrea
  *             ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝                        
  */
 amVK_Device *amVK_CX::CreateDeviceMK2(amVK_DeviceMods *MODS) {
+    amFUNC_HISTORY();
+    
     VkDeviceCreateInfo the_info = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, nullptr, 0,
         MODS->qCIs.n, MODS->qCIs.data,          0, nullptr, /* [Deprecated] Layer */
@@ -157,6 +154,8 @@ amVK_Device *amVK_CX::CreateDeviceMK2(amVK_DeviceMods *MODS) {
     return the_device;
 }
 amVK_DeviceMods *amVK_CX::DeviceModsMK2(amVK_DevicePreset_Flags presets, uint32_t ur_exts_n, uint32_t ur_qCIs_n) {
+    amFUNC_HISTORY();
+
     if (!PD.list) load_PD_info(false, true);
 
     amVK_DeviceMods *MODS = new amVK_DeviceMods(presets, PD.chozen, false);
@@ -165,6 +164,23 @@ amVK_DeviceMods *amVK_CX::DeviceModsMK2(amVK_DevicePreset_Flags presets, uint32_
         MODS->konfigurieren();
 
     return MODS;
+}
+
+bool amVK_CX::DestroyDeviceMK2(amVK_Device *DEVICE) {
+    amFUNC_HISTORY();
+
+    /** \todo BackUP_StackTrace.... to get written if program closes.... */
+    vkDestroyDevice(DEVICE->_D, nullptr);
+    D_list.erase(D_list.begin() + D_list.index(DEVICE));
+    delete DEVICE;
+    return true;
+}
+bool amVK_CX::DestroyInstance(void) {
+    amFUNC_HISTORY();
+
+    vkDestroyInstance(instance, nullptr);
+    instance = nullptr;
+    return true;
 }
 
 
@@ -193,11 +209,11 @@ amVK_DeviceMods *amVK_CX::DeviceModsMK2(amVK_DevicePreset_Flags presets, uint32_
 
 /** \param appInfo: default value is nullptr. */
 void amVK_CX::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
+    amFUNC_HISTORY();
+
     // ----------- Muhaha, we use OUR Own stuffs.... if nullptr ------------
     if (appInfo == nullptr) {
-    #ifndef am_DEV
         LOG("(amVK Dev Blubbering: muHahahaha, you didn't think about VkApplicationInfo, I am definitely gonna use that for Advertising purposes)");
-    #endif    
 
         VkApplicationInfo newAppInfo{};
         newAppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -236,6 +252,8 @@ void amVK_CX::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
 
 // This is here cz, this one is the simplest form of   enum_InstanceExts
 void amVK_CX::enum_ValLayers(void) {
+    amFUNC_HISTORY_INTERNAL();
+
     if (vLayerP.n == 0) {
         uint32_t n;
         vkEnumerateInstanceLayerProperties(&n, NULL);
@@ -245,15 +263,17 @@ void amVK_CX::enum_ValLayers(void) {
         vkEnumerateInstanceLayerProperties(&n, vLayerP.data);
     }
 
-    amLOG_LOOP("All Available Layers:- ", i, vLayerP.n, vLayerP[i].layerName);
+    LOG_LOOP_MK1("All Available Layers:- ", i, vLayerP.n, vLayerP[i].layerName);
     //Also see validationLayers_LunarG in FORBIDEN VARIABLES Section
 }
 
 bool amVK_CX::enum_InstanceExts(bool do_log, VkExtensionProperties **pointer_iep, int *pointer_iec) {
+    amFUNC_HISTORY_INTERNAL();
+
     // ----------- Get Instance Extensions anyway ------------
     uint32_t n;
     vkEnumerateInstanceExtensionProperties(nullptr, &n, nullptr);
-    LOG(n << " Instance extensions supported\n");
+    LOG_MK1(n << " Instance extensions supported\n");
 
     IEP.data = new VkExtensionProperties[n];   
     IEP.n = n;    
@@ -267,7 +287,7 @@ bool amVK_CX::enum_InstanceExts(bool do_log, VkExtensionProperties **pointer_iep
     }
  
     // ----------- LOG/ENUMERATE (to CommandLine) ------------
-    if (do_log) {  LOG_LOOP("All the Instance Extensions:- ", i, IEP.n, IEP[i].extensionName); }
+    if (do_log) {  LOG_LOOP_MK1("All the Instance Extensions:- ", i, IEP.n, IEP[i].extensionName); }
 
     if (pointer_iep != nullptr)             {   *(pointer_iep) = IEP.data; }
     if (pointer_iec != nullptr)             {   *(pointer_iec) = IEP.n; }
@@ -276,6 +296,8 @@ bool amVK_CX::enum_InstanceExts(bool do_log, VkExtensionProperties **pointer_iep
 }
 
 bool amVK_CX::filter_SurfaceExts(void) {
+    amFUNC_HISTORY_INTERNAL();
+
     if (IEP.n == 0) {
         LOG_EX("Call enum_InstanceExts() before calling this, and make sure that function worked OK....");
         return false;
@@ -387,13 +409,13 @@ bool amVK_CX::filter_SurfaceExts(void) {
     }
 #endif
 
-    //At Last Success!!!! YESS!!!!        I mean, TIME TRAVEL!!!!
-    amLOG_LOOP("SurfaceExts:- ", i, 2, _req_surface_ep[i].extensionName);
-
+    LOG_LOOP_MK1("SurfaceExts:- ", i, 2, _req_surface_ep[i].extensionName);
     return true;
 }
 
 bool amVK_CX::add_InstanceExts(char *extName) {
+    amFUNC_HISTORY_INTERNAL();
+
     uint32_t index = amVK_CX::iExtName_to_index(extName);
     if (index == 0xFFFFFFFF) {  //Error Checking
         LOG(extName << " is not Supported on this PC/Device/Computer/System whatever.... [Also check the spelling]");
@@ -413,6 +435,8 @@ bool amVK_CX::add_InstanceExts(char *extName) {
 }
 
 bool amVK_CX::add_ValLayer(char *vLayerName) {
+    amFUNC_HISTORY_INTERNAL();
+
     uint32_t index = vLayerName_to_index(vLayerName);
     if (index == 0xFFFFFFFF) {
         LOG(vLayerName << " is not Available on this PC/Device/Computer/System whatever..... [Also check the spelling]");
@@ -452,11 +476,13 @@ bool amVK_CX::add_ValLayer(char *vLayerName) {
   * |-----------------------------------------|
 */
 bool amVK_CX::load_PD_info(bool force_load, bool auto_choose) {
+    amFUNC_HISTORY_INTERNAL();
+
     if (PD.list != nullptr) {
         LOG_EX("Already PD Info loaded Once....");
 
         if (force_load) {
-            LOG("force_load param enabled");
+            LOG_MK1("force_load param enabled");
             free(PD.list); PD = {};     // Zero Initialize
             goto load_PD;
         }
@@ -474,12 +500,14 @@ bool amVK_CX::load_PD_info(bool force_load, bool auto_choose) {
         amVK_CX::enum_PD_qFamilies();
         if(auto_choose) {this->auto_choosePD();}    //Does Benchmark TOO!
 
-        LOG("Loaded PD_info \n");
+        LOG_MK1("Loaded PD_info \n");
         return true;
     }
 }
 
 bool amVK_CX::enum_PhysicalDevs() {
+    amFUNC_HISTORY_INTERNAL();
+
     if (PD.list != nullptr) free(PD.list);      //By Default force_load
 
     vkEnumeratePhysicalDevices(instance, &PD.n, nullptr);
@@ -530,11 +558,13 @@ bool amVK_CX::enum_PhysicalDevs() {
         vkGetPhysicalDeviceFeatures(PD.list[i], (PD.features+i));
     }
 
-    LOG_LOOP("All the Physical Devices:- ", i, PD.n, PD.props[i].deviceName);
+    LOG_LOOP_MK1("All the Physical Devices:- ", i, PD.n, PD.props[i].deviceName);
     return true;
 }
 
 bool amVK_CX::enum_PD_qFamilies() {
+    amFUNC_HISTORY_INTERNAL();
+
     #ifndef amVK_RELEASE
         if (PD.list == nullptr) {LOG("call amVK_CX::enum_PhysicalDevs() first");  return false;}
     #endif
@@ -567,13 +597,15 @@ bool amVK_CX::enum_PD_qFamilies() {
 }
 
 void amVK_CX::benchMark_PD(void) {
+    amFUNC_HISTORY_INTERNAL();
+
 #ifndef amVK_RELEASE
     if (PD.list == nullptr) {LOG("call amVK_CX::enum_PhysicalDevs() first");  return;}
 #endif
 
     // ----------- THE GREAT TIME TRAVELING BENCHMARK ------------
     for (uint32_t i = 0; i < PD.n; i++) {
-        LOG("BenchMarking " << PD.props[i].deviceName);
+        LOG_MK1("BenchMarking " << PD.props[i].deviceName);
         uint32_t mk = 0;
         VkPhysicalDeviceFeatures features = PD.features[i];
         VkPhysicalDeviceProperties *props = &PD.props[i];
@@ -603,6 +635,8 @@ void amVK_CX::benchMark_PD(void) {
 }
 
 bool amVK_CX::auto_choosePD(void) {
+    amFUNC_HISTORY_INTERNAL();
+
     benchMark_PD(); //even if already benchmarked ONCE
 
     // ----------- FIND NEXT notUsed PD ------------
@@ -872,6 +906,8 @@ static const char *amVK_DeviceExtensions[9] = {
 
 
 void amVK_DeviceMods::calc_n_malloc(void) {
+    amFUNC_HISTORY_INTERNAL();
+
     // ----------- PreMod Settings [a.k.a Configurations] ------------
     configure_preMod_settings_based_on_presets:
     {
@@ -912,6 +948,8 @@ void amVK_DeviceMods::calc_n_malloc(void) {
    * 1 Queue per TYPE/PRESET [Graphics/Compute/Transfer/Sparse/ENC_DEC]   only ENC_DEC has 2 queue 
 */
 void amVK_DeviceMods::set_qCIs(void) {
+    amFUNC_HISTORY_INTERNAL();
+
     uint32_t PD_index = HEART_CX->PD_to_index(_PD);
     amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART_CX->PD.qFamily_lists[PD_index];
 
@@ -977,6 +1015,8 @@ void amVK_DeviceMods::set_qCIs(void) {
     /│\  └─┘┴ └─ ┴ └─┘
 */
 void amVK_DeviceMods::set_exts(void) {
+    amFUNC_HISTORY_INTERNAL();
+
     amVK_Array<VkExtensionProperties> sup_exts = {};
     vkEnumerateDeviceExtensionProperties(_PD, nullptr, &sup_exts.n, nullptr);
     sup_exts.data = new VkExtensionProperties[sup_exts.n];
@@ -1033,6 +1073,8 @@ void amVK_DeviceMods::set_exts(void) {
     /│\  └  └─┘┴ ┴ ┴ └─┘┴└─└─┘└─┘
 */
 void amVK_DeviceMods::set_ftrs(void) {
+    amFUNC_HISTORY_INTERNAL();
+
     uint32_t PD_index = HEART_CX->PD_to_index(_PD);
     VkPhysicalDeviceFeatures sup_ftrs = HEART_CX->PD.features[PD_index];
 

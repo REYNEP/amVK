@@ -5,6 +5,7 @@
 #define amVK_LOGGER_BLI_ASSERT
 #include "amVK_Common.hh"
 #include "amVK_Device.hh"
+/** #include "amVK_WI.hh" in .cpp before \fn set_surfaceFormat */
 
 
 /**
@@ -70,6 +71,7 @@ class amVK_RenderPassMK2 : public amVK_RenderPassMK1 {
     uint8_t       depth_index = 0xFF;  /** 0xFF = Error code, variable mainly used for \fn set_subpasses, set in \fn set_attachment_refs */
     /** For now only these 2 are implicitly supported.... & amVK_WI::create_framebuffer depends on this */
 
+    bool            _malloced = false;
     amVK_Array<VkAttachmentDescription>  attachment_descs = {};
     amVK_Array<VkAttachmentReference>     attachment_refs = {};
     amVK_Array<VkSubpassDescription>            subpasses = {};
@@ -90,19 +92,21 @@ class amVK_RenderPassMK2 : public amVK_RenderPassMK1 {
         the_info.pSubpasses = subpasses.data;
 
       VkResult res = vkCreateRenderPass(_amVK_D->_D, &the_info, nullptr, &_RP);
+      LOG("RenderPass created! Yes, Time TRAVEL!!!!");
       amASSERT(res != VK_SUCCESS);
       return _RP;
     }
 
-    /** CLEAN-UP  [DESTRUCTOR] */
+    /** CLEAN-UP / DESTRUCTOR */
     ~amVK_RenderPassMK2() {}
-    bool clean_mods(void) {return true;} /** TODO: +  use in calc_n_malloc */
+    bool destroy(void) {vkDestroyRenderPass(_amVK_D->_D, _RP, nullptr); clean_mods(); return true;}
+    bool clean_mods(void);
 
   /** Only call these functions once.... by calling konfigurieren() these can do the basic Setup for you.
    * then you need to PUSH_BACK or MODIFY yourself. thats What MK2 is all about 
    * but you would need to   set values to    'amVK_Array' like attachment_descs.n   before calling konfigurieren().... cz theres a MALLOC happens at first */
   private:
-    void set_surfaceFormat(void);   /** validate/fallback-set   \var final_image_format & final_image_colorSpace   from the ones supported for \var demo_surface */
+    void set_surfaceFormat(void);   /** validate/fallback-set   \var final_image_format & final_image_colorSpace,  calls \fn amVK_SurfaceMK2::filter_SurfaceFormat on demoSurfaceExt */
     void set_attachments(void);
     void set_attachment_refs(void); /** \see refs_done variable */
     void set_subpasses(void);

@@ -3,7 +3,7 @@
 #ifndef amVK_LIB
   #include "vulkan/vulkan.h"
 #endif
-#ifndef amVK_LOGGER
+#ifndef amVK_LOGGER_HH
   #include "amVK_Logger.hh"
 #endif
 #ifndef amVK_UTILS_H
@@ -261,7 +261,11 @@ typedef enum VkColorSpaceKHR_amVKPort {
 } amVK_ColorSpace;
 
 
-
+char *VkColorSpace_2_String(VkColorSpaceKHR colorspace_name);
+char *amVKColorSpace_2_String(amVK_ColorSpace amVK_Colorspace_name);
+/**{
+  return VkColorSpace_2_String( static_cast<VkColorSpaceKHR> (amVK_Colorspace_name) );
+}*/
 char *VkFormat_2_String(VkFormat F);
 
 typedef enum amVK_SurfaceFormat_BitsPerChannel {

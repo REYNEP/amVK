@@ -8,7 +8,7 @@
 #include <cstring>          // strcmp()     [cstdlib in .cpp]
 #include <vector>
 
-#ifdef amVK_CPP   //inside amVK.cpp file
+#ifdef amVK_CPP             //amVK.cpp file
   #define amVK_LOGGER_IMPLIMENTATION  // amASSERT() impl.
 #endif
 #include "amVK_Common.hh"   // amVK_IN, #define HEART, HEART_CX,   amVK_Logger.hh, amVK_Types.hh, amVK_Utils.hh
@@ -107,12 +107,10 @@ class amVK_CX : public amVK_IN {
     static amVK_Device *activeD;
     static VkInstance instance;
     static VkApplicationInfo vk_appInfo;
-
-    amVK_Utils::vec_amVK_Device         D_list{};   /** std::vector<amVK_Device *>      yes, [pointer], respect amVK_Device as an INDIVIDUAL 'BIG SMTH' */
-    /** [above one] Was STATIC, needed to DEFINE it in amVK.cc....  thus amVK::CreateDevice() didnt work if used in GLOBAL Space of other modules outside main function
+    static inline amVK_Utils::vec_amVK_Device         D_list = {};   // std::vector<amVK_Device *>  \note that pointer
   */
 
-  /** Only way to set activeD, not internally used.... this should be explicit */
+  /** Only way to set activeD, function not internally called.... */
   void activate_device(amVK_Device *D) {if (D_list.doesExist(D)) {activeD = D;}}
 
   bool check_VkSupport(void); /** \todo */
@@ -127,6 +125,7 @@ class amVK_CX : public amVK_IN {
    * CAUTION: More than 1 VkInstance is NEVER needed! [ \see 'first if-else block' of CreateInstance impl.]
    */
   VkInstance CreateInstance(void);
+  bool DestroyInstance(void);
   /**
    *  █░█ ▄▀█ █▀█ █▀
    *  ▀▄▀ █▀█ █▀▄ ▄█
@@ -173,6 +172,7 @@ class amVK_CX : public amVK_IN {
    * How do you check if supported? after \fn DeviceModsMK2 is called \var PD will have the data. use that 😉
    */
   amVK_Device *CreateDeviceMK2(amVK_DeviceMods *MODS);
+  bool DestroyDeviceMK2(amVK_Device *DEVICE);
   /** Dont do    new amVK_DeviceMods()    cz that class \requires amVK_CX::PD to have the data 
    * \see amVK_DeviceMods::calc_n_malloc() first....
    * \param ur_exts_n: USE: MODS->exts.push_back()    upto that number of times

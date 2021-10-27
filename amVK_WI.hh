@@ -16,23 +16,46 @@ typedef struct amVK_SurfaceCaps_GEN2 {
   VkImageUsageFlags                supportedUsageFlags;
 } amVK_SurfaceCaps;
 
-/** Stores extended data related to VkSurface.... cz RenderPass needed to filter present_modes, but amVK_WI requires a RenderPass */
+/** 
+ *             ███████╗██╗   ██╗██████╗ ███████╗ █████╗  ██████╗███████╗███╗   ███╗██╗  ██╗██████╗ 
+ *   ▄ ██╗▄    ██╔════╝██║   ██║██╔══██╗██╔════╝██╔══██╗██╔════╝██╔════╝████╗ ████║██║ ██╔╝╚════██╗
+ *    ████╗    ███████╗██║   ██║██████╔╝█████╗  ███████║██║     █████╗  ██╔████╔██║█████╔╝  █████╔╝
+ *   ▀╚██╔▀    ╚════██║██║   ██║██╔══██╗██╔══╝  ██╔══██║██║     ██╔══╝  ██║╚██╔╝██║██╔═██╗ ██╔═══╝ 
+ *     ╚═╝     ███████║╚██████╔╝██║  ██║██║     ██║  ██║╚██████╗███████╗██║ ╚═╝ ██║██║  ██╗███████╗
+ *             ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝
+ * Stores extended data related to VkSurface.... cz RenderPass needed to filter present_modes, but amVK_WI requires a RenderPass. SO these couldn't be inside amVK_WI 
+ * \brief
+ * calling get_SurfaceFormats 2nd time gives NULL values.... (nvidia, win10)   main reason we had to create this struct to store the DATA
+ *      [or maybe calling with same uint32_t pointer the 2nd time is what causes the problems....]
+ * bcz the first call happens in amVK_RenderPassMK2::set_surfaceFormat
+ *     2nd when create_Swapchain or fallback_the_info
+ */
 struct amVK_SurfaceMK2 {
   VkSurfaceKHR _S;
   VkPhysicalDevice _PD;
 
+  /** 
+   * \brief
+   * cz we needed to do this in RenderPassMK2, fallbacks on B8G8R8A8/R8G8B8A8_SRGB 
+   */
+  VkSurfaceFormatKHR filter_SurfaceFormat(VkSurfaceFormatKHR what_to_filter);
+
   amVK_Array<VkSurfaceFormatKHR> surface_formats = {};
   amVK_Array<VkPresentModeKHR>     present_modes = {};
 
+  amVK_SurfaceMK2(VkSurfaceKHR S, amVK_Device *D) : _S(S), _PD(D->_PD) {}
   amVK_SurfaceMK2(VkSurfaceKHR S, VkPhysicalDevice PD) : _S(S), _PD(PD) {}
   ~amVK_SurfaceMK2 () {delete[] surface_formats.data; delete[] present_modes.data;}
 
-  /** \brief imageUsageFlags, maxImageArrayLayers [stereoscope3D Stuff], Transform & CompositeAlpha */
+  /** 
+   * \brief imageUsageFlags, maxImageArrayLayers [stereoscope3D Stuff], Transform & CompositeAlpha 
+   * Doesn't have the same bug as the other get_ funcs below
+   */
   amVK_SurfaceCaps get_SurfaceCapabilities_II(void);
 
   void get_PresentModes(void);
   /** calling get_SurfaceFormats 2nd time gives NULL values.... (nvidia, win10)   main reason we had to create this struct to store the DATA */
-  void get_SurfaceFormats(void);
+  void get_SurfaceFormats(bool print = false);
 };
 
 
@@ -42,46 +65,64 @@ struct amVK_SurfaceMK2 {
  *  ╺╋╸   ┃┃┃┃┃╺┓    ┃┃┣━┫ ┃ ┣━┫   ┃┃┃┣┻┓┏━┛
  *  ╹ ╹   ╹╹ ╹┗━┛╺━╸╺┻┛╹ ╹ ╹ ╹ ╹╺━╸╹ ╹╹ ╹┗━╸
  */
-/** \see create_framebufs for how this is used */
 typedef struct SwapchainData_GEN3 {
   VkFramebuffer   *framebufs = nullptr;
-  bool imageless_framebuffer = false;     /** if true, 1 framebuf */
-  VkImageView   *attachments = {};        /** VkImageView[attach_n][n]   includes the views created from swap_imgs */
-  VkImage            *images = nullptr;   /**     VkImage[n][attach_n]   includes vkGetSwapchainImagesKHR   [this one's rows are above one's columns] */
+  bool imageless_framebuffer = false;
 
-  uint8_t n = 0;                          /** the_info.minImageCount \see the_info.defaults */
-  uint8_t attach_n = 0;                   /** _amVK_RP->attachment_descs.n */
+  VkImageView   *attachments = {};        /** VkImageView[n][attach_n]   includes views created from        swap_imgs  */
+  VkImage            *images = nullptr;   /**     VkImage[attach_n][n]   includes vkGetSwapchainImagesKHR  [swap_imgs] */
+  inline VkImage     *_ptr_img(   uint8_t framebuf_i, uint8_t attach_i) {return (     images + (attach_i * framebuf_n) + framebuf_i);}
+  inline VkImageView *_ptr_attach(uint8_t framebuf_i, uint8_t attach_i) {return (attachments + (framebuf_i * attach_n) + attach_i);}
+
+  inline bool check_index(        uint8_t framebuf_i, uint8_t attach_i) {
+    bool ok = true;
+    if (framebuf_i > framebuf_n) {LOG_EX("Requested: " << framebuf_i << "th framebuffer from " << this->framebuf_n                       << " [return nullptr]"); ok = false;}
+    if (  attach_i > attach_n)   {LOG_EX("Requested: " << attach_i   << "th   atachment from " << this->attach_n << " per framebuffer. " << " [return nullptr]"); ok = false;}
+    return ok;
+  }
+
+  uint8_t framebuf_n = 0;    /** [also: img_n]       the_info.minImageCount        \see Default_the_info */
+  uint8_t   attach_n = 0;    /** [per: framebuf]     _amVK_RP->attachment_descs.n  \see Default_the_info */
 
 
-  bool swap_imgs_are_color = true;
+  bool swap_imgs_are_color_attach = true;
   uint8_t color_index = 0;                /** _amVK_RP->color_index */
-  uint8_t swap_imgs_index = 0;            /** Yes default is zero, like _amVK_RP->color_index, change if you not using these for colorAttachment */
-  VkImage     *ptr_swap_imgs(void)        {return &images[swap_imgs_index * n];}
-  VkImageView *ptr_swap_attach(uint8_t i) {return (attachments + swap_imgs_index + (i * attach_n));}
+  uint8_t swap_attach_index = 0;          /** default: will be used for colorAttachment */
   
 
   bool alloc_called = false;
-  bool alloc(void) {
-    if (alloc_called) {
-      LOG("amVK_WI.IMGs.alloc_called == true;  seems like its already ALLOCATED!!!!       [we not allocating] ");
-      return false;
-    } 
-    if (!n || !attach_n) {
-      LOG("IMGs.n == 0   or   IMGs.attach_n == 0      [Nothing to malloc for, set those two (& possibly other values too)]");
-      return false;
-    }
-
-    uint32_t framebuf_size = (imageless_framebuffer) ? sizeof(VkImage) : sizeof(VkImage) * n;
-    void *xd = calloc(sizeof(VkImageView), /* attachments + images */ (n * attach_n * 2) + framebuf_size);
-    
-    attachments = reinterpret_cast<  VkImageView *> (xd);
-    images =      reinterpret_cast<      VkImage *> (attachments + (n * attach_n));
-    framebufs =   reinterpret_cast<VkFramebuffer *> (     images + (n * attach_n));
-
-    alloc_called = true;
+  bool alloc(void);
+  bool _free(void) {
+    if (alloc_called) {free(attachments); alloc_called = false; return true;} 
+    else {LOG_EX("alloc_called == false"); return false;}
   }
-  bool _free(void) {if (alloc_called) {free(attachments); alloc_called = false;} else {LOG_EX("alloc_called == false");}}
 } IMG_DATA_MK2;
+
+#define PTR_FRAMEBUF_ATTACHMENTS(PTR_IMG_DATA_MK2, framebuf_i)                  PTR_IMG_DATA_MK2->_ptr_attach(framebuf_i, 0); \
+    if (!PTR_IMG_DATA_MK2->            check_index(framebuf_i, 0))           { LOG_EX("PTR_FRAMEBUF_ATTACHMENTS called with out of bounds values, there will be vulkan errors"); }
+
+#define PTR_IMG(PTR_IMG_DATA_MK2,                  framebuf_i, attach_i)        PTR_IMG_DATA_MK2->_ptr_img(   framebuf_i, attach_i); \
+    if (!PTR_IMG_DATA_MK2->            check_index(framebuf_i, attach_i))    { LOG_EX("PTR_FRAMEBUF_ATTACHMENTS called with out of bounds values, there will be vulkan errors"); }
+
+#define PTR_ATTACH(PTR_IMG_DATA_MK2,               framebuf_i, attach_i)        PTR_IMG_DATA_MK2->_ptr_attach(framebuf_i, attach_i); \
+    if (!PTR_IMG_DATA_MK2->            check_index(framebuf_i, attach_i))    { LOG_EX("PTR_FRAMEBUF_ATTACHMENTS called with out of bounds values, there will be vulkan errors"); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -120,7 +161,7 @@ class amVK_WI_MK2 {
   amVK_Device          *_amVK_D;
   amVK_RenderPassMK2  *_amVK_RP;            /** [IN] used for AttachmentCreation & swapchainCI.imageFormat/ColorSpace, cz RenderPass colorAttachment.imageFormat has to match this TOO! */
   VkSurfaceKHR         _surface = nullptr;  /** [IN] */
-  amVK_SurfaceMK2  *_surfaceExt = nullptr;  /** [IN] \todo intention, we should delete after first swapchain/RenderPass Creation */
+  amVK_SurfaceMK2      *_amVK_S = nullptr;  /** [IN] \todo intention, we should delete after first swapchain/RenderPass Creation */
 
   /** USED-IN: CONSTRUCTOR & \see amVK_Device::_present_qFam   */
   VkBool32 is_presenting_sup(void)      {         if (_amVK_D->_present_qFam(_surface)        == 0xFFFFFFFF) {return false;} else return true;}
@@ -137,12 +178,13 @@ class amVK_WI_MK2 {
    * presentMode IMMEDIATE is checked if supported, if not, FIFO used
    * imageCount is currently incremented by   surfaceCapabilities.minImageCount  cz of   https://discord.com/channels/427551838099996672/427803486269210627/885268738247647263 
    * imageFormat & imageColorSpace  \see the comment-block before get**SurfaceFormats in \fn createSwapchain()
+   * \note called in the CONSTRUCTOR
    */
-  void the_info_defaults() {
+  void Default_the_info() {
     the_info.presentMode    = VK_PRESENT_MODE_IMMEDIATE_KHR;    /** Uncapped Frames [Less Input Lag],  yet minImageCount should be  at least 2, theoritically
                                                                     FALLBACK: FIFO */
     the_info.minImageCount  = 2; /** + surfaceCaps.minImageCount    this is where you do buffering, e.g. Triple Buffering or VSync  \todo move & ext.docs on these 2
-                                       [added anyway]               uhh, number of FINAL 'whatever you send to the Display' ???? \see nExt option, that's \related !
+                                       [ \todo added anyway??]      uhh, number of FINAL 'whatever you send to the Display' ???? \see nExt option, that's \related !
                                        [ \see createSwapchain]      Again, framebuffer is just a Vulkan/GL/DX Object that has all the data related to it */
 
     the_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;  /** The images created by swapchain will be for the FINAL [Presentation] Framebuffer 
@@ -158,16 +200,22 @@ class amVK_WI_MK2 {
     the_info.surface                = _surface;
     if (the_info.sType == (VkStructureType)0) swapchain_CI_generic_mods();
   }
+  /** not everything you see above is supported everywhere.... so we do smth like 'filtering' */
+  void fallback_the_info(void);
 
 
   /**
    * \brief vkGetSwapchainImagesKHR()      
    *    also acts as reCreateSwapchain [.oldSwapchain used if exists]
    * 
+   * \param check_the_info: calls fallback_the_info() if true. Enable 1 time after changing the_info
+   * 
+   * \note vkCreateSwapchain() creates images implicitly, this amVK Function gets those & creates ImageViews. [but thats in \fn post_create_swapchain]
+   * 
    * \todo Different ImageFormat & ColorSpace Support other than sRGB
    * \todo More options support for generic_mods as it covers up DeviceGroup, SharingMode, Stereoscopic3D options
    */
-  VkSwapchainKHR   createSwapchain(bool call_the_info_defaults = false);
+  VkSwapchainKHR   create_Swapchain(bool check_the_info = false);
   void swapchain_CI_generic_mods(void);
 
 
@@ -179,12 +227,14 @@ class amVK_WI_MK2 {
    *   ╺╋╸   ┃  ┃ ┃┃┗┫┗━┓ ┃ ┣┳┛┃ ┃┃   ┃ ┃ ┃┣┳┛
    *   ╹ ╹   ┗━╸┗━┛╹ ╹┗━┛ ╹ ╹┗╸┗━┛┗━╸ ╹ ┗━┛╹┗╸
    * sets parameter vars to member vars and checks if valid or not
+   * CALLS: \fn Default_the_info();
    * \param window: whatever name you choose to give to the Window....
    * \param device: DUH!!!!
-   * \param surface: For now, \see amGHOST_Window::vulkan_create_surface() or create your own impl of vkCreateXXXSurfaceKHR()
+   * \param surface: For now, \see amGHOST_Window::create_vulkan_surface() or create your own impl of vkCreateXXXSurfaceKHR()
    */
   amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_Device *D = nullptr);
-  ~amVK_WI_MK2() {delete[] _surfaceExt; IMGs._free();}
+  ~amVK_WI_MK2() {}
+  bool destroy(void); /** vkDestroySwapchainKHR, & also IMG._free() */
 
 
 
@@ -199,41 +249,51 @@ class amVK_WI_MK2 {
    *             ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝
    * 
    * TODO: imageless_framebuffer support
-   * MODS: IMGs.attachments, IMGs.framebufs
+   * \todo let choose arrayLayers & midLevels & imageType * pnext 
+   * 
+   * MODS: IMGs.attachments, IMGs.framebufs, IMGs.images
    */
-  IMG_DATA_MK2              IMGs = {};        /** sm ppl would like to call this 'attachments', but duh! */
+  IMG_DATA_MK2              IMGs = {};        /** sm ppl would like to call this 'attachments', but duh! this struct has everything related to those in it */
 
   /** 
-   *   \│/  ╔═╗┬─┐┌─┐┌┬┐┌─┐╔╗ ┬ ┬┌─┐┌─┐┌─┐┬─┐   ┬   ╔═╗┌┬┐┌┬┐┌─┐┌─┐┬ ┬┌┬┐┌─┐┌┐┌┌┬┐┌─┐      
-   *   ─ ─  ╠╣ ├┬┘├─┤│││├┤ ╠╩╗│ │├┤ ├┤ ├┤ ├┬┘  ┌┼─  ╠═╣ │  │ ├─┤│  ├─┤│││├┤ │││ │ └─┐      
-   *   /│\  ╚  ┴└─┴ ┴┴ ┴└─┘╚═╝└─┘└  └  └─┘┴└─  └┘   ╩ ╩ ┴  ┴ ┴ ┴└─┘┴ ┴┴ ┴└─┘┘└┘ ┴ └─┘   
-   * 
-   * \brief 
-   * use \fn malloc_n_get_IMGs after createSwapchain();
-   * 
-   * /** \todo what if someone suddenly turns off imageless_framebuffer or increases the_info.minImageCount   implement \fn realloc_n_get_IMGs(void);
-   * 
-   * [out] IMGs.framebufs, will be Compat with renderPass   
+   *   \│/  ╔═╗┬─┐┌─┐┌┬┐┌─┐╔╗ ┬ ┬┌─┐┌─┐┌─┐┬─┐   ┬   ╔═╗┌┬┐┌┬┐┌─┐┌─┐┬ ┬┌┬┐┌─┐┌┐┌┌┬┐┌─┐
+   *   ─ ─  ╠╣ ├┬┘├─┤│││├┤ ╠╩╗│ │├┤ ├┤ ├┤ ├┬┘  ┌┼─  ╠═╣ │  │ ├─┤│  ├─┤│││├┤ │││ │ └─┐
+   *   /│\  ╚  ┴└─┴ ┴┴ ┴└─┘╚═╝└─┘└  └  └─┘┴└─  └┘   ╩ ╩ ┴  ┴ ┴ ┴└─┘┴ ┴┴ ┴└─┘┘└┘ ┴ └─┘
    */
  private:
-  void malloc_n_get_IMGs(void) {
-    uint32_t swap_imgs_n = 0;
-    vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &swap_imgs_n, nullptr);
-    LOG("Swapchain Images N: " << swap_imgs_n);
-    
-    IMGs.n = (uint8_t) swap_imgs_n;
-    IMGs.attach_n = _amVK_RP->attachment_descs.n;
-    IMGs.color_index = _amVK_RP->color_index;
-    IMGs.swap_imgs_index =  IMGs.color_index;   /** \todo swap_imgs could be used in other ways too */
-    /** \todo    IMGs.imageless_framebuffer = false */
-    IMGs.alloc();
+  /** IMGs.alloc(), & gets swapchain Images, creates ImagesViews from those */
+  void post_create_swapchain(void);
 
-    vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &swap_imgs_n, IMGs.ptr_swap_imgs());
-  }
-
-  void create_SwapImageViews(void);   //called by createSwapchain
  public:
   void create_Attachments_n_FrameBuf(void);
 };
+
+
+/** 
+   ╻ ╻   ╻┏┳┓┏━╸   ╺┳┓┏━┓╺┳╸┏━┓   ┏━┓╻  ╻  ┏━┓┏━╸
+   ╺╋╸   ┃┃┃┃┃╺┓    ┃┃┣━┫ ┃ ┣━┫   ┣━┫┃  ┃  ┃ ┃┃  
+   ╹ ╹   ╹╹ ╹┗━┛╺━╸╺┻┛╹ ╹ ╹ ╹ ╹   ╹ ╹┗━╸┗━╸┗━┛┗━╸
+ */
+#ifdef amVK_WI_CPP
+  bool IMG_DATA_MK2::alloc(void) {
+    if (alloc_called) {
+      LOG("amVK_WI.IMGs.alloc_called == true;  seems like its already ALLOCATED!!!!       [we not allocating] ");
+      return false;
+    } 
+    if (!framebuf_n || !attach_n) {
+      LOG("IMGs.attach_i == 0   or   IMGs.attach_n == 0      [Nothing to malloc for, set those two (& possibly other values too)]");
+      return false;
+    }
+
+    uint32_t framebuf_size = (imageless_framebuffer) ? sizeof(VkImage) : sizeof(VkImage) * framebuf_n;
+    void *xd = calloc(sizeof(VkImageView), /* attachments + images */ (framebuf_n * attach_n * 2) + framebuf_size);
+    
+    attachments = reinterpret_cast<  VkImageView *> (xd);
+    images =      reinterpret_cast<      VkImage *> (attachments + (framebuf_n * attach_n));
+    framebufs =   reinterpret_cast<VkFramebuffer *> (     images + (framebuf_n * attach_n));
+
+    alloc_called = true;
+  }
+#endif
 
 #endif //amVK_WI_H

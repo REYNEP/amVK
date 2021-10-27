@@ -57,19 +57,21 @@
 
 
 
-/** Since amVK_CX has a lot of things, decided to separate these, cz are used in many amVK files.... */
+/** Since amVK_CX has a lot of things, decided to separate these, cz are used in many amVK files.... 
+ * only used as amVK_CX base/parent class & called as amVK_CX Constructor is called! */
 class amVK_IN {
   public:
-    static amVK_IN *heart;      
-    static amVK_Device *activeD;
-    static VkInstance instance;
-    static VkApplicationInfo vk_appInfo;
+    static inline                        amVK_IN *heart = nullptr;      
+    static inline amVK_Device                  *activeD = nullptr;
+    static inline VkInstance                   instance = nullptr;
+    static inline VkApplicationInfo          vk_appInfo = {};
+    static inline amVK_Utils::vec_amVK_Device    D_list = {};
 
-    amVK_IN(void) {heart = this; LOG("amVK_IN::heart set! \n\n");} //called by amVK_CX CONSTRUCTOR
+    amVK_IN(void) {heart = this; LOG("amVK_IN::heart set! \n");} //called by amVK_CX CONSTRUCTOR
     ~amVK_IN() {}
 
     /** HEART->D_list.doesExist() used to check if Device exists or not */
-    amVK_Utils::vec_amVK_Device         D_list{};
+    
 };
 
 #endif //amVK_COMMON_H

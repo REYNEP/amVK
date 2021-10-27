@@ -1,44 +1,37 @@
+#define amVK_WI_CPP
 #include "amVK_WI.hh"
 #include "amVK_Common.hh"
 #include "amVK_ImgMemBuf.hh"
 
-
-amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_Device *D) : _window(window), _amVK_D(D), _surfaceExt(S), _surface(S->_S), _amVK_RP(RP) {
-    if           (D == nullptr) { LOG_EX("param amVK_Device *D is nullptr...... " << "it has to be valid"); }
-    else if (D->_PD == nullptr) { LOG_EX("param amVK_Device *D->_PD is nullptr.." << "it has to be valid"); }
-         if (     S == nullptr) { LOG_EX("param S  is nullptr.......  " << "it has to be valid"); }
-         if (    RP == nullptr) { LOG_EX("param RP (amVK_RenderPass) is nullptr.......  " << "it has to be valid"); }
-         if (window == nullptr) { LOG_EX("Please dont pass nullptr, ERROR/WARNING Logs will look messy ");}
+/** 
+   ╻ ╻   ┏━╸┏━┓┏┓╻┏━┓╺┳╸┏━┓╻ ╻┏━╸╺┳╸┏━┓┏━┓
+   ╺╋╸   ┃  ┃ ┃┃┗┫┗━┓ ┃ ┣┳┛┃ ┃┃   ┃ ┃ ┃┣┳┛
+   ╹ ╹   ┗━╸┗━┛╹ ╹┗━┛ ╹ ╹┗╸┗━┛┗━╸ ╹ ┗━┛╹┗╸
+ */
+amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_Device *D) : _window(window), _amVK_D(D), _amVK_S(S), _surface(S->_S), _amVK_RP(RP) {
+         if (window == nullptr) { LOG_EX("Please dont pass nullptr, ERROR/WARNING Logs will look messy, this is used to let you know which window ");
+                                  window = "nullptr";}
+    if           (D == nullptr) { LOG_EX("[param]           amVK_Device *D      is nullptr.... name: " << window); }
+    else if (D->_PD == nullptr) { LOG_EX("[param]           amVK_Device *D->_PD is nullptr.... name: " << window); }
+         if (     S == nullptr) { LOG_EX("[param]       amVK_SurfaceMK2 *S      is nullptr.... name: " << window); }
+         if (    RP == nullptr) { LOG_EX("[param]    amVK_RenderPassMK2 *RP     is nullptr.... name: " << window); }
 
     /** [VUID-VkSwapchainCreateInfoKHR-surface-01270] - vkCreateSwapchain will fail     
      * Val Layer Error if    is_presenting_sup() not done per _surface    (a.k.a Basically per WINDOW) */
     amASSERT(!is_presenting_sup());
+
+    Default_the_info();
+    fallback_the_info();
+    LOG("amVK_WI_MK2 Constructed   &   Default_the_info() called...");
 }
 
-amVK_SurfaceCaps amVK_SurfaceMK2::get_SurfaceCapabilities_II(void) {
-    VkSurfaceCapabilitiesKHR surfaceCaps;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_PD, _S, &surfaceCaps);
-    
-    amVK_SurfaceCaps caps;
-    caps.maxImageArrayLayers = surfaceCaps.maxImageArrayLayers;
-    caps.supportedTransforms = surfaceCaps.supportedTransforms;
-    caps.currentTransform    = surfaceCaps.currentTransform;
-    caps.supportedCompositeAlpha = surfaceCaps.supportedCompositeAlpha;
-    caps.supportedUsageFlags = surfaceCaps.supportedUsageFlags;
-    return caps;
-}
 
-void amVK_SurfaceMK2::get_PresentModes(void) {
-    amVK_Array<VkPresentModeKHR> tmp_present_modes = {};
-    vkGetPhysicalDeviceSurfacePresentModesKHR(_PD, _S, &tmp_present_modes.n, nullptr);           tmp_present_modes.data = new VkPresentModeKHR[tmp_present_modes.n];
-    vkGetPhysicalDeviceSurfacePresentModesKHR(_PD, _S, &tmp_present_modes.n, tmp_present_modes.data);
-
-    if (tmp_present_modes.data != nullptr && tmp_present_modes.n > 0) {
-        present_modes = tmp_present_modes;
-    }
-}
-
-void amVK_SurfaceMK2::get_SurfaceFormats(void) {
+/** 
+    \│/  ┌─┐┌─┐┌┬┐   ╔═╗┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐╔═╗┌─┐┬─┐┌┬┐┌─┐┌┬┐┌─┐  
+    ─ ─  │ ┬├┤  │    ╚═╗│ │├┬┘├┤ ├─┤│  ├┤ ╠╣ │ │├┬┘│││├─┤ │ └─┐  
+    /│\  └─┘└─┘ ┴────╚═╝└─┘┴└─└  ┴ ┴└─┘└─┘╚  └─┘┴└─┴ ┴┴ ┴ ┴ └─┘  
+ */
+void amVK_SurfaceMK2::get_SurfaceFormats(bool print) {
     /** 
      * [its more like, WHAT Your Display's FORMAT & COLORSPACE support is + How your GPU wants it]
      * e.g. Your Display might support RGB 10-bit per channel.... But your GPU might want A2B10G10R10 instead of A2R10G10B10
@@ -66,110 +59,191 @@ void amVK_SurfaceMK2::get_SurfaceFormats(void) {
     if (tmp_surface_formats.data != nullptr && tmp_surface_formats.n > 0) {
         surface_formats = tmp_surface_formats;
 
-        LOG_LOOP("------ LIST OF SUPPORTED PRESENTATION-IMAGE FORMATS ------", i, surface_formats.n, 
+        if (print) {
+            LOG_LOOP_MK1("------ LIST OF SUPPORTED PRESENTATION-IMAGE FORMATS ------", i, surface_formats.n, 
                 "format: " << (uint32_t)surface_formats.data[i].format << ", colorSpace: " << (uint32_t)surface_formats.data[i].colorSpace);
+        }
+    }
+}
+
+/** 
+ * other amVK_SurfaceMK2 Get stuffs....
+ */
+amVK_SurfaceCaps amVK_SurfaceMK2::get_SurfaceCapabilities_II(void) {
+    VkSurfaceCapabilitiesKHR surfaceCaps;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_PD, _S, &surfaceCaps);
+    
+    amVK_SurfaceCaps caps;
+    caps.maxImageArrayLayers = surfaceCaps.maxImageArrayLayers;
+    caps.supportedTransforms = surfaceCaps.supportedTransforms;
+    caps.currentTransform    = surfaceCaps.currentTransform;
+    caps.supportedCompositeAlpha = surfaceCaps.supportedCompositeAlpha;
+    caps.supportedUsageFlags = surfaceCaps.supportedUsageFlags;
+    return caps;
+}
+void amVK_SurfaceMK2::get_PresentModes(void) {
+    amVK_Array<VkPresentModeKHR> tmp_present_modes = {};
+    vkGetPhysicalDeviceSurfacePresentModesKHR(_PD, _S, &tmp_present_modes.n, nullptr);           tmp_present_modes.data = new VkPresentModeKHR[tmp_present_modes.n];
+    vkGetPhysicalDeviceSurfacePresentModesKHR(_PD, _S, &tmp_present_modes.n, tmp_present_modes.data);
+
+    if (tmp_present_modes.data != nullptr && tmp_present_modes.n > 0) {
+        present_modes = tmp_present_modes;
     }
 }
 
 
-VkSwapchainKHR amVK_WI_MK2::createSwapchain(bool call_the_info_defaults) {
-    VkSurfaceCapabilitiesKHR surfaceCaps;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_amVK_D->_PD, _surface, &surfaceCaps);
-    /** maxImageExtent is not How much GPU can support, its more like HOW MUCH the SURFACE actually Needs  [even tho it says CAPABILITIES]*/
-    _extent = surfaceCaps.minImageExtent;
-        LOG("Swapchain Extent: (" << _extent.width << ", " << _extent.height << ")");
 
 
-    if (_swapchain == nullptr) {    // A.k.a Creating Swapchain for first time
-        // ----------- THE INFO - FirstTime ------------
-        if (call_the_info_defaults) {
-            the_info_defaults();
+
+
+
+
+
+/** 
+     \│/  ┌─┐┬┬ ┌┬┐┌─┐┬─┐    ╔═╗┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐╔═╗┌─┐┬─┐┌┬┐┌─┐┌┬┐
+     ─ ─  ├┤ ││  │ ├┤ ├┬┘    ╚═╗│ │├┬┘├┤ ├─┤│  ├┤ ╠╣ │ │├┬┘│││├─┤ │ 
+     /│\  └  ┴┴─┘┴ └─┘┴└─────╚═╝└─┘┴└─└  ┴ ┴└─┘└─┘╚  └─┘┴└─┴ ┴┴ ┴ ┴ 
+ * \brief
+ * cz we needed to do this in RenderPassMK2, fallbacks on B8G8R8A8/R8G8B8A8_SRGB 
+ */
+VkSurfaceFormatKHR amVK_SurfaceMK2::filter_SurfaceFormat(VkSurfaceFormatKHR what_to_filter) {
+    bool found_it = false;  //We gonna try and make sure that RenderPass imageFormat and imageColorSpace is VALID for this surface....
+    bool found_r8g8b8a8 = false;    /** \todo find non-sRGB ones too! */
+    bool found_b8g8r8a8 = false;    //one of these two will be available anyway on all consumer monitors
+
+    this->get_SurfaceFormats();
+    
+    LOG("  [searching...] imageFormat: " << what_to_filter.format << ", imageColorSpace: " << what_to_filter.colorSpace);
+    //this->surface_formats
+    for (int i = 0; i < surface_formats.n; i++) {
+        if ((surface_formats.data[i].format     == what_to_filter.format) &&
+            (surface_formats.data[i].colorSpace == what_to_filter.colorSpace)) {
+            found_it = true;
+            break;
         }
+        else if (surface_formats.data[i].format == VK_FORMAT_R8G8B8A8_SRGB) {
+            found_r8g8b8a8 = true;
+        }
+        else if (surface_formats.data[i].format == VK_FORMAT_B8G8R8A8_SRGB) {
+            found_b8g8r8a8 = true;
+        }
+    }
+    if (!found_it) {
+        LOG_EX("SurfaceFormat {" << VkFormat_2_String(what_to_filter.format) << ", " << VkColorSpace_2_String(what_to_filter.colorSpace) << "}.... " << "not supported." << std::endl
+            << "[Note that these 2 should also match with RenderPass's ImageFormat/ColorSpace....  so you need to configure using amVK_RenderPassMK2 stuffs]");
+
+             if (found_r8g8b8a8) {                what_to_filter.format = VK_FORMAT_R8G8B8A8_SRGB; 
+                LOG("Returning \u2022" <<               VkFormat_2_String(VK_FORMAT_R8G8B8A8_SRGB)           << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");}
+        else if (found_b8g8r8a8) {                what_to_filter.format = VK_FORMAT_B8G8R8A8_SRGB; 
+                LOG("Returning \u2022" <<               VkFormat_2_String(VK_FORMAT_B8G8R8A8_SRGB)           << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");}
+
+        what_to_filter.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; 
+                LOG("Returning \u2022" <<      VkColorSpace_2_String(VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)      << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");
+    }
+
+    return what_to_filter;  /** it has been filtered & modified */
+}
 
 
-        // ----------- PRESENT MODE SUPPORTED ------------
-        _surfaceExt->get_PresentModes();
-        amVK_Array<VkPresentModeKHR> present_modes = _surfaceExt->present_modes;
+
+
+
+
+
+/**
+ *  ╻ ╻   ┏━┓╻ ╻┏━┓┏━┓┏━╸╻ ╻┏━┓╻┏┓╻
+ *  ╺╋╸   ┗━┓┃╻┃┣━┫┣━┛┃  ┣━┫┣━┫┃┃┗┫
+ *  ╹ ╹   ┗━┛┗┻┛╹ ╹╹  ┗━╸╹ ╹╹ ╹╹╹ ╹
+ */
+void amVK_WI_MK2::fallback_the_info(void) {
+    // ----------- PRESENT MODE SUPPORTED ------------
+        _amVK_S->get_PresentModes();
+        amVK_Array<VkPresentModeKHR> present_modes = _amVK_S->present_modes;
+
         bool found_immediate = false;
-        for (int i = 0; i < present_modes.n; i++) {
-            if (present_modes.data[i] == the_info.presentMode) {    //VK_PRESENT_MODE_IMMEDIATE_KHR in the_info_defaults
-                found_immediate = true;
-                break;
-            }
+        amVK_ARRAY_IS_ELEMENT(present_modes, found_immediate, the_info.presentMode);
+        if (!found_immediate) {
+            this->the_info.presentMode = VK_PRESENT_MODE_FIFO_KHR; 
+            LOG("swapchain presentMode " << the_info.presentMode << " not available, using FIFO");
         }
-        if (!found_immediate) {the_info.presentMode = VK_PRESENT_MODE_FIFO_KHR; LOG("swapchain presentMode " << the_info.presentMode << " not available, using FIFO");}
+
+    // ----------- IMAGE COUNT SUPPORTED ------------
+        VkSurfaceCapabilitiesKHR surfaceCaps;
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_amVK_D->_PD, _surface, &surfaceCaps);
+
+        uint32_t target_img_cnt = the_info.minImageCount + surfaceCaps.minImageCount;
+        if (target_img_cnt > surfaceCaps.maxImageCount) {
+            if (the_info.minImageCount == surfaceCaps.maxImageCount) {  //This will be true only if the above if true
+                LOG("You have requested " << the_info.minImageCount << " Images. Thats the max amount this surface's capability is.");
+            }
+            else if (the_info.minImageCount > surfaceCaps.maxImageCount) {
+                LOG("You have requested " << the_info.minImageCount << " Images. surfaceCaps.maxImageCount = " << surfaceCaps.maxImageCount);
+                LOG("We are capping it, to surfaceCaps.maxImageCount");
+            }
+            else if (the_info.minImageCount < surfaceCaps.maxImageCount) {
+                LOG("You have requested " << the_info.minImageCount << " Images. surfaceCaps.maxImageCount = " << surfaceCaps.maxImageCount);
+                LOG("you are safe!");
+            }
+
+            /** Finally set the_info.minImageCount.... \note \see Default_the_info */
+            LOG("in create_Swapchain we do,    the_info.minImageCount += surfaceCaps.minImageCount;     [\see create_Swapchain]");
+            LOG("So we are setting here        the_info.minImageCount  = surfaceCaps.maxImageCount - surfaceCaps.minImageCount");
+            the_info.minImageCount = surfaceCaps.maxImageCount - surfaceCaps.minImageCount;
+        }
 
 
-        // ----------- SURFACE FORMAT SUPPORTED ------------
-        bool found_it = false;  //We gonna try and make sure that RenderPass imageFormat and imageColorSpace is VALID for this surface....
-        bool found_r8g8b8a8 = false;
-        _surfaceExt->get_SurfaceFormats();
-        amVK_Array<VkSurfaceFormatKHR> surface_formats = _surfaceExt->surface_formats;
-        LOG("imageFormat: " << the_info.imageFormat << ", imageColorSpace: " << the_info.imageColorSpace << " N: " << surface_formats.n);
-        //2nd time calling get_surfaceFormats || vkGetSurfaceFormats actually doesn't give anything on NVIDIA Driver (WINdows)
-        for (int i = 0; i < surface_formats.n; i++) {
-            if ((surface_formats.data[i].format == the_info.imageFormat)&&
-                (surface_formats.data[i].colorSpace == the_info.imageColorSpace)) {
-                found_it = true;
-                break;
-            }
-            else if (surface_formats.data[i].format == VK_FORMAT_R8G8B8A8_SRGB) {
-                found_r8g8b8a8 = true;
-            }
-        }
-        if (!found_it) {
-            LOG_EX("seems that .the_info.imageFormat & .the_info.imageColorSpace is set to something that ain't supported." << std::endl
-                << "[Note that these 2 should also match with RenderPass's ImageFormat/ColorSpace....  so you need to configure using amVK_RenderPassMK2 stuffs]");
-            if (found_r8g8b8a8) {LOG("Using \u2022" << VkFormat_2_String(VK_FORMAT_R8G8B8A8_SRGB) << "\u2022 as the_info.imageFormat"); the_info.imageFormat = VK_FORMAT_R8G8B8A8_SRGB;}
-            else                {LOG("Using \u2022" << VkFormat_2_String(VK_FORMAT_B8G8R8A8_SRGB) << "\u2022 as the_info.imageFormat"); the_info.imageFormat = VK_FORMAT_B8G8R8A8_SRGB;}
-                                    LOG("Using \u2022" << VK_COLOR_SPACE_SRGB_NONLINEAR_KHR <<"\u2022 as the_info.imageColorSpace"); the_info.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-        }
+     // ----------- SURFACE FORMAT SUPPORTED ------------
+        VkSurfaceFormatKHR _final = _amVK_S->filter_SurfaceFormat({the_info.imageFormat, the_info.imageColorSpace});
+        the_info.imageFormat = _final.format;
+        the_info.imageColorSpace = _final.colorSpace;
+
+        /** RenderPass filters too.... but why not make it future proof double check.... cz i dont feel like coming here and changing stuffs inside this function. */
         if (the_info.imageFormat != _amVK_RP->final_imageFormat) {
             LOG("amVK_WI_MK2.the_info.imageFormat != _amVK_RP->final_imageFormat" << std::endl << "will result in wrong colors" << "Window: " << _window);
         }
         if (the_info.imageColorSpace != _amVK_RP->final_imageColorSpace) {
             LOG("amVK_WI_MK2.the_info.imageColorSpace != _amVK_RP->final_imageColorSpace" << std::endl << "will result in wrong colors" << "Window: " << _window);
         }
-        
-        // ----------- IMAGE COUNT SUPPORTED ------------
-        the_info.minImageCount = the_info.minImageCount + surfaceCaps.minImageCount;
-        if (the_info.minImageCount > surfaceCaps.maxImageCount) {
-            LOG("the_info.minImageCount:- " << the_info.minImageCount << " > " << surfaceCaps.maxImageCount << "  [surfaceCaps.maxImageCount]");
-            LOG("you asked for " << the_info.minImageCount - surfaceCaps.minImageCount << " images   [why this happens? see amVK_WI_MK2::the_info_defaults()]");
-            LOG("setting: " << "the_info.minImageCount = surfaceCaps.minImageCount");
-            the_info.minImageCount = surfaceCaps.minImageCount;
-        }
+}
+
+VkSwapchainKHR amVK_WI_MK2::create_Swapchain(bool check_the_info) {
+    if (check_the_info) {
+        fallback_the_info();
     }
+
+    VkSurfaceCapabilitiesKHR surfaceCaps;
+    // ----------- get_SurfaceExtent() ------------
+    get_SurfaceExtent: {
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_amVK_D->_PD, _surface, &surfaceCaps);
+        /** maxImageExtent is not How much GPU can support, its more like HOW MUCH the SURFACE actually Needs  [even tho it says CAPABILITIES] */
+        _extent = surfaceCaps.minImageExtent;
+        LOG("");
+        LOG("Swapchain Extent: (" << _extent.width << ", " << _extent.height << ")");
+    }
+
+    uint8_t imageCount_fix = surfaceCaps.minImageCount; /** be safe & sound */
+    the_info.minImageCount += imageCount_fix;   /** Decremented at func end */
 
     the_info.imageExtent            = {_extent.width, _extent.height};
     the_info.oldSwapchain           = _swapchain;
 
-    // ----------- Actually Create the VkSwapchainKHR ------------
-    finally_create_swapchain:
-    {
-        vkDeviceWaitIdle(_amVK_D->_D);      //I dont remember actually Why i put this here [LOG: 23 SEPT]
+    finally: {
+        vkDeviceWaitIdle(_amVK_D->_D);          /** a lot of people says its better to just wait for the device to be idle, but why */
         VkResult res = vkCreateSwapchainKHR(_amVK_D->_D, &the_info, nullptr, &_swapchain);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateSwapchainKHR() failed"); amASSERT(true); return nullptr;}
+        
+        if (the_info.oldSwapchain) {LOG("Swapchain ReCreated.");}
+        else {LOG("Swapchain Created! Time TraveL....");}
 
         /** \todo what if someone suddenly turns off imageless_framebuffer or increases the_info.minImageCount */
-        if (!IMGs.alloc_called) {
-            malloc_n_get_IMGs();
-        } 
-        else {
-            uint32_t x = 0;
-            vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &x, nullptr);
-            if (x > 0) {
-                vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &x, IMGs.ptr_swap_imgs());
-                IMGs.n = static_cast<uint8_t>(x);
-            }
-        }
-        create_SwapImageViews();
-
-        return _swapchain;
+        post_create_swapchain();
     }
+
+    the_info.minImageCount -= imageCount_fix;   /** lets not make people confused after create_swapchain(); returns.... so we reset */
+    return _swapchain;
 }
 
-/** More like EXTENDED FEATURES.... */
+/** More like EXTENDED FEATURE.... kinda stuffs */
 void amVK_WI_MK2::swapchain_CI_generic_mods(void) {
     the_info.sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     the_info.pNext                  = nullptr;
@@ -206,9 +280,55 @@ void amVK_WI_MK2::swapchain_CI_generic_mods(void) {
  *   ▀╚██╔▀    ██║╚██╔╝██║██╔═██╗ ██╔═══╝ 
  *     ╚═╝     ██║ ╚═╝ ██║██║  ██╗███████╗
  *             ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝
- * 
- * TODO: imageless_framebuffer support
  */
+void amVK_WI_MK2::post_create_swapchain(void) {
+    if (!IMGs.alloc_called) {
+        uint32_t swap_imgs_n = 0;
+        vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &swap_imgs_n, nullptr);
+        LOG("Swapchain Images N: " << swap_imgs_n);
+        
+        IMGs.framebuf_n = (uint8_t) swap_imgs_n;
+        IMGs.attach_n = _amVK_RP->attachment_descs.n;
+        IMGs.color_index = _amVK_RP->color_index;
+        IMGs.swap_attach_index =  IMGs.color_index;   /** \todo swap_imgs could be used in other ways too */
+        /** \todo    IMGs.imageless_framebuffer = false */
+        IMGs.alloc();
+    }
+
+    uint32_t smth = IMGs.framebuf_n;
+    vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &smth, IMGs._ptr_img(0, IMGs.swap_attach_index));
+
+    VkImageViewCreateInfo CI = {};
+        CI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        CI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    /** The Only Thing that you need to Care about when creating FRAMEBUFFER imageViews
+     *    - Should match to RenderPass ColorAttachment.format ---- VUID-VkFramebufferCreateInfo-pAttachments-00880
+     *    - Should match to imageFormat passed to SwapchainCreateInfo ---- VUID-VkImageViewCreateInfo-image-01762 */
+        CI.format = the_info.imageFormat;
+
+    /** describes a remapping from components of the image to components of the vector returned by shader image instructions. */
+        CI.components = {};                       //All zeroes is fine for FRAMEBUFFER
+        CI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    
+    /** We don't need mipmap for frameBuffers IG   [1, cz VUID-VkImageCreateInfo-mipLevels-00947 mipLevels must be greater than 0] */
+        CI.subresourceRange.baseMipLevel = 0;     //0 means the OG/base Image
+        CI.subresourceRange.levelCount = 1;
+        CI.subresourceRange.baseArrayLayer = 0;   //For StereoScope3D [also see VK_IMAGE_VIEW_TYPE_2D]
+        CI.subresourceRange.layerCount = 1;
+
+    for (uint32_t i = 0; i < IMGs.framebuf_n; i++) {
+        CI.image = IMGs._ptr_img(0, IMGs.swap_attach_index)[i];
+
+        VkResult res = vkCreateImageView(_amVK_D->_D, &CI, nullptr, IMGs._ptr_attach(i, IMGs.swap_attach_index));
+        if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res);}
+        LOG("[Swapchain]_ IMGs.attachments[" << (((uint64_t)IMGs._ptr_attach(i, IMGs.swap_attach_index) - (uint64_t)IMGs._ptr_attach(0, IMGs.swap_attach_index)) / (uint64_t)8) << "]");
+    }
+    LOG("");
+}
+
+
+
+
 /** 
  * create the framebuffers for the swapchain images. 
  * This will connect the render-pass to the images for rendering
@@ -217,15 +337,8 @@ void amVK_WI_MK2::swapchain_CI_generic_mods(void) {
  */
 void amVK_WI_MK2::create_Attachments_n_FrameBuf(void) {
     // ----------- CREATE ATTACHMENT/IMGVIEWS FOR RENDERPASS ------------
-    /** \see amVK_RenderPassMK2::color_index.... For now, we create Color Attachment anyway 
-    for (int i = 0; i < color_index; i++) {
-        createAttachment();
-    }
-    \todo let choose arrayLayers & midLevels & imageType * pnext
-    */
-    
     for (int i = _amVK_RP->color_index + 1; i < IMGs.attach_n; i++) {
-        for (int x = 0; x < IMGs.n; x++) {
+        for (int x = 0; x < IMGs.framebuf_n; x++) {
             VkImageCreateInfo dImage_CI = {};
                 dImage_CI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
                 dImage_CI.pNext = nullptr;
@@ -282,13 +395,13 @@ void amVK_WI_MK2::create_Attachments_n_FrameBuf(void) {
             vkCreateImageView(_amVK_D->_D, &dview_info, nullptr, &xd._imgView);
 
             IMGs.attachments[(x * IMGs.attach_n) + i] = xd._imgView;
-            IMGs.images[(i * IMGs.n) + x] = xd._img;
-            LOG("Created attachment: IMGs.attachments[" << ((x * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.n) + x) << "]");
+            IMGs.images[(i * IMGs.framebuf_n) + x] = xd._img;
+            LOG("Created attachment: IMGs.attachments[" << ((x * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + x) << "]");
         }
     }
 
 
-    // ----------- \todo imageless_framebuffer ------------
+    // ----------- \todo imageless_framebuffer & Separate create_Framebuffer_s------------
 
     VkFramebufferCreateInfo fb_info = {};
         fb_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -301,38 +414,34 @@ void amVK_WI_MK2::create_Attachments_n_FrameBuf(void) {
         fb_info.layers = 1;
 
 
-    for (int i = 0, lim = IMGs.n; i < lim; i++) {
+    for (int i = 0, lim = IMGs.framebuf_n; i < lim; i++) {
         fb_info.pAttachments = &IMGs.attachments[i * IMGs.attach_n];
         vkCreateFramebuffer(_amVK_D->_D, &fb_info, nullptr, &IMGs.framebufs[i]);
     }
 }
 
-/** \todo let modify options */
-void amVK_WI_MK2::create_SwapImageViews(void) {
-    VkImageViewCreateInfo CI = {};
-        CI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        CI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    /** The Only Thing that you need to Care about when creating FRAMEBUFFER imageViews
-     *    - Should match to RenderPass ColorAttachment.format ---- VUID-VkFramebufferCreateInfo-pAttachments-00880
-     *    - Should match to imageFormat passed to SwapchainCreateInfo ---- VUID-VkImageViewCreateInfo-image-01762 */
-        CI.format = the_info.imageFormat;
 
-    /** describes a remapping from components of the image to components of the vector returned by shader image instructions. */
-        CI.components = {};                       //All zeroes is fine for FRAMEBUFFER
-        CI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    
-    /** We don't need mipmap for frameBuffers IG   [1, cz VUID-VkImageCreateInfo-mipLevels-00947 mipLevels must be greater than 0] */
-        CI.subresourceRange.baseMipLevel = 0;     //0 means the OG/base Image
-        CI.subresourceRange.levelCount = 1;
-        CI.subresourceRange.baseArrayLayer = 0;   //For StereoScope3D [also see VK_IMAGE_VIEW_TYPE_2D]
-        CI.subresourceRange.layerCount = 1;
-
-    if (!IMGs.alloc_called) {LOG_EX("IMGs.alloc() wasn't called"); return;}
-    for (uint32_t i = 0; i < IMGs.n; i++) {
-        CI.image = ( IMGs.ptr_swap_imgs() )[i];
-
-        VkResult res = vkCreateImageView(_amVK_D->_D, &CI, nullptr, IMGs.ptr_swap_attach(i));
-        if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res);}
-        LOG("IMGs.attachments[" << (((uint64_t)IMGs.ptr_swap_attach(i) - (uint64_t)IMGs.ptr_swap_attach(0)) / (uint64_t)8) << "]");
-    }
-}
+bool amVK_WI_MK2::destroy(void) {
+    if (_swapchain) {
+      vkDeviceWaitIdle(_amVK_D->_D);
+      // ----------- FrameBuffers ------------
+      for (int i = 0; i < IMGs.framebuf_n; i++) {
+        vkDestroyFramebuffer(_amVK_D->_D, IMGs.framebufs[i], nullptr);
+      }
+      // ----------- DepthAttachments ------------
+      for (int i = _amVK_RP->color_index + 1; i < IMGs.attach_n; i++) {
+        for (int x = 0; x < IMGs.framebuf_n; x++) {
+          vkDestroyImageView(_amVK_D->_D, *( IMGs._ptr_attach(x, i) ), nullptr);
+          vkDestroyImage(    _amVK_D->_D, *( IMGs._ptr_img   (x, i) ), nullptr);
+        }   //GIT_COMMIT_FIX
+      } //GIT_COMMIT_FIX
+      // ----------- Swapchain Images' imageviews ------------
+      for (int i = 0; i < IMGs.framebuf_n; i++) {
+        vkDestroyImageView(_amVK_D->_D, *(IMGs._ptr_attach(i, IMGs.swap_attach_index)), nullptr);
+      } //GIT_COMMIT_FIX
+      // ----------- Finally Destroy Swapchain & Free -----------
+      vkDestroySwapchainKHR(_amVK_D->_D, _swapchain, nullptr);
+      IMGs._free();
+    }   //GIT_COMMIT_FIX
+    return true;
+}   //GIT_COMMIT_FIT
