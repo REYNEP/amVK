@@ -3,10 +3,19 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 #Cmake Docs on this command says,  SubDirectory should have usually have its own project() too
 
 #-----------------------------------------------------------------------------
+# Usage
+# add_subdirectory(amVK)
+# target_link_libraries(your_program lib-amVK)    its safe.... 
+#      cz we used target_include_directories(amVK PUBLIC ${INC})   and such new way, this `PUBLIC` means ${INC will be treated as Include_Dirs for `your_program` too}
+#
+# Feel free to modify options below, before you build....
+
+
+#-----------------------------------------------------------------------------
 # Initialize project.
 project(amVK LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)    #amVK_IN's Member variables [amVK_Common.hh]
+set(CMAKE_CXX_STANDARD 17)    #amVK_IN's Member variables [intern/amVK_IN.hh]
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #-----------------------------------------------------------------------------
@@ -32,8 +41,9 @@ else()
   endif()
 endif()
 
-set(INC_EXTERN
+set(INC
   ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/intern
   ${amVK_EXTERN}/vulkan-sdk-lunarg/include
   ${amVK_EXTERN}/VulkanMemoryAllocator/include
 )
@@ -102,14 +112,14 @@ message("\n${glslc-exe}\n")
 #-----------------------------------------------------------------------------
 # The Final Target
 add_library(lib-amVK 
-  amVK_CX.cpp
-  amVK_Types.cpp
-  amVK_Device.cpp
-  amVK_WI.cpp 
-  amVK_RenderPass.cpp 
-  amVK_Pipeline.cpp
+  intern/amVK_CX.cpp
+  intern/amVK_Types.cpp
+  intern/amVK_Device.cpp
+  intern/amVK_WI.cpp 
+  intern/amVK_RenderPass.cpp 
+  intern/amVK_Pipeline.cpp
 )
-target_include_directories(lib-amVK PUBLIC ${INC_EXTERN})
+target_include_directories(lib-amVK PUBLIC ${INC})
 target_compile_definitions(lib-amVK PUBLIC ${DEF})
 if (WIN32)
   target_link_libraries(lib-amVK ${PLATFORM_LINKLIBS})
