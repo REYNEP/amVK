@@ -281,8 +281,6 @@ class amVK_WI_MK2 {
   /** 
    * \todo MERGE with IMAGEUTIL, the implementation 
    * \note CALLS: _set_RenderPassClearVals()
-   * 
-   * \note will change ImageMK2::s_amVK_D   &   CI.format + CI.usage
    */
   void create_Attachments(void);
   void create_Framebuffers(void);

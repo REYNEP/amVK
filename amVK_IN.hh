@@ -1,50 +1,29 @@
 #ifndef amVK_LIB
 #define amVK_LIB
 
-/** 
-   ╻ ╻   ┏━┓┏━┓┏━╸┏━┓┏━┓┏━┓┏━╸┏━╸┏━┓┏━┓┏━┓┏━┓┏━┓
-   ╺╋╸   ┣━┛┣┳┛┣╸ ┣━┛┣┳┛┃ ┃┃  ┣╸ ┗━┓┗━┓┃ ┃┣┳┛┗━┓
-   ╹ ╹   ╹  ╹┗╸┗━╸╹  ╹┗╸┗━┛┗━╸┗━╸┗━┛┗━┛┗━┛╹┗╸┗━┛
- * If you are searching on GITHUB, it Has a problem, Sometimes it won't show stuffs from BIG files when you search like vkCreateInstnace in trampoline.c
- * If U R using VSCode /w C/C++ Ext (for VSCode), BeAware it will cause 1 ERROR by not being able to find any of the Macros Below and then Reporting that #error (below #else) statement as an ERROR
- * Solve this with CMake-Tools For VSCode Ext, or add one of the Macros MANUALLY in the 'defines' list (C/C++ Ext SETTINGS, Just search 'defines' [UR 1stTime? then hit 'edit in settings.json']) 
- */
-#ifdef amVK_BUILD_WIN32   /** \todo properly doc about this VK MACROS.... \see vulkan/vulkan.h amGHOST needs this cz of VkSurfaceKHR creation.... */
-  #define VK_USE_PLATFORM_WIN32_KHR
-#elif defined(amVK_BUILD_X11)
-  #define VK_USE_PLATFORM_XCB_KHR
-  #define VK_USE_PLATFORM_XLIB_KHR
-#elif defined(amVK_BUILD_WAYLAND)
-  #define VK_USE_PLATFORM_WAYLAND_KHR
-#elif defined(amVK_BUILD_COCOA)
-  #define VK_USE_PLATFORM_METAL_EXT
-  #define VK_USE_PLATFORM_MACOS_MVK
-#else 
-  #error A amVK Build OS must be Specified [amVK_BUILD_WIN32/X11/WAYLAND/COCOA] by defining One of the Macros from inside amVK.hh .... use CMAKE for such
-#endif
-#include "vulkan/vulkan.h"  // Vulkan Includes "windows.h" on WIN     [? DEFINE  WIN32_LEAN_AND_MEAN  + possibly (https://github.com/achalpandeyy/VolumeRenderer/blob/30996789d819dba59db683e8d996b03eee456fdd/Source/Core/Win32.h)]
+#include "amVK_Defines.hh"
+#include "vulkan/vulkan.h"  // Vulkan Includes "windows.h" on WIN  cz amVK_Defines.hh defines VK_USE_PLATFORM_WIN32_KHR on WIN
 
 #include <cstdint>
 #include <cstddef>
 
 
-//Includes all the common & preprocessors for all amVK headers/files/modules
+//Common Stuffs
 #define amVK_LOGGER_BLI_ASSERT  /** \todo there are other modules inside amVK_Logger.hh.... */
 #include "amVK_Logger.hh"
 #include "amVK_Utils.hh"
 #include "amVK_Types.hh"
 
 
-//Even if this file does this.... all other amVK Headers includes amVK_Device.hh if they have a `amVK_DeviceMK2` var
+//Even if this file does this.... all other amVK Headers include amVK_Device.hh if they have a `amVK_DeviceMK2` var
 #ifndef amVK_DEVICE_HH
   class amVK_DeviceMK2;
 #endif
 
 #include <vector>
 /**
- * I just wanted to access amVK_CX::_device_list with _device_list[(VkDevice)D]
+ * I just wanted to access amVK_IN::D_list with D_list[(VkDevice)D]
  * IMPL: \see amVK_DeviceMK2.cpp
- * Declarations and Includes at Top
  */
 class vec_amVK_Device : public std::vector<amVK_DeviceMK2 *> {
   public:
@@ -52,9 +31,8 @@ class vec_amVK_Device : public std::vector<amVK_DeviceMK2 *> {
     vec_amVK_Device(void) : std::vector<amVK_DeviceMK2 *>() {}
     ~vec_amVK_Device() {}
 
-    //amVK Stores a lot of different kinda data like this. Maybe enable a option to store these in HDD as cache
     amVK_DeviceMK2 *operator[](VkDevice D);
-    bool doesExist(amVK_DeviceMK2 *amVK_D);  /** cz, VkDevice is inside amVK_DeviceMK2 class, that means the need to include amVK_DeviceMK2.hh in every single file*/
+    bool doesExist(amVK_DeviceMK2 *amVK_D);
     uint32_t index(amVK_DeviceMK2 *D);
 };
 
@@ -62,8 +40,12 @@ class vec_amVK_Device : public std::vector<amVK_DeviceMK2 *> {
 
 #define HEART amVK_IN::heart
 
-/** Since amVK_CX has a lot of things, decided to separate these, cz are used in many amVK files.... 
- * only used as amVK_CX base/parent class & called as amVK_CX Constructor is called! */
+/** 
+ * Since amVK_CX has a lot of things, decided to separate these, cz are used in many amVK files.... 
+ * only used as amVK_CX base/parent class 
+ * 
+ * \note Don't COnvert/TypeCast amVK_CX to this.... you should refer to these vars below from an amVK_CX object
+ */
 class amVK_IN {
   public:
     static inline                        amVK_IN *heart = nullptr;  /** C++17 */
@@ -71,10 +53,12 @@ class amVK_IN {
     static inline VkInstance                   instance = nullptr;
     static inline VkApplicationInfo          vk_appInfo = {};
     static inline vec_amVK_Device                D_list = {};
-    loaded_PD_info_plus_plus                         PD = {};   /** \ref amVK_Types.hh */
+    loaded_PD_info_plus_plus                         PD = {};   /** \ref amVK_Types.hh, call \fn load_PD_info() before */
 
 
     virtual VkInstance CreateInstance(void) = 0;
+    virtual bool add_InstanceExt(char *extName) = 0;
+    virtual bool add_ValLayer(char *vLayerName) = 0;
     virtual bool DestroyInstance(void) = 0;
 
     virtual bool check_VkSupport(void) = 0; /** \todo */
@@ -85,6 +69,8 @@ class amVK_IN {
      * \return true if already/successfully loaded.... false if enum_PhysicalDevs \returns false
      * \param force_load: pretty much sure you get this one ;)
      * \param auto_choose: does benchmark too, if not already done
+     * 
+     * \todo our benchmark just sucks....
      */
     virtual bool load_PD_info(bool force_load, bool auto_choose) = 0;
 
@@ -94,7 +80,8 @@ class amVK_IN {
       if (D_list.doesExist(D)) activeD = D;
     }
 
-    amVK_IN(void) {heart = this; LOG("amVK_IN::heart set! \n");} //called by amVK_CX CONSTRUCTOR
+    /** called by amVK_CX CONSTRUCTOR */
+    amVK_IN(void) {heart = this; LOG("amVK_IN::heart set! \n");}
     ~amVK_IN() {}
 };
 

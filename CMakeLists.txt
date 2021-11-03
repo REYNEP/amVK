@@ -60,7 +60,6 @@ SET(DEF
 
 if(WIN32)
   list(APPEND   DEF   amVK_BUILD_WIN32)
-  list(APPEND   DEF   amVK_LOGGER_BLI_ASSERT)
 
   set(PLATFORM_LINKLIBS dbghelp shlwapi kernel32 Version)
 endif()

@@ -27,10 +27,10 @@ VkInstance amVK_CX::CreateInstance(void) {
     // ----------- Extensions for vkCreateInstance ------------
     amVK_CX::enum_InstanceExts();           //Loads into  IEP      [Force_Load]
     amVK_CX::filter_SurfaceExts();          // _req_surface_ep
-    amVK_CX::add_InstanceExts(_req_surface_ep[0].extensionName);
-    amVK_CX::add_InstanceExts(_req_surface_ep[1].extensionName);
-    amVK_CX::add_InstanceExts("VK_EXT_debug_report");
-    amVK_CX::add_InstanceExts("VK_EXT_debug_utils");
+    amVK_CX::add_InstanceExt(_req_surface_ep[0].extensionName);
+    amVK_CX::add_InstanceExt(_req_surface_ep[1].extensionName);
+    amVK_CX::add_InstanceExt("VK_EXT_debug_report");
+    amVK_CX::add_InstanceExt("VK_EXT_debug_utils");
     LOG_LOOP_MK1("Enabled Instance Extensions:- ", i, enabled_iExts.size(), enabled_iExts[i]);
 
 
@@ -297,8 +297,12 @@ bool amVK_CX::filter_SurfaceExts(void) {
     return true;
 }
 
-bool amVK_CX::add_InstanceExts(char *extName) {
-    amFUNC_HISTORY_INTERNAL();
+bool amVK_CX::add_InstanceExt(char *extName) {
+    amFUNC_HISTORY();
+
+    if (IEP.data == nullptr) {
+        enum_InstanceExts();
+    }
 
     uint32_t index = amVK_CX::iExtName_to_index(extName);
     if (index == 0xFFFFFFFF) {  //Error Checking
@@ -319,7 +323,7 @@ bool amVK_CX::add_InstanceExts(char *extName) {
 }
 
 bool amVK_CX::add_ValLayer(char *vLayerName) {
-    amFUNC_HISTORY_INTERNAL();
+    amFUNC_HISTORY();
 
     uint32_t index = vLayerName_to_index(vLayerName);
     if (index == 0xFFFFFFFF) {
@@ -514,7 +518,7 @@ void amVK_CX::benchMark_PD(void) {
     }
 
     // ----------- SORTING ------------ [TODO: Test mergeSort, Impl memcpy, don't include <string> in amVK_utils]
-    for (int i = 0; i < PD.n; i++) {PD.index_sortedByMark[i] = i;}
+    for (uint32_t i = 0; i < PD.n; i++) {PD.index_sortedByMark[i] = i;}
     bool sort_success = amVK_Utils::mergeSort<uint32_t> (0, PD.n-1, PD.benchMarks, PD.index_sortedByMark);
 }
 
