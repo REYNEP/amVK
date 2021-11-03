@@ -1,29 +1,57 @@
-# [v0.0.3a] Well, it builds.... Time Travel! 
-use    `cmake --build . --target install --config release`
-currently.... its a huhe WIP
+#### amVK is not a Renderer.... make your own using amVK, thats the Idea. amVK is just a Thin layer on top of Khronos-Vulkan-API
 
-only **amVK.hh** and **amVK.cpp** is kinda like standards.... But every other file needs so many features to be added
+##### will target lots of patches till v0.0.5
 
-# BUILD
-- run `python make.py`    that alone should do it.... on any OS....
+## [v0.0.3] Well, it builds.... [& Works... so yay!] Time Travel! 
+use  `python make.py`  ***or***  `cmake --build ./build-x64/ --target install --config release`
 
-# inside ./extern   [downloaded_by_make.py]
+## inside ./extern   [downloaded_by_make.py]
 - vulkan-sdk-lunarg - comes with [VulkanSDK](https://www.lunarg.com/vulkan-sdk/) by LunarG
 - VulkanMemoryAllocator [VMA](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 
-# MODS - is a MK2 feature [and can be a bit Slower than base MK1 impl]
-Hereby we introduce MODS.... every class `amVK_CX, amVK_WI, amVK_RenderPass, amVK_Device, amVK_Pipeline` is modifiable.... most of the time, its the CI [createInfo] for the main vkCreate*** func that the class targets, _createInfos_ thats how vulkan manages its settings and stuffs, what should be what
-so we got MODS section in every class documentation, look at them you will get a better idea....faster!
 
-NOTE: For device creation [amVK_CX::CreateDevice()] we introduced Presets....
+#### Roadmap... i guess
 
-# We use Forward declarations in Header files.... to make every file independant of one another   [except_for_amVK.hh]
+```md
+# We mostly used Forward declarations in Header files.... to make every file independant of one another
 
-# Pythonic way of naming used for class member functions and vars     [We_Could_have_Used_underscore_at_beginning_too_but_duh_not_for_funcs]
+#####        MK-1: There was an idea.... nope, nope, nope, there wasn't! MK1 simply was JustCause4 I needed to divide stuffs into classes & modules & functions, and thats it!
 
-# MK-1: Fastest API. cz as less Malloc as there can be, Whole Idea fits into    amVK_Class::init()... you can only modify via member variable settings  everything created is STATIC inside that init()
+#####  [WIP] MK-2: MOD[ifiable] Vars in every classes.... incrementing some ModVar_n before`malloc` will increase malloced memory.... and DESTRUCTOR won't do anything, theres a `destroy()` func....
 
-# [WIP] MK-2: we Introduce    amVK_DeviceMods, amVK_RenderPassMods,    You pass the Mods to the co-responding class
+##### [PLAN] MK-3: A JSON/Similar file support.... for Modifications
+##### [PLAN] MK-4: [SameIdeaAS_MK3] only a new Graphical USER-Interface to create the JSON Files + Link Inputs [such 1 case is SWAPCHAIN, Renderpass, FrameBuffer imageFormat]
 
-# [PLAN] MK-3: A JSON/Similar file support.... for Modifications
-#        MK-4: [SameIdeaAS_MK3] only a new Graphical USER-Interface to create the JSON Files + Link Inputs [such 1 case is SWAPCHAIN, Renderpass, FrameBuffer imageFormat]
+##### [PLAN] MK-5: A Bpy like api.... where everything is connected e.g. amVK_CommandPool can store qFamily number its using.... pointers to amVK_DeviceMK2 * such is basic     [But this can increase Memory usage]
+```
+
+#### ex1
+```cpp
+#include "amVK_CX.hh"   //Doesn't Include other amVK Headers....
+
+int main(void) {
+    amVK_CX amVK = amVK_CX();
+    VkInstance instance = amVK.CreateInstance();
+
+    this->device    = new amVK_DeviceMK2(amVK_DP_GRAPHICS, NULL, 3, 0); //erro if 3rd param  bigger than 0 & you dont make use of that
+        amVK_ARRAY_PUSH_BACK(device->exts) = ("VK_KHR_imageless_framebuffer");
+        amVK_ARRAY_PUSH_BACK(device->exts) = ("VK_KHR_maintenance2");
+        amVK_ARRAY_PUSH_BACK(device->exts) = ("VK_KHR_image_format_list");
+        //device->exts is    amVK_Array<>    [amVK_Utils.hh]
+    this->device->create();
+        //Creates VkDevice finally.... [device->_D]
+
+    amVK.activate_device(this->device); /** doing this lets you relax, cz you dont need to pass amVK_DeviceMK2 to amVK object creations anymore.... */
+    // WIP.... almost done....
+
+    //Then Create RenderPass, Swapchain (also Attachments & Framebuffers), CommandBuffers
+    //Then implement MainLoop
+    return 0;
+}
+```
+
+
+#### ex2
+```cpp
+For now.... check RTC repo....
+```

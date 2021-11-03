@@ -1,5 +1,4 @@
 #include "amVK_Pipeline.hh"
-#include "amVK_Device.hh"
 
 /**
  *   █▀ █░█ ▄▀█ █▀▄ █▀▀ █▀█   █▀▄▀█ █▀█ █▀▄ █░█ █░░ █▀▀
@@ -210,7 +209,7 @@ void amVK_GraphicsPipes::konfigurieren(void) {
  *   █▀█ █ █▀█ █▀▀ █░░ █ █▄░█ █▀▀   █░░ ▄▀█ █▄█ █▀█ █░█ ▀█▀
  *   █▀▀ █ █▀▀ ██▄ █▄▄ █ █░▀█ ██▄   █▄▄ █▀█ ░█░ █▄█ █▄█ ░█░
  */ 
-void ShaderInputsMK2::create_PipelineLayout(amVK_Device *amVK_D) {
+void ShaderInputsMK2::create_PipelineLayout(VkDevice D) {
     /** TrianglePipeLineLayout, May be needed in So many other Vulkan Functions */
     VkPipelineLayoutCreateInfo CI{};
       CI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -227,6 +226,6 @@ void ShaderInputsMK2::create_PipelineLayout(amVK_Device *amVK_D) {
       CI.pushConstantRangeCount = pushConsts.n;
       CI.pPushConstantRanges = pushConsts.data;
 
-    VkResult res = vkCreatePipelineLayout(amVK_D->_D, &CI, nullptr, &layout);
+    VkResult res = vkCreatePipelineLayout(D, &CI, nullptr, &layout);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG_EX("vkCreatePipelineLayout() failed");}
-  }
+}

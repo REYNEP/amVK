@@ -7,7 +7,6 @@
 #define amVK_LOGGER_HH
 
 #include <iostream>
-#include <bitset>
 
 /** Basic LOGGER */
 #define LOG(x) std::cout << x << std::endl
@@ -54,9 +53,9 @@
 #endif
 
 
-#define LOG_DBG(x) LOG(<< "MANGLED NAME:- " << __FUNC_MANGLED__ << std::endl \
-                       << __FILE__ << " || Function: " << __FUNCINFO__ << "() - Line" << __LINE__ << std::endl \
-                       << " Log-Message:- " << x << std::endl)
+#define LOG_DBG(x) LOG("MANGLED NAME:- " << __FUNC_MANGLED__ << std::endl \
+                     << __FILE__ << " || Function: " << __FUNCINFO__ << "() - Line" << __LINE__ << std::endl \
+                     << " Log-Message:- " << x << std::endl)
 
 /**
    ╻ ╻   ╻  ┏━┓┏━╸   ┏━╸╻ ╻

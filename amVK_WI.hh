@@ -1,11 +1,13 @@
 #ifndef amVK_WI_H
 #define amVK_WI_H
+
 #include "vulkan/vulkan.h"
+
+
+#include "amVK_IN.hh"
 #include "amVK_Device.hh"
 #include "amVK_RenderPass.hh"
-// #include "amVK_Common.hh" [in .cpp]
-
-
+//#include "amVK_ImgMemBuf.hh" [in .cpp]
 
 /** so we use this cut version to catch your eyes on these settings and save sm bytes too */
 typedef struct amVK_SurfaceCaps_GEN2 { 
@@ -43,9 +45,25 @@ struct amVK_SurfaceMK2 {
   amVK_Array<VkSurfaceFormatKHR> surface_formats = {};
   amVK_Array<VkPresentModeKHR>     present_modes = {};
 
-  amVK_SurfaceMK2(VkSurfaceKHR S, amVK_Device *D) : _S(S), _PD(D->_PD) {}
+  amVK_SurfaceMK2(VkSurfaceKHR S, amVK_DeviceMK2 *D) : _S(S), _PD(D->_PD) {}
   amVK_SurfaceMK2(VkSurfaceKHR S, VkPhysicalDevice PD) : _S(S), _PD(PD) {}
   ~amVK_SurfaceMK2 () {delete[] surface_formats.data; delete[] present_modes.data;}
+
+
+  uint32_t present_qFamily = 0xFFFFFFFF;  //UINT32_T_NULL, means like false, like not found yet
+  bool found_present_qFamily = false;
+  /**
+   * Call for all surfaces created. otherwise    VUID-VkSwapchainCreateInfoKHR-surface-01270  will be hit
+   */
+  bool is_presenting_sup(void) {
+    this->present_qFam();
+    return found_present_qFamily;
+  }
+  /** 
+   * \note saves in \var present_qFamily
+   * \return presenting supportive qFamily index [of _PD] 
+   */
+  uint32_t present_qFam(void);
 
   /** 
    * \brief imageUsageFlags, maxImageArrayLayers [stereoscope3D Stuff], Transform & CompositeAlpha 
@@ -91,7 +109,7 @@ typedef struct SwapchainData_GEN3 {
   
 
   bool alloc_called = false;
-  bool alloc(void);
+  bool alloc(void); //malloc
   bool _free(void) {
     if (alloc_called) {free(attachments); alloc_called = false; return true;} 
     else {LOG_EX("alloc_called == false"); return false;}
@@ -158,21 +176,16 @@ typedef struct SwapchainData_GEN3 {
 class amVK_WI_MK2 {
  public:
   const char           *_window;            /** Name your Window, DUH! */
-  amVK_Device          *_amVK_D;
+  amVK_DeviceMK2          *_amVK_D;
   amVK_RenderPassMK2  *_amVK_RP;            /** [IN] used for AttachmentCreation & swapchainCI.imageFormat/ColorSpace, cz RenderPass colorAttachment.imageFormat has to match this TOO! */
   VkSurfaceKHR         _surface = nullptr;  /** [IN] */
   amVK_SurfaceMK2      *_amVK_S = nullptr;  /** [IN] \todo intention, we should delete after first swapchain/RenderPass Creation */
-
-  /** USED-IN: CONSTRUCTOR & \see amVK_Device::_present_qFam   */
-  VkBool32 is_presenting_sup(void)      {         if (_amVK_D->_present_qFam(_surface)        == 0xFFFFFFFF) {return false;} else return true;}
-  uint32_t present_qFam(VkSurfaceKHR S) {uint32_t x = _amVK_D->_present_qFam(_surface); if (x != 0xFFFFFFFF) {return     x;} else return 0xFFFFFFFF;}
 
   VkSwapchainKHR    _swapchain = nullptr;   /** [OUT], not meant to be modified by you */
   VkExtent2D           _extent = {};        /** [OUT], from \fn createSwapchain, updated as you reCreate */
 
 
-
-  VkSwapchainCreateInfoKHR the_info = {};   /** Not many vars needs to be modified for a reCreate */
+  VkSwapchainCreateInfoKHR the_info = {};   /** [MOD-MAIN] Not many vars needs to be modified for a reCreate */
   /**
    * stuffs that I'ld tell ppl to use....
    * presentMode IMMEDIATE is checked if supported, if not, FIFO used
@@ -232,9 +245,9 @@ class amVK_WI_MK2 {
    * \param device: DUH!!!!
    * \param surface: For now, \see amGHOST_Window::create_vulkan_surface() or create your own impl of vkCreateXXXSurfaceKHR()
    */
-  amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_Device *D = nullptr);
+  amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D = nullptr);
   ~amVK_WI_MK2() {}
-  bool destroy(void); /** vkDestroySwapchainKHR, & also IMG._free() */
+  bool destroy(void); /** If you want Docs, see inside amVK_WI.cpp, the impl.   \return false, if (!_swapchain) */
 
 
 
@@ -265,7 +278,102 @@ class amVK_WI_MK2 {
   void post_create_swapchain(void);
 
  public:
-  void create_Attachments_n_FrameBuf(void);
+  /** 
+   * \todo MERGE with IMAGEUTIL, the implementation 
+   * \note CALLS: _set_RenderPassClearVals()
+   */
+  void create_Attachments(void);
+  void create_Framebuffers(void);
+
+  uint32_t nExt_img = 0;
+  /**
+   * \param to_signal: Signaled after acquiring is done, i guess
+   * \param timeout, vkAcquireNextImageKHR takes a timeout in nanosec. def: 1sec
+   * \return index of IMGs.images that is available, don't worry, you will only need to pass this index later on to other vulkan funcs
+   * 
+   * SETS: \var nExt_img
+   * \see \fn Present.... Uses \var nExt_img. 
+   * 
+   * \note Acquired image can only be freed once you call vkQueuePresent()
+   */
+  uint32_t AcquireNextImage(VkSemaphore to_signal, uint64_t timeout = 1000000000) {
+    VkResult res = vkAcquireNextImageKHR(_amVK_D->_D, _swapchain, timeout, to_signal, nullptr, &nExt_img);
+    if (res != VK_SUCCESS) {
+        LOG_DBG("Couldn't AcquireNextImageKHR....");
+        LOG_EX("")
+        return UINT32_T_NULL;
+    }
+    return nExt_img;
+  }
+
+  /**
+   * \todo fix, how 'graphics_queue' is actually implemented in amVK is seems like vague
+   * \todo Multi-Window single Present support?
+   */
+  bool Present(VkSemaphore to_wait) {
+    VkResult res;
+    VkPresentInfoKHR presentInfo = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, nullptr, 
+        1, &to_wait,
+        1, &_swapchain,
+        &nExt_img,   /** 1    img per swapchain passed */
+        &res         /** 1 result per swapchain passed */
+    };
+    vkQueuePresentKHR(_amVK_D->get_graphics_queue(), &presentInfo);
+
+    if (res != VK_SUCCESS) {
+        LOG_DBG("vkQueuePresentKHR() failed.... Serious bug....");
+        LOG_EX("");
+        return false;
+    }
+    return true;
+  }
+
+
+  /** 
+   *   \│/  ╦═╗┌─┐┌┐┌┌┬┐┌─┐┬─┐╔═╗┌─┐┌─┐┌─┐  ╔╗ ┌─┐┌─┐┬┌┐┌  ╦┌┐┌┌─┐┌─┐
+   *   ─ ─  ╠╦╝├┤ │││ ││├┤ ├┬┘╠═╝├─┤└─┐└─┐  ╠╩╗├┤ │ ┬││││  ║│││├┤ │ │
+   *   /│\  ╩╚═└─┘┘└┘─┴┘└─┘┴└─╩  ┴ ┴└─┘└─┘  ╚═╝└─┘└─┘┴┘└┘  ╩┘└┘└  └─┘
+   */
+  VkClearValue *clearValues;
+  /** 
+   * CALLED IN: \fn create_Attachments();
+   * \todo support for more than 2 Attachments.... 
+   * \todo ImageLess Framebuffer Support
+   */
+  void _set_RenderPassClearVals(void) {
+    clearValues = new VkClearValue[_amVK_RP->attachment_descs.n]; 
+
+    clearValues[_amVK_RP->color_index] = { 0.0f, 0.0f, 0.0f, 1.0f }; /** Color */
+
+    if (_amVK_RP->attachment_descs.n >= 2) {
+      clearValues[_amVK_RP->depth_index] = { 1.f }; /** Depth */
+    }
+    /** More Attachment Support soon */
+
+    rpInfo.clearValueCount = _amVK_RP->attachment_descs.n;
+    rpInfo.pClearValues = clearValues;
+  }
+  VkRenderPassBeginInfo rpInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, nullptr,
+    _amVK_RP->_RP, nullptr /** [.framebuffer] */
+  };
+
+  /**
+   * \param idk: I Dont Know much about this....
+   * \note CALL: AcquireNextImage() before this function.... or it wont work
+   * Why is this not in amVK_RenderPass? because.... vkCmdBeginRenderPass doesn't exactly mean what it seems at first
+   *    the BeginInfo here ties to this window's FrameBuffer....  and thats it, the reason
+   *
+   * vkCmdEndRenderPass just takes 1 param.... VkCommandBuffer, so we dont have a func for that
+   */
+  void Begin_RenderPass(VkCommandBuffer cmdBuf, VkSubpassContents idk = VK_SUBPASS_CONTENTS_INLINE) {
+      rpInfo.framebuffer = IMGs.framebufs[nExt_img];
+      rpInfo.renderArea = { /** its same data type as scissor*/
+          {0, 0}, /** [.offset] (x, y) */
+          _extent
+      };
+      
+      vkCmdBeginRenderPass(cmdBuf, &rpInfo, idk);
+  }
 };
 
 
@@ -275,7 +383,7 @@ class amVK_WI_MK2 {
    ╹ ╹   ╹╹ ╹┗━┛╺━╸╺┻┛╹ ╹ ╹ ╹ ╹   ╹ ╹┗━╸┗━╸┗━┛┗━╸
  */
 #ifdef amVK_WI_CPP
-  bool IMG_DATA_MK2::alloc(void) {
+  bool IMG_DATA_MK2::alloc(void) {  //malloc
     if (alloc_called) {
       LOG("amVK_WI.IMGs.alloc_called == true;  seems like its already ALLOCATED!!!!       [we not allocating] ");
       return false;

@@ -8,20 +8,20 @@
 
 It's just safe to Include      amVK.hh      [just like you include vulkan/vulkan.hh]      Currently you will need to use amVK_INCLUDE_LIB
     Current Dependency of Each Modules:-
-        amVK_Device:
+        amVK_DeviceMK2:
             |-- [.hh]  vk_mem_alloc [AMD__VMA__H]
             |-- [.cpp] VMA_IMPLEMENTATION   [Definition_Kinda_Stuffs]
         amVK_WI:
-            |-- [.hh]  amVK_Device  [pointerOnly]
-            |-- [.cpp] amVK_Device  [CLASS__INFO]
+            |-- [.hh]  amVK_DeviceMK2  [pointerOnly]
+            |-- [.cpp] amVK_DeviceMK2  [CLASS__INFO]
         ANY:
             |-- amVK_Utils.hh
               |-- amVK.cpp  [vulkan_result_reg();] function in this TranslationUnit [The Sole Goal was to Reduce another TRANSLATION-UNIT]
         amVK_Logger:
             |-- [.hh]  amVK_Utils
         amVK_Pipeline:
-            |-- [.hh]  amVK_Device  [pointerOnly]
-            |-- [.cpp] amVK_Device  [CLASS__INFO]
+            |-- [.hh]  amVK_DeviceMK2  [pointerOnly]
+            |-- [.cpp] amVK_DeviceMK2  [CLASS__INFO]
 
 
 # BENCHMARKS   [WIP-TODO_CustomBenchMarks]

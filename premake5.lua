@@ -55,7 +55,7 @@ project "amVK-0.1b"
   newoption {
     trigger = "amVK_AMD_VMA_SUPPORT",
     value = "BOOLEAN",
-    description = "Vulkan Memory Allocator.... amVK_Device will have some VMA-Related stuffs, as VMA is Device Specific",
+    description = "Vulkan Memory Allocator.... amVK_DeviceMK2 will have some VMA-Related stuffs, as VMA is Device Specific",
     default = ON,
     allowed = {
       { " true/Y/1/ON",    "TRUE" },

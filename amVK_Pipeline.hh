@@ -1,10 +1,12 @@
 #ifndef amVK_PIPELINE_H
 #define amVK_PIPELINE_H
 
-#include <string>
-#include "amVK_Common.hh"
+#include <string>   //load_ShaderModule
+#include "amVK_IN.hh"
+#include "amVK_Device.hh"
 #include "amVK_RenderPass.hh"
-class amVK_Device; // Cyclic Dependency, [Header included in] 😃
+
+class amVK_DeviceMK2; // Cyclic Dependency, [Header included in] 😃
 
 class ShaderInputsMK2 {
  public:
@@ -20,7 +22,11 @@ class ShaderInputsMK2 {
    *   █▀▀ █ █▀▀ ██▄ █▄▄ █ █░▀█ ██▄  █▄▄ █▀█ ░█░ █▄█ █▄█ ░█░
    *
    * Uses   \fn ref_pushConsts()   \fn ref_descSets()    and [out]puts into layout */
-  void create_PipelineLayout(amVK_Device *amVK_D);
+  void create_PipelineLayout(VkDevice D);
+  inline void create_PipelineLayout(amVK_DeviceMK2 *amVK_D) {create_PipelineLayout(amVK_D->_D);}
+
+  inline void destroy(amVK_DeviceMK2 *amVK_D) {vkDestroyPipelineLayout(amVK_D->_D, layout, nullptr);}
+  inline void destroy(VkDevice D) {vkDestroyPipelineLayout(D, layout, nullptr);}
 };
 
 
@@ -49,17 +55,18 @@ class ShaderInputsMK2 {
  * \todo debug and see if amVK_GraphicsPipes ShaderOnly_pipeStore; declaration causes a call to constructor      cz we later do ShaderOnly_pipeStore = amVK_GraphicsPipes(renderPass, device); which means calling the construcotr   we dont wanna waste time
  * \todo see if ShaderOnly_pipeStore = amVK_GraphicsPipes(renderPass, device);   actually called the constructor & copy-constructor..... calling both would waste CPU time
  * TODO: Make a PARTED Docs on PIPELINE [ 😃 Use Good Fonts]
+ * 
  * USE ONE OF THESE:
  * \see amVK_GraphicsPipes
  * \see amVK_ComputePipes  [WIP]
  */
 class amVK_PipeStoreMK2 {
  public:
-  amVK_Device *_amVK_D;
+  amVK_DeviceMK2 *_amVK_D;
   ShaderInputsMK2 *shaderInputs = nullptr;/** MUST, you do it EXPLICIT */
   VkPipelineCreateFlags flags;  /** :WIP: */
 
-  amVK_PipeStoreMK2(amVK_Device *D = nullptr) : _amVK_D(D) { 
+  amVK_PipeStoreMK2(amVK_DeviceMK2 *D = nullptr) : _amVK_D(D) { 
     if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
     else {amVK_CHECK_DEVICE(D, _amVK_D);}
   }
@@ -72,6 +79,7 @@ class amVK_PipeStoreMK2 {
    * \param spvPath: You should compile any .vert or .frag and specify Full/Rel-path to EXE (.spv)
    */
   VkShaderModule load_ShaderModule(std::string &spvPath);
+  inline void destroy_ShaderModule(VkShaderModule xd) {vkDestroyShaderModule(_amVK_D->_D, xd, nullptr);}
 
   /** \see ShaderInputsMK2::create_pipelineLayout for layout */
 };
@@ -97,8 +105,7 @@ class amVK_PipeStoreMK2 {
 class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
  public:
   amVK_RenderPassMK2 *_amVK_RP;       /** [IN, MUST] */
-  amVK_GraphicsPipes(amVK_RenderPassMK2 *RP, amVK_Device *D) : _amVK_RP(RP), amVK_PipeStoreMK2(D) {if (RP == nullptr) {LOG_EX("Param 'RP': nullptr ....  build_pipeline() will fail ");}}
-  amVK_GraphicsPipes(void) {}
+  amVK_GraphicsPipes(amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D) : _amVK_RP(RP), amVK_PipeStoreMK2(D) {if (RP == nullptr) {LOG_EX("Param 'RP': nullptr ....  build_pipeline() will fail ");}}
 
   /** \todo Add support for Tesselation & Geometry which can be optional */
   VkShaderModule vert = nullptr;     /** [IN, MUST] */
@@ -215,6 +222,7 @@ class ShaderInputsMK2_NotSolo : public ShaderInputsMK2 {
   amVK_Array<VkPushConstantRange> _pushConsts;
   amVK_Array<VkDescriptorSetLayout> _descSets;
 
+ public:
   ShaderInputsMK2_NotSolo(void) {usingSolo = false;}
   void alloc(uint32_t pushConst_n, uint32_t descSet_n) {
     void *xd = malloc((pushConst_n * sizeof(VkPushConstantRange))

@@ -3,7 +3,7 @@
 /** TODO: INVESTIGATE: What did AMD show us as 256MB here? https://www.youtube.com/watch?v=zSG6dPq57P8&t=308s
  *  TODO: have size and usage as member variables of class   [maybe even buf_data?]
  * Some options like size could and should be used as Function PARAMS... change of less runtime errors */
-void amVK_Buffer::upload_new_gpu(amVK_Device *device, size_t buf_size, VkBufferUsageFlags buf_usage, void *buf_data) {
+void amVK_Buffer::upload_new_gpu(amVK_DeviceMK2 *device, size_t buf_size, VkBufferUsageFlags buf_usage, void *buf_data) {
     //allocate vertex buffer
     VkBufferCreateInfo buf_CI = {};
         buf_CI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -42,12 +42,12 @@ void amVK_Buffer::upload_new_gpu(amVK_Device *device, size_t buf_size, VkBufferU
         vmaUnmapMemory(device->_allocator, _allocation);
 }
 
-void amVK_Buffer::destroy(amVK_Device *device) {
+void amVK_Buffer::destroy(amVK_DeviceMK2 *device) {
     vmaDestroyBuffer(device->_allocator, _buffer, _allocation);
 }
 
 
-bool amVK_Buffer::alloc_GPU(amVK_Device *device, size_t buf_size, VkBufferUsageFlags buf_usage) {
+bool amVK_Buffer::alloc_GPU(amVK_DeviceMK2 *device, size_t buf_size, VkBufferUsageFlags buf_usage) {
     //allocate vertex buffer
     VkBufferCreateInfo buf_CI = {};
         buf_CI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -79,7 +79,7 @@ bool amVK_Buffer::alloc_GPU(amVK_Device *device, size_t buf_size, VkBufferUsageF
 
 
 
-imgBuf new_image(amVK_Device *D, VkImageCreateInfo *dImage_CI) {
+imgBuf new_image(amVK_DeviceMK2 *D, VkImageCreateInfo *dImage_CI) {
     imgBuf smth = {};
     /** the depth image will be an image with the format we selected and Depth Attachment usage flag */
     //for the depth image, we want to allocate it from GPU local memory

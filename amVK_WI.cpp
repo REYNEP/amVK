@@ -1,6 +1,5 @@
 #define amVK_WI_CPP
 #include "amVK_WI.hh"
-#include "amVK_Common.hh"
 #include "amVK_ImgMemBuf.hh"
 
 /** 
@@ -8,23 +7,41 @@
    ╺╋╸   ┃  ┃ ┃┃┗┫┗━┓ ┃ ┣┳┛┃ ┃┃   ┃ ┃ ┃┣┳┛
    ╹ ╹   ┗━╸┗━┛╹ ╹┗━┛ ╹ ╹┗╸┗━┛┗━╸ ╹ ┗━┛╹┗╸
  */
-amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_Device *D) : _window(window), _amVK_D(D), _amVK_S(S), _surface(S->_S), _amVK_RP(RP) {
+amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D) : _window(window), _amVK_D(D), _amVK_S(S), _surface(S->_S), _amVK_RP(RP) {
          if (window == nullptr) { LOG_EX("Please dont pass nullptr, ERROR/WARNING Logs will look messy, this is used to let you know which window ");
                                   window = "nullptr";}
-    if           (D == nullptr) { LOG_EX("[param]           amVK_Device *D      is nullptr.... name: " << window); }
-    else if (D->_PD == nullptr) { LOG_EX("[param]           amVK_Device *D->_PD is nullptr.... name: " << window); }
+    if           (D == nullptr) { LOG_EX("[param]        amVK_DeviceMK2 *D      is nullptr.... name: " << window); }
+    else if (D->_PD == nullptr) { LOG_EX("[param]        amVK_DeviceMK2 *D->_PD is nullptr.... name: " << window); }
          if (     S == nullptr) { LOG_EX("[param]       amVK_SurfaceMK2 *S      is nullptr.... name: " << window); }
          if (    RP == nullptr) { LOG_EX("[param]    amVK_RenderPassMK2 *RP     is nullptr.... name: " << window); }
 
-    /** [VUID-VkSwapchainCreateInfoKHR-surface-01270] - vkCreateSwapchain will fail     
-     * Val Layer Error if    is_presenting_sup() not done per _surface    (a.k.a Basically per WINDOW) */
-    amASSERT(!is_presenting_sup());
+
+    if (_amVK_S->_PD != _amVK_D->_PD) {
+        LOG_DBG("[param]       \u0027amVK_SurfaceMK2 *S->VkSurface _S\u0027, wasn't created on the same PhysicalDevice as _amVK_Device->_PD....  This will probably fail....");
+        LOG_EX("");
+    }
+    amASSERT(!_amVK_S->is_presenting_sup());
 
     Default_the_info();
     fallback_the_info();
     LOG("amVK_WI_MK2 Constructed   &   Default_the_info() called...");
 }
 
+
+/** \see \fn amVK_SurfaceMK2::is_presenting_sup() */
+uint32_t amVK_SurfaceMK2::present_qFam(void) {
+    uint32_t PD_index = HEART->PD_to_index(_PD);
+    amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
+
+    VkBool32 sup = false;
+    for (int i = 0, lim = qFAM_list.n; i < lim; i++) {
+        vkGetPhysicalDeviceSurfaceSupportKHR(_PD, i, _S, &sup);
+        if (sup == true) { present_qFamily = i;  found_present_qFamily = true; }
+    }
+
+    if (present_qFamily == 0xFFFFFFFF) {LOG_EX("Couldn't Find any qFamily on PhysicalDevice that supports Presentation to given surface....");}
+    return present_qFamily;
+}
 
 /** 
     \│/  ┌─┐┌─┐┌┬┐   ╔═╗┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐╔═╗┌─┐┬─┐┌┬┐┌─┐┌┬┐┌─┐  
@@ -206,6 +223,12 @@ void amVK_WI_MK2::fallback_the_info(void) {
         }
 }
 
+
+/**
+    \│/  ┌─┐┬─┐┌─┐┌─┐┌┬┐┌─┐    ╔═╗┬ ┬┌─┐┌─┐┌─┐┬ ┬┌─┐┬┌┐┌
+    ─ ─  │  ├┬┘├┤ ├─┤ │ ├┤     ╚═╗│││├─┤├─┘│  ├─┤├─┤││││
+    /│\  └─┘┴└─└─┘┴ ┴ ┴ └─┘────╚═╝└┴┘┴ ┴┴  └─┘┴ ┴┴ ┴┴┘└┘
+ */
 VkSwapchainKHR amVK_WI_MK2::create_Swapchain(bool check_the_info) {
     if (check_the_info) {
         fallback_the_info();
@@ -298,23 +321,35 @@ void amVK_WI_MK2::post_create_swapchain(void) {
     uint32_t smth = IMGs.framebuf_n;
     vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &smth, IMGs._ptr_img(0, IMGs.swap_attach_index));
 
-    VkImageViewCreateInfo CI = {};
-        CI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        CI.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    /** The Only Thing that you need to Care about when creating FRAMEBUFFER imageViews
-     *    - Should match to RenderPass ColorAttachment.format ---- VUID-VkFramebufferCreateInfo-pAttachments-00880
-     *    - Should match to imageFormat passed to SwapchainCreateInfo ---- VUID-VkImageViewCreateInfo-image-01762 */
-        CI.format = the_info.imageFormat;
+    VkImageViewCreateInfo CI = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, 0,
+        nullptr,    /** .image - set in the loop below */
+        VK_IMAGE_VIEW_TYPE_2D,
 
-    /** describes a remapping from components of the image to components of the vector returned by shader image instructions. */
-        CI.components = {};                       //All zeroes is fine for FRAMEBUFFER
-        CI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    
-    /** We don't need mipmap for frameBuffers IG   [1, cz VUID-VkImageCreateInfo-mipLevels-00947 mipLevels must be greater than 0] */
-        CI.subresourceRange.baseMipLevel = 0;     //0 means the OG/base Image
-        CI.subresourceRange.levelCount = 1;
-        CI.subresourceRange.baseArrayLayer = 0;   //For StereoScope3D [also see VK_IMAGE_VIEW_TYPE_2D]
-        CI.subresourceRange.layerCount = 1;
+        /** [.format]
+         * The Only Thing that you need to Care about when creating FRAMEBUFFER imageViews
+         *    - Should match to RenderPass ColorAttachment.format ---- VUID-VkFramebufferCreateInfo-pAttachments-00880
+         *    - Should match to imageFormat passed to SwapchainCreateInfo ---- VUID-VkImageViewCreateInfo-image-01762 
+         * 
+         * It’s possible for the formats to not match, and that will let you “reinterpret” the formats, 
+         *    but that can be tricky to use, and very niche, so for now make sure that the formats will match. - vblanco */
+        the_info.imageFormat,
+
+        /** [.components] If you wanna swap RGBA channels/components, All zeroes are okay, means stay how it was */
+        {},
+
+        /** [.subresourceRange] 
+         * subresourceRange holds the information about where the image points to. 
+         *  This is used for layered images, where you might have multiple layers in one image, and want to create an imageview that points to a specific layer. 
+         *  It’s also possible to control the mipmap levels with it. 
+         *  For our current usage, we are going to default it to no mipmaps (mipmap base 0, and mipmaps level 1), and only 1 texture layer. - vblanco */
+        {   
+            VK_IMAGE_ASPECT_COLOR_BIT,     /** [.aspectMask] */
+            /*  We don't need mipmap for frameBuffers IG   [1, cz VUID-VkImageCreateInfo-mipLevels-00947 mipLevels must be greater than 0] */
+            0, 1, /** [.baseMipLevel], [.levelCount]   -   0 means the OG/base Image i guess.... */
+
+            0, 1  /** [.baseArrayLayer], [.layerCount] - For StereoScope3D [also see VK_IMAGE_VIEW_TYPE_2D] */
+        }
+    };
 
     for (uint32_t i = 0; i < IMGs.framebuf_n; i++) {
         CI.image = IMGs._ptr_img(0, IMGs.swap_attach_index)[i];
@@ -330,97 +365,106 @@ void amVK_WI_MK2::post_create_swapchain(void) {
 
 
 /** 
- * create the framebuffers for the swapchain images. 
  * This will connect the render-pass to the images for rendering
  * 
  * \param renderPass: Rendering is done in renderPasses.... So RenderPass uses FrameBuffer's Images
  */
-void amVK_WI_MK2::create_Attachments_n_FrameBuf(void) {
+void amVK_WI_MK2::create_Attachments(void) {
     // ----------- CREATE ATTACHMENT/IMGVIEWS FOR RENDERPASS ------------
-    for (int i = _amVK_RP->color_index + 1; i < IMGs.attach_n; i++) {
-        for (int x = 0; x < IMGs.framebuf_n; x++) {
-            VkImageCreateInfo dImage_CI = {};
-                dImage_CI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-                dImage_CI.pNext = nullptr;
-
-                dImage_CI.imageType = VK_IMAGE_TYPE_2D;
-
-            /** hardcoding the depth format to 32 bit float   You might want to choose other formats for other uses, or if you use Stencil buffer.*/
-                dImage_CI.format = _amVK_RP->attachment_descs[i].format;
-                dImage_CI.extent = {_extent.width, _extent.height, 1};
-
-                dImage_CI.mipLevels = 1;
-                dImage_CI.arrayLayers = 1;
-                dImage_CI.samples = _amVK_RP->samples;
-            /** Tiling is very important. Tiling describes how the data for the texture is arranged in the GPU. 
-             *  For improved performance, GPUs do not store images as 2d arrays of pixels, 
-             *  but instead use complex custom formats, unique to the GPU brand and even models. 
-             *  VK_IMAGE_TILING_OPTIMAL tells vulkan to let the driver decide how the GPU arranges the memory of the image. 
-             *  If you use VK_IMAGE_TILING_OPTIMAL, it won’t be possible to read the data from CPU or to write it without changing its tiling first 
-             *  (it’s possible to change the tiling of a texture at any point, but this can be a costly operation). 
-             *  The other tiling we can care about is VK_IMAGE_TILING_LINEAR, which will store the image as a 2d array of pixels. 
-             *  While LINEAR tiling will be a lot slower, it will allow the cpu to safely write and read from that memory.   - vblanco20-1 */
-                dImage_CI.tiling = VK_IMAGE_TILING_OPTIMAL;
-
-                dImage_CI.usage = image_layout_2_usageflags(_amVK_RP->attachment_descs[i].finalLayout); //VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-
-            imgBuf xd = new_image(_amVK_D, &dImage_CI);
-
-            
-            // TODO MERGE with IMAGEUTIL  [see wip stuffs in WI.cpp]
-            //build a image-view for the depth image to use for rendering
-            VkImageViewCreateInfo dview_info = {};
-                dview_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-                dview_info.pNext = nullptr;
-
-            /** In here, we will have it matched to image_create_info, and hardcode it to 2D images as it’s the most common case. */
-                dview_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-                dview_info.image = xd._img;
-            /** format has to match the format in the image this view was created from.   
-             *  It’s possible for the formats to not match, and that will let you “reinterpret” the formats, 
-             *    but that can be tricky to use, and very niche, so for now make sure that the formats will match.  */
-                dview_info.format = _amVK_RP->attachment_descs[i].format;;
-
-            /** subresourceRange holds the information about where the image points to. 
-             *  This is used for layered images, where you might have multiple layers in one image, and want to create an imageview that points to a specific layer. 
-             *  It’s also possible to control the mipmap levels with it. 
-             *  For our current usage, we are going to default it to no mipmaps (mipmap base 0, and mipmaps level 1), and only 1 texture layer. */
-                dview_info.subresourceRange.baseMipLevel = 0;
-                dview_info.subresourceRange.levelCount = 1;
-                dview_info.subresourceRange.baseArrayLayer = 0;
-                dview_info.subresourceRange.layerCount = 1;
-            /** aspectMask is similar to the usageFlags from the image. It’s about what this image is used for. */
-                dview_info.subresourceRange.aspectMask = image_layout_2_aspectMask(_amVK_RP->attachment_descs[i].finalLayout); //VK_IMAGE_ASPECT_DEPTH_BIT
-
-            vkCreateImageView(_amVK_D->_D, &dview_info, nullptr, &xd._imgView);
-
-            IMGs.attachments[(x * IMGs.attach_n) + i] = xd._imgView;
-            IMGs.images[(i * IMGs.framebuf_n) + x] = xd._img;
-            LOG("Created attachment: IMGs.attachments[" << ((x * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + x) << "]");
+    for (int i = 0; i < IMGs.attach_n; i++) {
+        if (i == IMGs.swap_attach_index) {
+            continue;
         }
-    }
+
+        // ----------- INFOs ------------
+
+        VkImageCreateInfo imgCI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, nullptr, 0,
+            VK_IMAGE_TYPE_2D, VK_FORMAT_UNDEFINED, {_extent.width, _extent.height, 1},
+
+            1, 1, /** [.mipLevels], [.arrayLayers] */
+            _amVK_RP->samples, /** [.samples] - where you gotta specify MSAA */
+            
+            VK_IMAGE_TILING_OPTIMAL, /** [.tiling], \todo */
+            0,      /** [.usage] */
+            
+            VK_SHARING_MODE_EXCLUSIVE, 0, nullptr, /** [.VkSharingMode] */
+            VK_IMAGE_LAYOUT_UNDEFINED   /** [.initialLayout] */
+        };
+        /** Tiling is very important. Tiling describes how the data for the texture is arranged in the GPU. 
+         *  For improved performance, GPUs do not store images as 2d arrays of pixels, 
+         *  but instead use complex custom formats, unique to the GPU brand and even models. 
+         *  VK_IMAGE_TILING_OPTIMAL tells vulkan to let the driver decide how the GPU arranges the memory of the image. 
+         *  If you use VK_IMAGE_TILING_OPTIMAL, it won’t be possible to read the data from CPU or to write it without changing its tiling first 
+         *  (it’s possible to change the tiling of a texture at any point, but this can be a costly operation). 
+         *  The other tiling we can care about is VK_IMAGE_TILING_LINEAR, which will store the image as a 2d array of pixels. 
+         *  While LINEAR tiling will be a lot slower, it will allow the cpu to safely write and read from that memory.   - vblanco20-1 */
+
+        VkImageViewCreateInfo viewCI = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, 0,
+            nullptr,   VK_IMAGE_VIEW_TYPE_2D,
+            VK_FORMAT_UNDEFINED,
+
+            {}, /** [.components] */
+            {   /** [.subresourceRange] */
+                0,     /** [.aspectMask] */
+                0, 1, /** [.baseMipLevel], [.levelCount] */
+                0, 1  /** [.baseArrayLayer], [.layerCount] */
+            }
+        };
 
 
-    // ----------- \todo imageless_framebuffer & Separate create_Framebuffer_s------------
 
-    VkFramebufferCreateInfo fb_info = {};
-        fb_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        fb_info.pNext = nullptr;
+        // ----------- finally_create ------------
+        finally_create:
+        {
+            for (int fi = 0; fi < IMGs.framebuf_n; fi++) {
+                imgCI.format = _amVK_RP->attachment_descs[i].format;
+                imgCI.usage  = image_layout_2_usageflags(_amVK_RP->attachment_descs[i].finalLayout);
 
-        fb_info.renderPass = _amVK_RP->_RP;
-        fb_info.attachmentCount = 2;
-        fb_info.width = _extent.width;
-        fb_info.height = _extent.height;
-        fb_info.layers = 1;
+                imgBuf xd = new_image(_amVK_D, &imgCI);
 
+                viewCI.image = xd._img;
+                viewCI.format = _amVK_RP->attachment_descs[i].format;
+                viewCI.subresourceRange.aspectMask = image_layout_2_aspectMask(_amVK_RP->attachment_descs[i].finalLayout);
+                vkCreateImageView(_amVK_D->_D, &viewCI, nullptr, &xd._imgView);
 
-    for (int i = 0, lim = IMGs.framebuf_n; i < lim; i++) {
-        fb_info.pAttachments = &IMGs.attachments[i * IMGs.attach_n];
-        vkCreateFramebuffer(_amVK_D->_D, &fb_info, nullptr, &IMGs.framebufs[i]);
+                *(IMGs._ptr_attach(fi, i)) = xd._imgView;
+                *(IMGs._ptr_img   (fi, i)) = xd._img;
+                LOG("Created attachment: IMGs.attachments[" << ((fi * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + fi) << "]");
+            }
+            LOG("");
+
+            ClearValues: {
+                _set_RenderPassClearVals();
+            }
+        }
     }
 }
 
+/** 
+ * create the framebuffers for the swapchain images. 
+ */
+void amVK_WI_MK2::create_Framebuffers(void) {
+    // ----------- \todo imageless_framebuffer & Separate create_Framebuffer_s------------
 
+    VkFramebufferCreateInfo fb_info = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, nullptr, 0,
+        _amVK_RP->_RP, _amVK_RP->attachment_descs.n, nullptr, /** [.pAttachments] set in the loop below */
+        _extent.width, _extent.height, 1 /** [.layers] */
+    };
+
+    for (int fi = 0, lim = IMGs.framebuf_n; fi < lim; fi++) {
+        fb_info.pAttachments = IMGs._ptr_attach(fi, 0);
+        vkCreateFramebuffer(_amVK_D->_D, &fb_info, nullptr, &IMGs.framebufs[fi]);
+    }
+}
+
+/** 
+ * we manually do it like this.... and not like in a std::vector record kinda way, where we keep record of created stuffs....
+ * cz everything inside of IMG_DATA_MK2 is designed to be in a way that, only this amVK_WI_MK2 creates....
+ * like theres no way to provide framebuffer attachment EXTERNALY
+ * all the attachments, VkImages & VkFrameBuffers are created in the function above
+ * 
+ * since we know that amVK_WI is the one that created it.... theres no need to keep track, we can just go ahead and destroy
+ */
 bool amVK_WI_MK2::destroy(void) {
     if (_swapchain) {
       vkDeviceWaitIdle(_amVK_D->_D);
@@ -429,19 +473,25 @@ bool amVK_WI_MK2::destroy(void) {
         vkDestroyFramebuffer(_amVK_D->_D, IMGs.framebufs[i], nullptr);
       }
       // ----------- DepthAttachments ------------
-      for (int i = _amVK_RP->color_index + 1; i < IMGs.attach_n; i++) {
-        for (int x = 0; x < IMGs.framebuf_n; x++) {
-          vkDestroyImageView(_amVK_D->_D, *( IMGs._ptr_attach(x, i) ), nullptr);
-          vkDestroyImage(    _amVK_D->_D, *( IMGs._ptr_img   (x, i) ), nullptr);
-        }   //GIT_COMMIT_FIX
-      } //GIT_COMMIT_FIX
+      for (int i = 0; i < IMGs.attach_n; i++) {
+        if (i == IMGs.swap_attach_index) {
+            continue;   //Gotta skip Swapchain Images ones....
+        }
+        for (int fi = 0; fi < IMGs.framebuf_n; fi++) {
+          vkDestroyImageView(_amVK_D->_D, *( IMGs._ptr_attach(fi, i) ), nullptr);
+          vkDestroyImage(    _amVK_D->_D, *( IMGs._ptr_img   (fi, i) ), nullptr);
+        }
+      }
       // ----------- Swapchain Images' imageviews ------------
       for (int i = 0; i < IMGs.framebuf_n; i++) {
         vkDestroyImageView(_amVK_D->_D, *(IMGs._ptr_attach(i, IMGs.swap_attach_index)), nullptr);
-      } //GIT_COMMIT_FIX
+      }
       // ----------- Finally Destroy Swapchain & Free -----------
       vkDestroySwapchainKHR(_amVK_D->_D, _swapchain, nullptr);
       IMGs._free();
-    }   //GIT_COMMIT_FIX
-    return true;
-}   //GIT_COMMIT_FIT
+
+      LOG("Framebuffers, Attachments, Images, SwapchainImages & the Swapchain   has been Destroyed!   BYE BYE!");
+      return true;
+    }
+    else {return false;}
+}

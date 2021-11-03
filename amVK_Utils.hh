@@ -1,15 +1,11 @@
-#ifndef amVK_UTILS_H
-#define amVK_UTILS_H
+#ifndef amVK_UTILS_HH
+#define amVK_UTILS_HH
 
-#include "vulkan/vulkan.h"
-#include <vector>   //vec_amVK_Device for now
-#if defined(amVK_DEVICE_CPP) || defined(VEC_amVK_DEVICE)
-  #ifndef amVK_DEVICE_H
-    class amVK_Device;
-  #endif
+//You should instead #include "amVK_IN.hh" rather than including amVK_Utils.hh directly....
+//also amVK_Logger is included there before utils....
+#ifndef amVK_LOGGER_HH
+  #include "amVK_Logger.hh"
 #endif
-#include <string>
-#include "amVK_Logger.hh"
 
 
 /** 
@@ -31,6 +27,7 @@ struct amVK_Array {
     /** CONSTRUCTOR - More like failsafes.... */
     amVK_Array(T *D, uint32_t N) : data(D), n(N) {}
     amVK_Array(void) {data = nullptr; n = 0;}
+    ~amVK_Array() {}
 
     inline T& operator[](uint32_t index) {    //inline hugely optimizes it, [the next inline copy-assignment func below too!]
       return data[index];
@@ -113,13 +110,39 @@ struct amVK_Array {
       }
 
 
+/** .n doesn't mean size anymore.... use \fn size() */
+template<typename T> 
+struct amVK_Vector : public amVK_Array<T> {
+  amVK_Vector(uint32_t n) : amVK_Array() {
+    data = new T[n];
+    n = n;
+  }
+  ~amVK_Vector() {}
+
+  /** Makes it 2X sized by default */
+  void resize(double size_mul = 2) {
+    amVK_Vector<VkCommandBuffer> _NEW(n*size_mul);
+    memcpy(_NEW.data, this->data, n * sizeof(T));
+    //_NEW.next_add_where = this->next_add_where;
+
+    data = _NEW.data;
+    n = _NEW.n;
+  }
+
+  //Delete this object instance after calling this function
+  inline void _delete(void) { delete[] data; }
+
+  inline size_t size(void) {return next_add_where;}
+};
+
+#define amVK_VECTOR_PUSH_BACK(var) var.data[var.next_add_where++]
 
 
 
 
 
 
-
+#include "vulkan/vulkan.h"
 /** 
  *              █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██╗   ██╗████████╗██╗██╗     ███████╗
  *   ▄ ██╗▄    ██╔══██╗████╗ ████║██║   ██║██║ ██╔╝        ██║   ██║╚══██╔══╝██║██║     ██╔════╝
@@ -215,68 +238,6 @@ bool mergeSort(uint32_t first_index, uint32_t last_index, T *unsorted, uint32_t 
 }
 
 
+} //namespace amVK_Utils
 
-
-
-/**
- * I just wanted to access amVK_CX::_device_list with _device_list[(VkDevice)D]
- * IMPL: \see amVK_Device.cpp
- * Declarations and Includes at Top
- */
-#if defined(amVK_DEVICE_CPP) || defined(VEC_amVK_DEVICE)
-
-  class vec_amVK_Device : public std::vector<amVK_Device *> {
-   public:
-    vec_amVK_Device(uint32_t n) : std::vector<amVK_Device *> (n) {}
-    vec_amVK_Device(void) : std::vector<amVK_Device *>() {}
-    ~vec_amVK_Device() {}
-
-    //amVK Stores a lot of different kinda data like this. Maybe enable a option to store these in HDD as cache
-    amVK_Device *operator[](VkDevice D);
-    bool doesExist(amVK_Device *amVK_D);  /** cz, VkDevice is inside amVK_Device class, that means the need to include amVK_Device.hh in every single file*/
-    uint32_t index(amVK_Device *D);
-  };
-
-  #ifdef IMPL_VEC_amVK_DEVICE   //in amVK_Device.cpp
-    #ifndef amVK_LOGGER_HH
-      #include "amVK_Logger.hh"
-    #endif
-    amVK_Device *vec_amVK_Device::operator[](VkDevice D) {
-      amVK_Device **data = this->data();
-      for (int i = 0, lim = this->size(); i < lim; i++) {
-        if (data[i]->_D == D) {
-          return data[i];
-        }
-      }
-      LOG_EX("LogicalDevice doesn't Exist");
-      return nullptr;
-    }
-
-
-    #include <typeinfo>
-    bool vec_amVK_Device::doesExist(amVK_Device *amVK_D) {
-      amVK_Device **data = this->data();
-      for (int i = 0, lim = this->size(); i < lim; i++) {
-        if (data[i] == amVK_D) {
-          return true;
-        }
-      }
-      LOG_EX("amVK_Device doesn't Exist in " << typeid(this).name());
-    }
-
-    uint32_t vec_amVK_Device::index(amVK_Device *D) {
-      amVK_Device **data = this->data();
-      for (int i = 0, lim = this->size(); i < lim; i++) {
-        if (data[i] == D) {
-          return i;
-        }
-      }
-      LOG_EX("amVK_Device doesn't Exist in " << typeid(this).name());
-      return 0xFFFFFFFF;  //UINT_32T_NULL
-    }
-  #endif //IMPL_VEC_amVK_DEVICE
-#endif //amVK_DEVICE_CPP || VEC_amVK_DEVICE
-
-
-}; //NameSpace amVK_utils
-#endif //#ifndef amVK_UTILS_H
+#endif //#ifndef amVK_UTILS_HH

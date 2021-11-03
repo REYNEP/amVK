@@ -1,12 +1,12 @@
 #ifndef amVK_TYPES_H
 #define amVK_TYPES_H
-#ifndef amVK_LIB
-  #include "vulkan/vulkan.h"
-#endif
+
+#include "vulkan/vulkan.h"
+
 #ifndef amVK_LOGGER_HH
   #include "amVK_Logger.hh"
 #endif
-#ifndef amVK_UTILS_H
+#ifndef amVK_UTILS_HH
   #include "amVK_Utils.hh"
 #endif
 
@@ -62,6 +62,32 @@ typedef enum amVK_TDevicePreset_GEN2__ {
   amVK_DP_RayTracing = 2048,                //2000 series RTX Cards
 } amVK_DevicePresets;
 typedef uint32_t amVK_DevicePreset_Flags;
+
+/** amVK_DevicePreset_Flags to STRING  for print/Log purposes */
+const char *flag_2_strName(amVK_DevicePreset_Flags flag);
+
+
+
+/** 
+   ╻ ╻   ╺┳┓┏━╸╻ ╻╻┏━╸┏━╸   ┏━╸╻ ╻╺┳╸┏━╸┏┓╻┏━┓╻┏━┓┏┓╻┏━┓
+   ╺╋╸    ┃┃┣╸ ┃┏┛┃┃  ┣╸    ┣╸ ┏╋┛ ┃ ┣╸ ┃┗┫┗━┓┃┃ ┃┃┗┫┗━┓
+   ╹ ╹   ╺┻┛┗━╸┗┛ ╹┗━╸┗━╸   ┗━╸╹ ╹ ╹ ┗━╸╹ ╹┗━┛╹┗━┛╹ ╹┗━┛
+*/
+typedef struct amVK_BExtensions__ {
+  bool VK_NONE_UNDEFINED = false;
+  
+  bool VK_KHR_SWAPCHAIN = false;
+  /** amVK_DevicePreset_Encode_Decode */
+  bool VK_KHR_VIDEO_DECODE_QUEUE = false;
+  bool VK_KHR_VIDEO_ENCODE_QUEUE = false;
+  bool VK_KHR_VIDEO_QUEUE = false;
+  /** amVK_DevicePreset_Image_Shaders | amVK_DevicePreset_Compositor */
+  bool VK_KHR_IMAGE_FORMAT_LISTS = false;
+  /** bool VK_KHR_PERFORMANCE_QUERY = false; */
+  /** amVK_DevicePreset_RayTracing */
+  bool VK_KHR_RAY_QUERY = false;
+  bool VK_KHR_RAY_TRACING_PIPELINE = false;
+} amVK_DeviceExtensionsBools;
 
 
 

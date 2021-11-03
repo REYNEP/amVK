@@ -1,5 +1,45 @@
 #include "amVK_Types.hh"
 
+
+const char *flag_2_strName(amVK_DevicePreset_Flags flag) {
+    switch (flag)
+    {
+        case amVK_DP_UNDEFINED:
+            return "amVK_DP_UNDEFINED";
+
+        case amVK_DP_GRAPHICS:
+            return "amVK_DP_GRAPHICS";
+        case amVK_DP_COMPUTE:
+            return "amVK_DP_COMPUTE";
+
+        case amVK_DP_TRANSFER:
+            return "amVK_DP_TRANSFER";
+        case amVK_DP_SPARSE:
+            return "amVK_DP_SPARSE";
+        case amVK_DP_VIDEO_DECODE:
+            return "amVK_DP_VIDEO_DECODE";
+        case amVK_DP_VIDEO_ENCODE:
+            return "amVK_DP_VIDEO_ENCODE";
+
+        case amVK_DP_PROTECTED_MEM:
+            return "amVK_DP_PROTECTED_MEM";
+
+        case amVK_DP_3DEngine:
+            return "amVK_DP_3DEngine";
+        case amVK_DP_Encode_Decode:
+            return "amVK_DP_Encode_Decode";
+        case amVK_DP_Image_Shaders:
+            return "amVK_DP_Image_Shaders";
+        case amVK_DP_Compositor:
+            return "amVK_DP_Compositor";
+        case amVK_DP_RayTracing:
+            return "amVK_DP_RayTracing";
+
+        default: 
+            return "We gotta Return something DUH!!! [this is amVK_DeviceMods::flag_2_strName]";
+    }
+}
+
 /**
  * ONE: VkFormats that are for the DISPLAY.... or the so called PRESENTATION ENGINE
  * For now these are the known Ones I found from Nvidia or AMD surfaceCapabilities

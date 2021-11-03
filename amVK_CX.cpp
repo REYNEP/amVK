@@ -1,6 +1,6 @@
 #define amVK_CPP
+#include "amVK_CX.hh"
 #include "amVK_Device.hh"
-#include "amVK.hh"
 #include <cstdlib>          // calloc() & malloc()  [Needed in .cpp only]
 
 /**
@@ -74,107 +74,6 @@ VkInstance amVK_CX::CreateInstance(void) {
 
 
 
-amVK_Device *amVK_CX::CreateDevice(amVK_DevicePreset_Flags presets, VkDeviceCreateInfo *CI) {
-    amFUNC_HISTORY();
-
-    // ----------- Physical Device Info ------------
-    if (PD.chozen == nullptr) {
-        if (amVK_CX::instance == nullptr) {
-            LOG("amVK_CX::CreateInstance() has to be called before. [or set amVK_CX::instance & amVK_CX::heart]");
-        }
-        amVK_CX::enum_PhysicalDevs();
-        amVK_CX::enum_PD_qFamilies();
-        this->auto_choosePD();
-    }
-    LOG_MK1("GPU SELECTED:- \u0027"  << PD.props[PD_to_index(PD.chozen)].deviceName << "\u0027 Going in For vkCreateDevice");
-
-
-    // ----------- THE CREATE INFO ------------
-    amVK_DeviceMods *MODS = nullptr;    /** [for] new amVK_Device   \see ~amVK_DEVICE()   */
-    if (CI != nullptr) {
-        goto finally_CreateDevice;
-    }
-
-    VkDeviceCreateInfo the_info = {};
-    CI = &the_info;
-        the_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        the_info.pNext = nullptr;
-        the_info.flags = 0;
-
-    MODS = new amVK_DeviceMods(presets, PD.chozen, true);
-        the_info.queueCreateInfoCount = MODS->qCIs.n;
-        the_info.pQueueCreateInfos = MODS->qCIs.data;
-
-        // ----------- DEVICE EXTENSIONS, ENABLED FEATURES ------------
-        the_info.enabledExtensionCount = MODS->exts.n;
-        the_info.ppEnabledExtensionNames = MODS->exts.data;
-        the_info.pEnabledFeatures = &MODS->req_ftrs;
-
-    
-    // ----------- Actually Create the VkDevice ------------
-    finally_CreateDevice:
-    {
-        VkDevice device = nullptr;
-        VkResult res = vkCreateDevice( //Occupies Almost 20MB
-            PD.chozen, CI, nullptr, &device
-        );
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateDevice() failed, time to call the devs, it's an highly unstable emergency. amASSERT"); amASSERT(true); return nullptr; }
-
-        LOG("VkDevice Created! Yessssss, Time Travel! \n");
-
-        amVK_Device *the_device = new amVK_Device(device, PD.chozen, MODS);
-        D_list.push_back(the_device);
-        PD.isUsed[PD.chozen_index] = true;
-
-        return the_device;
-    }
-}
-
-
-/**
- *             ███╗   ███╗██╗  ██╗██████╗ 
- *   ▄ ██╗▄    ████╗ ████║██║ ██╔╝╚════██╗
- *    ████╗    ██╔████╔██║█████╔╝  █████╔╝
- *   ▀╚██╔▀    ██║╚██╔╝██║██╔═██╗ ██╔═══╝ 
- *     ╚═╝     ██║ ╚═╝ ██║██║  ██╗███████╗
- *             ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝                        
- */
-amVK_Device *amVK_CX::CreateDeviceMK2(amVK_DeviceMods *MODS) {
-    amFUNC_HISTORY();
-    
-    VkDeviceCreateInfo the_info = {
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, nullptr, 0,
-        MODS->qCIs.n, MODS->qCIs.data,          0, nullptr, /* [Deprecated] Layer */
-        MODS->exts.n, MODS->exts.data,
-       &MODS->req_ftrs
-    };
-    amVK_Device *the_device = this->CreateDevice(amVK_DP_UNDEFINED, &the_info);
-    the_device->_MODS = MODS;
-    LOG("MK2 NO ERROR");
-    return the_device;
-}
-amVK_DeviceMods *amVK_CX::DeviceModsMK2(amVK_DevicePreset_Flags presets, uint32_t ur_exts_n, uint32_t ur_qCIs_n) {
-    amFUNC_HISTORY();
-
-    if (!PD.list) load_PD_info(false, true);
-
-    amVK_DeviceMods *MODS = new amVK_DeviceMods(presets, PD.chozen, false);
-        MODS->qCIs.n = ur_qCIs_n;
-        MODS->exts.n = ur_exts_n;
-        MODS->konfigurieren();
-
-    return MODS;
-}
-
-bool amVK_CX::DestroyDeviceMK2(amVK_Device *DEVICE) {
-    amFUNC_HISTORY();
-
-    /** \todo BackUP_StackTrace.... to get written if program closes.... */
-    vkDestroyDevice(DEVICE->_D, nullptr);
-    D_list.erase(D_list.begin() + D_list.index(DEVICE));
-    delete DEVICE;
-    return true;
-}
 bool amVK_CX::DestroyInstance(void) {
     amFUNC_HISTORY();
 
@@ -182,28 +81,6 @@ bool amVK_CX::DestroyInstance(void) {
     instance = nullptr;
     return true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -229,11 +106,18 @@ void amVK_CX::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
         appInfo = &newAppInfo;
     }
     appInfo->pEngineName = "amVK";
-    appInfo->engineVersion = VK_MAKE_VERSION(0, 0, 1);
-    LOG("amVK Engine Version 0.0.1b \n\n");
+    appInfo->engineVersion = VK_MAKE_VERSION(0, 0, 3);
+    LOG("amVK Engine Version 0.0.3 \n\n");
     
     amVK_CX::vk_appInfo = *(appInfo);
 }
+
+
+
+
+
+
+
 
 /**
     ██╗     ███████╗██╗   ██╗███████╗██╗         ██████╗ 
@@ -780,53 +664,6 @@ if you fetched them in some custom way e.g. using some loader like Volk.
  * [FROM https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html]
  */
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /**
     https://open.spotify.com/playlist/142cbkQ47RALYjSZ1SDfkj?si=0a3c910e6a214e3c
     https://open.spotify.com/playlist/6OlaKLLkqZMbeiYVlnYS3O?si=c9d61255910b4723
@@ -836,257 +673,3 @@ if you fetched them in some custom way e.g. using some loader like Volk.
     https://open.spotify.com/playlist/7sva0cdxDoes7IULKHdQZK?si=859584c635c249fc
     https://open.spotify.com/playlist/5O6qx7wpZ8kcC2VuhziNSK?si=36819cd6102f4580
  */
-
-
-/**
- *              █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██████╗ ███████╗██╗   ██╗██╗ ██████╗███████╗███╗   ███╗ ██████╗ ██████╗ ███████╗
- *   ▄ ██╗▄    ██╔══██╗████╗ ████║██║   ██║██║ ██╔╝        ██╔══██╗██╔════╝██║   ██║██║██╔════╝██╔════╝████╗ ████║██╔═══██╗██╔══██╗██╔════╝
- *    ████╗    ███████║██╔████╔██║██║   ██║█████╔╝         ██║  ██║█████╗  ██║   ██║██║██║     █████╗  ██╔████╔██║██║   ██║██║  ██║███████╗
- *   ▀╚██╔▀    ██╔══██║██║╚██╔╝██║╚██╗ ██╔╝██╔═██╗         ██║  ██║██╔══╝  ╚██╗ ██╔╝██║██║     ██╔══╝  ██║╚██╔╝██║██║   ██║██║  ██║╚════██║
- *     ╚═╝     ██║  ██║██║ ╚═╝ ██║ ╚████╔╝ ██║  ██╗███████╗██████╔╝███████╗ ╚████╔╝ ██║╚██████╗███████╗██║ ╚═╝ ██║╚██████╔╝██████╔╝███████║
- *             ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚══════╝╚═════╝ ╚══════╝  ╚═══╝  ╚═╝ ╚═════╝╚══════╝╚═╝     ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝                                                                                                                                    
- */
-
-const char *amVK_DeviceMods::flag_2_strName(amVK_DevicePreset_Flags flag) {
-    switch (flag)
-    {
-        case amVK_DP_UNDEFINED:
-            return "amVK_DP_UNDEFINED";
-
-        case amVK_DP_GRAPHICS:
-            return "amVK_DP_GRAPHICS";
-        case amVK_DP_COMPUTE:
-            return "amVK_DP_COMPUTE";
-
-        case amVK_DP_TRANSFER:
-            return "amVK_DP_TRANSFER";
-        case amVK_DP_SPARSE:
-            return "amVK_DP_SPARSE";
-        case amVK_DP_VIDEO_DECODE:
-            return "amVK_DP_VIDEO_DECODE";
-        case amVK_DP_VIDEO_ENCODE:
-            return "amVK_DP_VIDEO_ENCODE";
-
-        case amVK_DP_PROTECTED_MEM:
-            return "amVK_DP_PROTECTED_MEM";
-
-        case amVK_DP_3DEngine:
-            return "amVK_DP_3DEngine";
-        case amVK_DP_Encode_Decode:
-            return "amVK_DP_Encode_Decode";
-        case amVK_DP_Image_Shaders:
-            return "amVK_DP_Image_Shaders";
-        case amVK_DP_Compositor:
-            return "amVK_DP_Compositor";
-        case amVK_DP_RayTracing:
-            return "amVK_DP_RayTracing";
-
-        default: 
-            return "We gotta Return something DUH!!! [this is amVK_DeviceMods::flag_2_strName]";
-    }
-}
-
-/** Also    \see amVK_DeviceExtensionsBools     in the HEADER */
-static const char *amVK_DeviceExtensions[9] = {
-  "VK_NONE_undefined",
-  /** amVK_DevicePreset_Graphics */
-  "VK_KHR_swapchain",
-  /** amVK_DevicePreset_Encode_Decode */
-  "VK_KHR_video_decode_queue",
-  "VK_KHR_video_encode_queue",
-  "VK_KHR_video_queue",
-  /** amVK_DevicePreset_Image_Shaders | amVK_DevicePreset_Compositor */
-  "VK_KHR_image_format_lists",
-  /** VK_KHR_PERFORMANCE_QUERY", */
-  /** amVK_DevicePreset_RayTracing */
-  "VK_KHR_ray_query",
-  "VK_KHR_ray_tracing_pipeline"
-};
-
-
-
-void amVK_DeviceMods::calc_n_malloc(void) {
-    amFUNC_HISTORY_INTERNAL();
-
-    // ----------- PreMod Settings [a.k.a Configurations] ------------
-    configure_preMod_settings_based_on_presets:
-    {
-        if (_flag & amVK_DP_GRAPHICS) {
-            req_Queues += VK_QUEUE_GRAPHICS_BIT;
-            qCIs.n++;
-
-            req_exts.VK_KHR_SWAPCHAIN = true;
-            exts.n++;
-        }
-        if (_flag & amVK_DP_COMPUTE) {
-            req_Queues += VK_QUEUE_COMPUTE_BIT;
-            qCIs.n++;
-        }
-    }
-
-
-    // ----------- Memory Allocation [MALLOC] ------------
-    memory_allocation_malloc:
-    {
-        /* Mixed with Configuration above
-            if (req_Queues & VK_QUEUE_GRAPHICS_BIT) { qCIs.n++; }
-            if (req_Queues & VK_QUEUE_COMPUTE_BIT)  { qCIs.n++; } 
-        */
-
-        void *test = malloc(qCIs.n * sizeof(VkDeviceQueueCreateInfo)
-                           +exts.n * sizeof(char *));
-        qCIs.data = static_cast<VkDeviceQueueCreateInfo *> (test);
-        exts.data = reinterpret_cast<char **> (qCIs.data + qCIs.n);
-    }
-}
-
-
-/** 
-    \│/  ┌─┐ ╔═╗╦┌─┐
-    ─ ─  │─┼┐║  ║└─┐
-    /│\  └─┘└╚═╝╩└─┘
-   * 1 Queue per TYPE/PRESET [Graphics/Compute/Transfer/Sparse/ENC_DEC]   only ENC_DEC has 2 queue 
-*/
-void amVK_DeviceMods::set_qCIs(void) {
-    amFUNC_HISTORY_INTERNAL();
-
-    uint32_t PD_index = HEART_CX->PD_to_index(_PD);
-    amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART_CX->PD.qFamily_lists[PD_index];
-
-
-
-    // ----------- Indexes graphicsQueueFamily, computeQueueFamily ------------
-    struct dedicated_qFAM_T {
-        uint32_t graphics = 0xFFFFFFFF;
-        uint32_t  compute = 0xFFFFFFFF;
-    } dedicated_qFAM;
-
-    // ----------- FIND Device qFamily INFO & SUP ------------
-    find_req_qFAMs:
-    {
-        for (int i = 0, lim = qFAM_list.size(); i < lim; i++) {
-        // We try to find if any qFAM support ONLY DEDICATED qTYPE   [bcz: https://www.reddit.com/r/vulkan/comments/bw47tg/comment/epvnikg/]
-        VkQueueFlags qFLAGS = qFAM_list[i].queueFlags;
-        
-        // TODO: smtimes graphics & presentation qFAM is same.... But still graphics might be a DEDICATED one....
-        if      (qFLAGS == VK_QUEUE_GRAPHICS_BIT) { dedicated_qFAM.graphics = i;} 
-        else if (qFLAGS == VK_QUEUE_COMPUTE_BIT)  { dedicated_qFAM.compute  = i;}
-
-        if (_graphics_qFAM == 0xFFFFFFFF) {    if (qFLAGS & VK_QUEUE_GRAPHICS_BIT) {_graphics_qFAM = i;}   }
-        if (_compute_qFAM == 0xFFFFFFFF)  {    if (qFLAGS & VK_QUEUE_COMPUTE_BIT)  { _compute_qFAM = i;}   }
-        }
-        if (dedicated_qFAM.graphics != 0xFFFFFFFF) { _graphics_qFAM = dedicated_qFAM.graphics; }
-        if (dedicated_qFAM.compute != 0xFFFFFFFF)  {  _compute_qFAM = dedicated_qFAM.compute;  }
-    }
-
-
-    // ----------- Main MODs ------------
-    modifications:
-    {
-        if (req_Queues & VK_QUEUE_GRAPHICS_BIT) { //amVK_DevicePreset_Graphics
-            if (_graphics_qFAM == 0xFFFFFFFF) {LOG_MODS_NOTSUP("Couldn't Find any GRAPHICS qFamily"); does_PD_sup_mods = false;}
-            amVK_ARRAY_PUSH_BACK(qCIs) = {
-                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                nullptr,
-                0,        /** flags */
-                _graphics_qFAM,
-                1,        /** queueCount */
-                &_qPRIORITIES
-            };
-        }
-        if (req_Queues & VK_QUEUE_COMPUTE_BIT) {  //amVK_DevicePreset_Compute
-            if (!_compute_qFAM == 0xFFFFFFFF) {LOG_MODS_NOTSUP("Couldn't Find any COMPUTE qFamily"); does_PD_sup_mods = false;}
-            amVK_ARRAY_PUSH_BACK(qCIs) = {
-                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                nullptr,
-                0,        /** flags */
-                _compute_qFAM,
-                1,        /** queueCount */
-                &_qPRIORITIES
-            };
-        }
-    }
-}
-
-
-/**
-    \│/  ┌─┐─┐ ┬┌┬┐┌─┐
-    ─ ─  ├┤ ┌┴┬┘ │ └─┐
-    /│\  └─┘┴ └─ ┴ └─┘
-*/
-void amVK_DeviceMods::set_exts(void) {
-    amFUNC_HISTORY_INTERNAL();
-
-    amVK_Array<VkExtensionProperties> sup_exts = {};
-    vkEnumerateDeviceExtensionProperties(_PD, nullptr, &sup_exts.n, nullptr);
-    sup_exts.data = new VkExtensionProperties[sup_exts.n];
-    vkEnumerateDeviceExtensionProperties(_PD, nullptr, &sup_exts.n, sup_exts.data);
-
-    // ----------- FIND Device Exts SUP ------------
-    amVK_DeviceExtensionsBools isSup = {};
-    find_sup_exts: 
-    {
-        uint32_t found_n = 0;
-
-        for (int i = 0, lim = sup_exts.n; i < lim; i++) {
-            if (found_n == exts.n) break;
-
-            /** most of the time the first 6 CHARS will match, so.... */
-            if (strcmp(&sup_exts.data[i].extensionName[6], "_swapchain")) {
-                isSup.VK_KHR_SWAPCHAIN = true;
-                found_n++;
-            }
-            /** else if ()
-             * MORE SOON, For now only amVK_DevicePreset_Graphics */
-        }
-    }
-    delete[] sup_exts.data;
-
-    find_req_exts:
-    {
-        const bool *req_exts_p = reinterpret_cast<bool *> (&req_exts);
-        const bool *sup_exts_p = reinterpret_cast<bool *> (&isSup);
-        bool result_success = true;
-
-        for (int i = 0; i < sizeof(req_exts); i++) {
-            if (req_exts_p[i] && !sup_exts_p[i]) {
-                LOG_MODS_NOTSUP("Device Extension: \u0027" << amVK_DeviceExtensions[i] << "isn't supported....");
-                result_success = false;
-                does_PD_sup_mods = false;
-            }
-        }
-    }
-
-    // ----------- Main MODs ------------
-    modifications:
-    {
-        if (req_exts.VK_KHR_SWAPCHAIN) {
-            amVK_ARRAY_PUSH_BACK(exts) = const_cast<char *>(amVK_DeviceExtensions[1]);
-        }
-    }
-}
-
-
-/** 
-    \│/  ┌─┐┌─┐┌─┐┌┬┐┬ ┬┬─┐┌─┐┌─┐
-    ─ ─  ├┤ ├┤ ├─┤ │ │ │├┬┘├┤ └─┐
-    /│\  └  └─┘┴ ┴ ┴ └─┘┴└─└─┘└─┘
-*/
-void amVK_DeviceMods::set_ftrs(void) {
-    amFUNC_HISTORY_INTERNAL();
-
-    uint32_t PD_index = HEART_CX->PD_to_index(_PD);
-    VkPhysicalDeviceFeatures sup_ftrs = HEART_CX->PD.features[PD_index];
-
-    // ----------- Main MODs ------------
-    modifications:
-    {
-        if (_flag & amVK_DP_3DEngine) {
-            if (sup_ftrs.geometryShader) req_ftrs.geometryShader = true;
-            if (sup_ftrs.tessellationShader) req_ftrs.tessellationShader = true;
-        }
-
-        /** Sparse \todo */
-        /** shaderStorageImageExtendedFormats \todo */
-    }
-}

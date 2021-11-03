@@ -1,68 +1,89 @@
-#ifndef amVK_RENDERPASS_H
-#define amVK_RENDERPASS_H
+#ifndef amVK_RENDERPASS_HH
+#define amVK_RENDERPASS_HH
+
 #include "vulkan/vulkan.h"
 
-#define amVK_LOGGER_BLI_ASSERT
-#include "amVK_Common.hh"
+#include "amVK_IN.hh"
 #include "amVK_Device.hh"
 /** #include "amVK_WI.hh" in .cpp before \fn set_surfaceFormat */
 
 
+struct amVK_SurfaceMK2;
+
+
+#define amVK_RenderPass amVK_RenderPassMK2
 /**
- *              █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██████╗ ███████╗███╗   ██╗██████╗ ███████╗██████╗ ██████╗  █████╗ ███████╗███████╗
- *   ▄ ██╗▄    ██╔══██╗████╗ ████║██║   ██║██║ ██╔╝        ██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝
- *    ████╗    ███████║██╔████╔██║██║   ██║█████╔╝         ██████╔╝█████╗  ██╔██╗ ██║██║  ██║█████╗  ██████╔╝██████╔╝███████║███████╗███████╗
- *   ▀╚██╔▀    ██╔══██║██║╚██╔╝██║╚██╗ ██╔╝██╔═██╗         ██╔══██╗██╔══╝  ██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗██╔═══╝ ██╔══██║╚════██║╚════██║
- *     ╚═╝     ██║  ██║██║ ╚═╝ ██║ ╚████╔╝ ██║  ██╗███████╗██║  ██║███████╗██║ ╚████║██████╔╝███████╗██║  ██║██║     ██║  ██║███████║███████║
- *             ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝
- * ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+ *             ██████╗ ███████╗███╗   ██╗██████╗ ███████╗██████╗ ██████╗  █████╗ ███████╗███████╗        ███╗   ███╗██╗  ██╗██████╗ 
+ *   ▄ ██╗▄    ██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝██╔════╝        ████╗ ████║██║ ██╔╝╚════██╗
+ *    ████╗    ██████╔╝█████╗  ██╔██╗ ██║██║  ██║█████╗  ██████╔╝██████╔╝███████║███████╗███████╗        ██╔████╔██║█████╔╝  █████╔╝
+ *   ▀╚██╔▀    ██╔══██╗██╔══╝  ██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗██╔═══╝ ██╔══██║╚════██║╚════██║        ██║╚██╔╝██║██╔═██╗ ██╔═══╝ 
+ *     ╚═╝     ██║  ██║███████╗██║ ╚████║██████╔╝███████╗██║  ██║██║     ██║  ██║███████║███████║███████╗██║ ╚═╝ ██║██║  ██╗███████╗
+ *             ╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝
+ * ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
  *                                            - RENDER PASSES [(Swapchain) FrameBuffer ties to this] -
- * ═══════════════════════════════════════════════════════════════ HIGH LIGHTS ══════════════════════════════════════════════════════════════
+ * ════════════════════════════════════════════════════════════ HIGH LIGHTS ═══════════════════════════════════════════════════════════
  * \brief
  * MSAA [MultiSampling], Depth Stencil, Tiled Rendering, MultiPass [Deferred Rendering]
  * 
+ * [MOTTO: its more about the SubPasses and not about'RenderPass' hype that you get from hearing the name]
+ * 
+ * 
  * \note Attachments are what Ties RENDERPASS & Framebuffers Together
  * This class is more like a Struct and is used like that, LINKS: with amVK_WI [ \todo why ]
-*/
-class amVK_RenderPassMK1 { /** TREAT this like a STRUCT, that you will have to Pass on to other amVK_Classes.... for Auto mods */
+ * 
+ * \see \fn set_attachments() for Attachment Related Docs
+ * \see \fn set_attachment_refs() for attachment Reference related Docs 
+ * 
+ * \see create_framebuffers in amVK_WI
+ * 
+ * attachment_refs are How subpass knows about the Attachments    & ties with the_info.pAttachments index
+ * 
+ * 
+ * 
+ * ══════════════════════════════════════════════════════════ EXT HIGH LIGHTS: ═════════════════════════════════════════════════════════
+ * \note For Now we only impl. 1 Subpass as Desktop GPUs \todo MUST: 
+ * 
+ * [vblanco20-1] [from: https://vkguide.dev/docs/chapter-1/vulkan_renderpass/]
+ *     In Vulkan, all of the rendering happens inside a VkRenderPass. 
+ *     It is not possible to do rendering commands outside of a renderpass, 
+ *     but it is possible to do   Compute commands without them.
+ * 
+ * MUST-READ: https://gpuopen.com/learn/vulkan-renderpasses/      [They explain whats actually goin on, Explains SubPasses]
+ * 
+ *     The renderpass is a concept that only exists in Vulkan. 
+ *     It’s there because it allows the driver to know more about the state of the images you render.  
+ *     [HOW? Bcz of SubPasses, (thats only if... you do use them)]
+ *        Now whaat can someone mean by 'state of the images'?   
+ *        well if you have ever deffered rendering.... or Multiple Passes in Blender.... like Mist, Diffuse, Specular, Volume
+ *        its like, in OpenGL People used to implement multiple FRAMEBUFFERS or IMAGEs for each of these Passes.... but this theory of PASSES is slightly by a bit different
+ *          cz this one usually has like DEPTH or STENCIL as the other Passes.... then only if the Game Engine author wants the other Passes like from blender to be like that....
+ *        
+ *        Now each of these passes can depend on each other.... so comes again the idea of States.... if a pass is Done or is in Rendering process.... thats it, yeah....
+ * 
+ * \see create_framebuffers in amVK_WI
+ * 
+ * \in main module page.... "This file in Individual.... cz 
+ *                              \note it ties to ONLY the Swapchain Framebuffers & Multipass.... (Deffered Rendering & Tiled rendering)   [& slightly to Pipeline a bit]"
+ *                              and as this is a new concept in VULKAN, this deserved its very own page for now
+ *                           most people tends to get confused over this so i created a Individual File for this....
+ *                              People uses classes when they will be using many SIMILAR OBEJCTS, but in our this case, we just want to MAKE sure that this CONCEPT of RenderPass catches Eyes 😉
+ *                           make sure that this->_amVK_D matches with the    amVK_WI->_amVK_D
+ * 
+ * WHY Ties to Pipeline: https://stackoverflow.com/a/55992644   \todo Go Furthur, Invertigator....
+ *
+ * \TODO: Should we change `calc_n_malloc` to `alloc`? 
+ */
+class amVK_RenderPassMK2 {
   public:
     VkRenderPass           _RP = nullptr;
-    amVK_Device       *_amVK_D = nullptr;
-
-    amVK_RenderPassMK1(amVK_Device *D = nullptr) : _amVK_D(D) { 
-      if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
-      else {amVK_CHECK_DEVICE(D, _amVK_D);}
-    }
+    amVK_DeviceMK2       *_amVK_D = nullptr;
 
     VkSampleCountFlagBits            samples = VK_SAMPLE_COUNT_1_BIT;         /** [MSAA MultiSample] \todo Can depthAttachment use DIfferent Sample numebr? */
     VkFormat           final_imageFormat     = amVK_SWAPCHAIN_IMAGE_FORMAT;   /** \see amVK_Types.hh */
     VkColorSpaceKHR    final_imageColorSpace = amVK_SWAPCHAIN_IMAGE_COLORSPACE;
 
     // depth_format = VK_FORMAT_D32_SFLOAT;
-};
 
-
-
-
-
-
-struct amVK_SurfaceMK2;
-#define amVK_RenderPass amVK_RenderPassMK2
-/**
- *             ███╗   ███╗██╗  ██╗██████╗ 
- *   ▄ ██╗▄    ████╗ ████║██║ ██╔╝╚════██╗
- *    ████╗    ██╔████╔██║█████╔╝  █████╔╝
- *   ▀╚██╔▀    ██║╚██╔╝██║██╔═██╗ ██╔═══╝ 
- *     ╚═╝     ██║ ╚═╝ ██║██║  ██╗███████╗
- *             ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝
- * 
- * \see \fn set_attachments() for Attachment Related Docs
- * \see \fn set_attachment_refs() for attachment Reference related Docs 
- * 
- * attachment_refs are How subpass knows about the Attachments    & ties with the_info.pAttachments index
- */
-class amVK_RenderPassMK2 : public amVK_RenderPassMK1 {
-  public:
     bool     color_attachment = true;
     bool     depth_attachment = false; /** [DepthAttachment, Depth Stecil] */
     bool       single_subpass = true;  /** For now this is the Only Support.   You can PUSH_BACK your own subpasses EXPLICITLY tho thats what MK2 is about right? */
@@ -77,8 +98,14 @@ class amVK_RenderPassMK2 : public amVK_RenderPassMK1 {
     amVK_Array<VkSubpassDescription>            subpasses = {};
 
     amVK_SurfaceMK2 *demoSurfaceExt = nullptr;
-    amVK_RenderPassMK2(amVK_SurfaceMK2 *S, amVK_Device *D = nullptr) : amVK_RenderPassMK1(D), demoSurfaceExt(S) {amASSERT(!_amVK_D); amASSERT(!S);}
+    amVK_RenderPassMK2(amVK_SurfaceMK2 *S, amVK_DeviceMK2 *D = nullptr) : demoSurfaceExt(S) {
+      if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
+      else {amVK_CHECK_DEVICE(D, _amVK_D);}
+      amASSERT(!S);
+    }
     /** MK2 MODIFY */
+
+    /** \todo make all amvk classes to have malloc as in that exact name */
     void calc_n_malloc(void);  //Increments attachment.n  and such amVK_Arrays
     void konfigurieren(void) {/** Do calc_n_malloc() first */set_surfaceFormat(); set_attachments(); set_attachment_refs(); set_subpasses();}
 
@@ -150,6 +177,7 @@ VkImageUsageFlags image_layout_2_usageflags(VkImageLayout finalLayout) {
   }
 }
 
+/** aspectMask is similar to the usageFlags from the image. It’s about what this image is used for. */
 VkImageAspectFlags image_layout_2_aspectMask(VkImageLayout finalLayout) {
   switch (finalLayout)
   {
@@ -170,4 +198,4 @@ VkImageAspectFlags image_layout_2_aspectMask(VkImageLayout finalLayout) {
   VkImageAspectFlags image_layout_2_aspectMask(VkImageLayout finalLayout);
 #endif // amVK_RENDERPASS_CPP
 
-#endif //amVK_RENDERPASS_H
+#endif //amVK_RENDERPASS_HH
