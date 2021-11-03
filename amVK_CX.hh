@@ -6,13 +6,11 @@
 #include <cstring>          // strcmp()     [cstdlib in .cpp]
 #include <vector>
 
-#ifdef amVK_CPP             //amVK_CX.cpp file
+#ifdef amVK_CPP             // amVK_CX.cpp file
   #define amVK_LOGGER_IMPLIMENTATION  // amASSERT() impl.
 #endif
 #include "amVK_IN.hh"       // amVK_IN, #define HEART, HEART_CX,   amVK_Logger.hh, amVK_Types.hh, amVK_Utils.hh
-#ifndef amVK_DEVICE_HH
-  class amVK_DeviceMK2;
-#endif
+#include "amVK_Device.hh"
 
 
 

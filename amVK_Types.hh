@@ -20,7 +20,7 @@
 
 
 /** Only used for amVK_CX::PD... and it was intended  ([should] not [be] used anywhere else) */
-typedef struct everything_PD__ {
+struct loaded_PD_info_plus_plus {
   VkPhysicalDevice                 *list = nullptr;         //'Physical Devices List'
   VkPhysicalDeviceProperties      *props = nullptr;         //'Physical Devices Properties'
   VkPhysicalDeviceFeatures     *features = nullptr;         //'Physical Devices Features'
@@ -33,7 +33,16 @@ typedef struct everything_PD__ {
   uint32_t                  chozen_index = 0;
   uint32_t                   *benchMarks = nullptr;
   uint32_t           *index_sortedByMark = nullptr;
-} loaded_PD_info_plus_plus;
+
+  inline uint32_t index(VkPhysicalDevice pd) {
+    for (uint32_t i = 0; i < n; i++) {
+      if (pd == list[i]) {return i;}
+    }
+    return 0xFFFFFFFF;  //NOT FOUND
+  }
+
+  inline const VkQueueFamilyProperties *get_qFamilies(VkPhysicalDevice pd) {return const_cast<VkQueueFamilyProperties *> (qFamily_lists[index(pd)].data);}
+};
 
 /** 
  * TODO: You can use it like    DevicePresets = amVK_DevicePreset_Graphics + amVK_DevicePreset_Compute   [We will create 1 GRAPHICS & 1 COMPUTE Queue]

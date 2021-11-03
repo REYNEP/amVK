@@ -13,7 +13,7 @@
 #include "vk_mem_alloc.h"
 #define amVK_DO_INIT_VMA true
 
-class amVK_DeviceMK2;
+class amVK_DeviceMK2; //This is a Forward Declaration. Now amVK_IN.hh checks if amVK_DEVICE_HH is defined....
 #include "amVK_IN.hh"
 
 
@@ -64,7 +64,7 @@ class amVK_DeviceMK2 {
 
       if (PD == nullptr) {
         _PD = HEART->PD.chozen;
-        LOG("GPU SELECTED:- \u0027"  << HEART->PD.props[HEART->PD_to_index(HEART->PD.chozen)].deviceName << "\u0027 Going in For vkCreateDevice");
+        LOG("GPU SELECTED:- \u0027"  << HEART->PD.props[HEART->PD.index(HEART->PD.chozen)].deviceName << "\u0027 Going in For vkCreateDevice");
       }
 
       this->qCIs.n = ur_qCIs_n;
@@ -82,7 +82,7 @@ class amVK_DeviceMK2 {
 
     /** INITIALIZE */
     void konfigurieren(void) { 
-      LOG("amVK_DeviceMK2(" << flag_2_strName(_flag) << ", " << "\u0022" << "Physical Device [" << _PD << "] :- \u0027" << HEART->PD.props[HEART->PD_to_index(_PD)].deviceName << "\u0027 " << "\u0022)");
+      LOG("amVK_DeviceMK2(" << flag_2_strName(_flag) << ", " << "\u0022" << "Physical Device [" << _PD << "] :- \u0027" << HEART->PD.props[HEART->PD.index(_PD)].deviceName << "\u0027 " << "\u0022)");
       calc_n_malloc(); set_qCIs(); set_exts(); set_ftrs();
     }
 

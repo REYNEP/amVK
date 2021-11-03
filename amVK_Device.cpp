@@ -106,7 +106,7 @@ void amVK_DeviceMK2::calc_n_malloc(void) {
 void amVK_DeviceMK2::set_qCIs(void) {
     amFUNC_HISTORY_INTERNAL();
 
-    uint32_t PD_index = HEART->PD_to_index(_PD);
+    uint32_t PD_index = HEART->PD.index(_PD);
     amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
 
 
@@ -232,7 +232,7 @@ void amVK_DeviceMK2::set_exts(void) {
 void amVK_DeviceMK2::set_ftrs(void) {
     amFUNC_HISTORY_INTERNAL();
 
-    uint32_t PD_index = HEART->PD_to_index(_PD);
+    uint32_t PD_index = HEART->PD.index(_PD);
     VkPhysicalDeviceFeatures sup_ftrs = HEART->PD.features[PD_index];
 
     // ----------- Main MODs ------------

@@ -1,13 +1,13 @@
-#ifndef amVK_PIPELINE_H
-#define amVK_PIPELINE_H
+#ifndef amVK_PIPELINE_HH
+#define amVK_PIPELINE_HH
 
-#include <string>   //load_ShaderModule
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
 #include "amVK_RenderPass.hh"
 
-class amVK_DeviceMK2; // Cyclic Dependency, [Header included in] 😃
 
+
+/** \todo SPIRV-Reflect: Parse DescriptorSet & PushConstant input information from (Compiled Shader) .spv binary */
 class ShaderInputsMK2 {
  public:
   VkPipelineLayout     layout;
@@ -236,4 +236,4 @@ class ShaderInputsMK2_NotSolo : public ShaderInputsMK2 {
   ~ShaderInputsMK2_NotSolo() {if (didMalloc) {free(_pushConsts.data); didMalloc = false;}}
 };
 
-#endif  //amVK_PIPELINE_H
+#endif  //amVK_PIPELINE_HH

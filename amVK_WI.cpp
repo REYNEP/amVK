@@ -30,7 +30,7 @@ amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPass
 
 /** \see \fn amVK_SurfaceMK2::is_presenting_sup() */
 uint32_t amVK_SurfaceMK2::present_qFam(void) {
-    uint32_t PD_index = HEART->PD_to_index(_PD);
+    uint32_t PD_index = HEART->PD.index(_PD);
     amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
 
     VkBool32 sup = false;
@@ -363,7 +363,30 @@ void amVK_WI_MK2::post_create_swapchain(void) {
 
 
 
+VkImageCreateInfo imgCI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, nullptr, 0,
+    VK_IMAGE_TYPE_2D, VK_FORMAT_UNDEFINED, {},
 
+    1, 1, /** [.mipLevels], [.arrayLayers] */
+    VK_SAMPLE_COUNT_1_BIT, /** [.samples] - where you gotta specify MSAA */
+    
+    VK_IMAGE_TILING_OPTIMAL, /** [.tiling], \todo */
+    0,      /** [.usage] */
+    
+    VK_SHARING_MODE_EXCLUSIVE, 0, nullptr, /** [.VkSharingMode] */
+    VK_IMAGE_LAYOUT_UNDEFINED   /** [.initialLayout] */
+};
+
+VkImageViewCreateInfo viewCI = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, 0,
+    nullptr,   VK_IMAGE_VIEW_TYPE_2D,
+    VK_FORMAT_UNDEFINED,
+
+    {}, /** [.components] */
+    {   /** [.subresourceRange] */
+        0,     /** [.aspectMask] */
+        0, 1, /** [.baseMipLevel], [.levelCount] */
+        0, 1  /** [.baseArrayLayer], [.layerCount] */
+    }
+};
 /** 
  * This will connect the render-pass to the images for rendering
  * 
@@ -376,59 +399,23 @@ void amVK_WI_MK2::create_Attachments(void) {
             continue;
         }
 
-        // ----------- INFOs ------------
+        //We dont modify ImageMK2::CI & view_CI values
+        imgCI.extent = {_extent.width, _extent.height, 1};
+        imgCI.samples = _amVK_RP->samples;
 
-        VkImageCreateInfo imgCI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, nullptr, 0,
-            VK_IMAGE_TYPE_2D, VK_FORMAT_UNDEFINED, {_extent.width, _extent.height, 1},
-
-            1, 1, /** [.mipLevels], [.arrayLayers] */
-            _amVK_RP->samples, /** [.samples] - where you gotta specify MSAA */
-            
-            VK_IMAGE_TILING_OPTIMAL, /** [.tiling], \todo */
-            0,      /** [.usage] */
-            
-            VK_SHARING_MODE_EXCLUSIVE, 0, nullptr, /** [.VkSharingMode] */
-            VK_IMAGE_LAYOUT_UNDEFINED   /** [.initialLayout] */
-        };
-        /** Tiling is very important. Tiling describes how the data for the texture is arranged in the GPU. 
-         *  For improved performance, GPUs do not store images as 2d arrays of pixels, 
-         *  but instead use complex custom formats, unique to the GPU brand and even models. 
-         *  VK_IMAGE_TILING_OPTIMAL tells vulkan to let the driver decide how the GPU arranges the memory of the image. 
-         *  If you use VK_IMAGE_TILING_OPTIMAL, it won’t be possible to read the data from CPU or to write it without changing its tiling first 
-         *  (it’s possible to change the tiling of a texture at any point, but this can be a costly operation). 
-         *  The other tiling we can care about is VK_IMAGE_TILING_LINEAR, which will store the image as a 2d array of pixels. 
-         *  While LINEAR tiling will be a lot slower, it will allow the cpu to safely write and read from that memory.   - vblanco20-1 */
-
-        VkImageViewCreateInfo viewCI = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, 0,
-            nullptr,   VK_IMAGE_VIEW_TYPE_2D,
-            VK_FORMAT_UNDEFINED,
-
-            {}, /** [.components] */
-            {   /** [.subresourceRange] */
-                0,     /** [.aspectMask] */
-                0, 1, /** [.baseMipLevel], [.levelCount] */
-                0, 1  /** [.baseArrayLayer], [.layerCount] */
-            }
-        };
-
-
-
-        // ----------- finally_create ------------
         finally_create:
         {
             for (int fi = 0; fi < IMGs.framebuf_n; fi++) {
                 imgCI.format = _amVK_RP->attachment_descs[i].format;
                 imgCI.usage  = image_layout_2_usageflags(_amVK_RP->attachment_descs[i].finalLayout);
-
-                imgBuf xd = new_image(_amVK_D, &imgCI);
-
-                viewCI.image = xd._img;
                 viewCI.format = _amVK_RP->attachment_descs[i].format;
                 viewCI.subresourceRange.aspectMask = image_layout_2_aspectMask(_amVK_RP->attachment_descs[i].finalLayout);
-                vkCreateImageView(_amVK_D->_D, &viewCI, nullptr, &xd._imgView);
 
-                *(IMGs._ptr_attach(fi, i)) = xd._imgView;
-                *(IMGs._ptr_img   (fi, i)) = xd._img;
+                ImageMK2 xd;
+                xd.create(&imgCI, &viewCI, _amVK_D);   //Creates Image + View
+
+                *(IMGs._ptr_attach(fi, i)) = xd.VIEW;
+                *(IMGs._ptr_img   (fi, i)) = xd.IMG;
                 LOG("Created attachment: IMGs.attachments[" << ((fi * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + fi) << "]");
             }
             LOG("");

@@ -102,7 +102,14 @@ message("\n${glslc-exe}\n")
 
 #-----------------------------------------------------------------------------
 # The Final Target
-add_library(lib-amVK amVK_CX.cpp amVK_WI.cpp amVK_RenderPass.cpp amVK_Types.cpp amVK_Device.cpp amVK_Pipeline.cpp amVK_ImgMemBuf.cpp)
+add_library(lib-amVK 
+  amVK_CX.cpp
+  amVK_Types.cpp
+  amVK_Device.cpp
+  amVK_WI.cpp 
+  amVK_RenderPass.cpp 
+  amVK_Pipeline.cpp
+)
 target_include_directories(lib-amVK PUBLIC ${INC_EXTERN})
 target_compile_definitions(lib-amVK PUBLIC ${DEF})
 if (WIN32)

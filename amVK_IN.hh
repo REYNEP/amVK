@@ -35,7 +35,7 @@
 #include "amVK_Types.hh"
 
 
-
+//Even if this file does this.... all other amVK Headers includes amVK_Device.hh if they have a `amVK_DeviceMK2` var
 #ifndef amVK_DEVICE_HH
   class amVK_DeviceMK2;
 #endif
@@ -88,16 +88,6 @@ class amVK_IN {
      */
     virtual bool load_PD_info(bool force_load, bool auto_choose) = 0;
 
-    /** used INTERNALLY in other amVK files */
-    uint32_t PD_to_index(VkPhysicalDevice pd) {
-      for (uint32_t i = 0; i < PD.n; i++) {
-        if (pd == PD.list[i]) {return i;}
-      }
-      return 0xFFFFFFFF;  //NOT FOUND
-    }
-
-    inline const VkQueueFamilyProperties *get_qFamilies(VkPhysicalDevice pd) {return const_cast<VkQueueFamilyProperties *> (PD.qFamily_lists[PD_to_index(pd)].data);}
-
 
     /** Only way to set activeD, function not internally called.... */
     void activate_device(amVK_DeviceMK2 *D) {
@@ -108,14 +98,14 @@ class amVK_IN {
     ~amVK_IN() {}
 };
 
-
+/** these doesn't need amVK_Device.hh to be included */
 #define amVK_CHECK_DEVICE(PARAM_D, VAR_D) \
   if (PARAM_D && !HEART->D_list.doesExist(PARAM_D)) { \
     LOG_EX("\u0027param amVK_DeviceMK2 *" << #PARAM_D << "\u0027 doesn't exist in 'amVK_CX::heart->D_list'"); \
   } else { VAR_D = PARAM_D; }
 
 #define amVK_SET_activeD(VAR_D) \
-  if           (!HEART->activeD){ LOG_DBG("Either pass a valid amVK_DeviceMK2 as param" << \
+  if           (!HEART->activeD){ LOG_EX("Either pass a valid amVK_DeviceMK2 as param" << \
                                          "\n  ...or see amVK_CX::activeD & amVK_CX::activate_device()  "); } \
   else { VAR_D = HEART->activeD; }
 
