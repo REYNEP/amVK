@@ -2,16 +2,10 @@
 #define amVK_DEVICE_HH
 
 #ifdef amVK_DEVICE_CPP
-  #ifdef amVK_AMD_VMA_SUP
-    #define VMA_IMPLEMENTATION
-  #endif
   #define IMPL_VEC_amVK_DEVICE  /** \see  vec_amVK Device  at eof */
 #endif
 
 #include "vulkan/vulkan.h"
-/** We use VMA for now    [VMA_IMPLIMENTATION used in this Translation Unit] */
-#include "vk_mem_alloc.h"
-#define amVK_DO_INIT_VMA true
 
 class amVK_DeviceMK2; //This is a Forward Declaration. Now amVK_IN.hh checks if amVK_DEVICE_HH is defined....
 #include "amVK_IN.hh"
@@ -31,7 +25,6 @@ class amVK_DeviceMK2; //This is a Forward Declaration. Now amVK_IN.hh checks if 
  * ═════════════════════════════════════════ HIGH  LIGHTS ═══════════════════════════════════════════
  * \brief
  * Handles everything of VkDeviceCreateInfo.... QueueCreateInfos, DeviceExtensions & DeviceFeatures
- * and \external Initiate VMA [VulkanMemoryAllocator by AMD]    --    [external as in we are using an 'External' Library
  * 
  * since we dont have a amVK_PhysicalDevice class, Physical Device related stuffs are mostly in amVK_CX, But you can find sm stuffs here too like the USED Internally section
  * \todo doc this in the MAIN DOC
@@ -43,15 +36,12 @@ class amVK_DeviceMK2 {
     amVK_DevicePreset_Flags _flag = amVK_DP_UNDEFINED;
 
 
-
-
-    VmaAllocator _allocator = nullptr;    /** \see \fn init_VMA() */
     MemoryMK2 *amVK_M = nullptr;          /** as per PD.... so we set this in CONSTRUCTOR */
 
     /** Modified in \fn amVK_DeviceMK2::BindImageMemory.... even for amVK_WI_MK2::create_Attachments... its ok */
-    static inline VkMemoryPropertyFlags   img_mem_flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    static inline VkMemoryPropertyFlags     img_mem_flag = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     /** Modified in \fn amVK_DeviceMK2::BindImageMemory */
-    static inline VkMemoryAllocateInfo      alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr,
+    static inline VkMemoryAllocateInfo    img_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr,
         0, UINT32_T_NULL    /** [.size], [.memoryTypeIndex ] */
     };
 
@@ -78,10 +68,19 @@ class amVK_DeviceMK2 {
       //alloc_info.memoryTypeIndex = img_mem_type;  already should be set
 
       VkDeviceMemory mem = nullptr;
-      vkAllocateMemory(_D, &this->alloc_info, nullptr, &mem);
+      vkAllocateMemory(_D, &this->img_alloc_info, nullptr, &mem);
       vkBindImageMemory(_D, IMG, mem, 0);
       return mem;
     }
+
+    /** Modified in \fn amVK_DeviceMK2::BindImageMemory.... even for amVK_WI_MK2::create_Attachments... its ok */
+    static inline VkMemoryPropertyFlags     buf_mem_flag = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    /** Modified in \fn amVK_DeviceMK2::BindImageMemory */
+    static inline VkMemoryAllocateInfo    buf_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, nullptr,
+        0, UINT32_T_NULL    /** [.size], [.memoryTypeIndex ] */
+    };
+    uint32_t buf_mem_type = UINT32_T_NULL;
+    VkDeviceMemory BindBufferMemory(VkBuffer BUF, VkMemoryPropertyFlags flags = buf_mem_flag);
       
 
 
@@ -170,30 +169,6 @@ class amVK_DeviceMK2 {
   void set_qCIs(void);
   void set_exts(void);
   void set_ftrs(void);
-
-
-
-  /**
-   *              █████╗ ███╗   ███╗██████╗     ██╗   ██╗███╗   ███╗ █████╗ 
-   *   ▄ ██╗▄    ██╔══██╗████╗ ████║██╔══██╗    ██║   ██║████╗ ████║██╔══██╗
-   *    ████╗    ███████║██╔████╔██║██║  ██║    ██║   ██║██╔████╔██║███████║
-   *   ▀╚██╔▀    ██╔══██║██║╚██╔╝██║██║  ██║    ╚██╗ ██╔╝██║╚██╔╝██║██╔══██║
-   *     ╚═╝     ██║  ██║██║ ╚═╝ ██║██████╔╝     ╚████╔╝ ██║ ╚═╝ ██║██║  ██║
-   *             ╚═╝  ╚═╝╚═╝     ╚═╝╚═════╝       ╚═══╝  ╚═╝     ╚═╝╚═╝  ╚═╝
-   * ═════════════════════════════════════════════════════════════════════════
-   *                   - AMD VMA (Vulkan Memory Allocator) -
-   * ═════════════════════════════ HIGH LIGHTS ═══════════════════════════════
-   * \todo Doc....
-   */
-  VmaAllocator init_VMA(void) {
-    VmaAllocatorCreateInfo info = {};
-        info.physicalDevice = _PD;
-        info.device = _D;
-        info.instance = HEART->instance;
-    vmaCreateAllocator(&info, &this->_allocator);
-
-    return this->_allocator;
-  }
 };
 
 #endif //#ifndef amVK_DEVICE_HH

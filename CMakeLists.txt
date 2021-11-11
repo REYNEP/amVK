@@ -20,11 +20,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #-----------------------------------------------------------------------------
 # Options
-# Currently VMA must be ON
-option(amVK_AMD_VMA_SUPPORT "Vulkan Memory Allocator.... amVK_Device will have some VMA-Related stuffs, as VMA is Device Specific" ON)
 option(amVK_MK1_NOOB_LOG "kinda DUMPS stuffs like 'available Vulkan exts/devices/stuffs' in the terminal like an NOOB API" OFF)
-option(amVK_HISTORY "Log every function, its kinda like a live stack_tarce" ON)
-option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" ON)
+option(amVK_HISTORY "Log every function, its kinda like a live stack_tarce" OFF)
+option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" OFF)
 
 #-----------------------------------------------------------------------------
 # Externs
@@ -45,7 +43,6 @@ set(INC
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/intern
   ${amVK_EXTERN}/vulkan-sdk-lunarg/include
-  ${amVK_EXTERN}/VulkanMemoryAllocator/include
 )
 
 set(_all_extern_found TRUE)
@@ -75,9 +72,6 @@ if(WIN32)
 endif()
 
 
-if(amVK_AMD_VMA_SUPPORT)
-  list(APPEND   DEF   amVK_AMD_VMA_SUP)
-endif()
 if(amVK_MK1_NOOB_LOG)
   list(APPEND   DEF   amVK_LOG_MK1)
 endif()
@@ -130,7 +124,6 @@ install(TARGETS lib-amVK
 
 #-----------------------------------------------------------------------------
 # UnSet Options:
-unset(amVK_AMD_VMA_SUPPORT CACHE)
 unset(amVK_MK1_NOOB_LOG CACHE)
 unset(amVK_HISTORY CACHE)
 unset(amVK_HISTORY_INTERNAL CACHE)

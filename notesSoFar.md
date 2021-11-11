@@ -9,8 +9,8 @@
 It's just safe to Include      amVK.hh      [just like you include vulkan/vulkan.hh]      Currently you will need to use amVK_INCLUDE_LIB
     Current Dependency of Each Modules:-
         amVK_DeviceMK2:
-            |-- [.hh]  vk_mem_alloc [AMD__VMA__H]
-            |-- [.cpp] VMA_IMPLEMENTATION   [Definition_Kinda_Stuffs]
+            |-- 
+            |-- 
         amVK_WI:
             |-- [.hh]  amVK_DeviceMK2  [pointerOnly]
             |-- [.cpp] amVK_DeviceMK2  [CLASS__INFO]

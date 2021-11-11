@@ -24,8 +24,7 @@ except (ImportError, ModuleNotFoundError) as err:
 #               ╺┻┛┗━┛┗┻┛╹ ╹┗━╸┗━┛╹ ╹╺┻┛ ┛   ┗━┛╹ ╹┗━╸╹╹   ┛   ╹┗╸┗━╸╹ ╹┗━┛┗┛ ┗━╸
 
 externs = {
-    "vulkan-sdk-lunarg",
-    "VulkanMemoryAllocator"
+    "vulkan-sdk-lunarg"
 }
 extern_dir = "./extern"
 extern_zip = "extern-tmp-youCanDelete.zip"

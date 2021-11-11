@@ -7,7 +7,6 @@ use  `python make.py`  ***or***  `cmake --build ./build-x64/ --target install --
 
 ## inside ./extern   [downloaded_by_make.py]
 - vulkan-sdk-lunarg - comes with [VulkanSDK](https://www.lunarg.com/vulkan-sdk/) by LunarG
-- VulkanMemoryAllocator [VMA](https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 
 
 #### Roadmap... i guess

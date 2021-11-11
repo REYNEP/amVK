@@ -15,6 +15,17 @@
  * we only handle the MemoryHeap management here.... a.k.a if its full
  *      but we don't store stuffs like size and etc. we only like check if result is MEMORY OVERFLOW or smth. 
  *          and let you ask for what heap has how much left
+ * 
+ *
+ * 
+ * 
+ * 
+ * - ## Memory Allocation
+    1. The number of total allocations is fixed by the driver, and can be a number as low as 1024.
+    2. So we gonna use VMA [Vulkan Memory Allocator] (by AMD) & use SubAllocation
+    3. The VMA library abstracts this slightly for us, but it’s still very important to know.
+ * 
+ * \todo Find more details like this on VkMemory,   THIS is From notesSoFar.md
  */
 class MemoryMK2 {
   public:
@@ -44,5 +55,26 @@ class MemoryMK2 {
         return UINT32_T_NULL;
     }
 };
+
+
+/**
+ * | -------------------------------------- |
+ *  SOMETHING ABOUT LOADING Vulkan Functions 
+ * | -------------------------------------- |
+ * 
+
+You may need to configure the way you import Vulkan functions.
+
+By default, VMA assumes you you link statically with Vulkan API. 
+If this is not the case, #define VMA_STATIC_VULKAN_FUNCTIONS 0 before #include of the VMA implementation and use another way.
+
+You can #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1 and make sure vkGetInstanceProcAddr and vkGetDeviceProcAddr globals are defined. 
+All the remaining Vulkan functions will be fetched automatically.
+
+Finally, you can provide your own pointers to all Vulkan functions needed by VMA using structure member VmaAllocatorCreateInfo::pVulkanFunctions, 
+if you fetched them in some custom way e.g. using some loader like Volk.
+
+ * [FROM https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html]
+ */
 
 #endif  //amVK_MEMORY_HH

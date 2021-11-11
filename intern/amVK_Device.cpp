@@ -16,8 +16,7 @@ bool amVK_DeviceMK2::create(void) {
 
     HEART->D_list.push_back(this);
     HEART->PD.isUsed[HEART->PD.chozen_index] = true;  /** \todo DOC This heavily.... after adding support for Multi Device */
-
-    this->init_VMA();
+    
     return true;
 }
 
@@ -37,25 +36,53 @@ VkDeviceMemory amVK_DeviceMK2::BindImageMemory(VkImage IMG, VkMemoryPropertyFlag
     VkMemoryRequirements req;
     vkGetImageMemoryRequirements(_D, IMG, &req);
     
-    alloc_info.allocationSize  = req.size;
+    img_alloc_info.allocationSize  = req.size;
 
     find_memory_type:
     {
         if (flags != this->img_mem_flag) {
-            alloc_info.memoryTypeIndex = amVK_M->_find_mem_type(req.memoryTypeBits, flags);
+            img_alloc_info.memoryTypeIndex = amVK_M->_find_mem_type(req.memoryTypeBits, flags);
         } else {
             if (img_mem_type == UINT32_T_NULL) {
                 img_mem_type = amVK_M->_find_mem_type(req.memoryTypeBits, this->img_mem_flag);
             }
-            alloc_info.memoryTypeIndex = img_mem_type;
+            img_alloc_info.memoryTypeIndex = img_mem_type;
         }
     }
 
     VkDeviceMemory mem = nullptr;
-    VkResult res = vkAllocateMemory(_D, &this->alloc_info, nullptr, &mem);
+    VkResult res = vkAllocateMemory(_D, &this->img_alloc_info, nullptr, &mem);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
 
     res = vkBindImageMemory(_D, IMG, mem, 0);
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
+
+    return mem;
+}
+
+VkDeviceMemory amVK_DeviceMK2::BindBufferMemory(VkBuffer BUF, VkMemoryPropertyFlags flags) {
+    VkMemoryRequirements req;
+    vkGetBufferMemoryRequirements(_D, BUF, &req);
+    
+    buf_alloc_info.allocationSize  = req.size;
+
+    find_memory_type:
+    {
+        if (flags != this->buf_mem_flag) {
+            buf_alloc_info.memoryTypeIndex = amVK_M->_find_mem_type(req.memoryTypeBits, flags);
+        } else {
+            if (buf_mem_type == UINT32_T_NULL) {
+                buf_mem_type = amVK_M->_find_mem_type(req.memoryTypeBits, this->buf_mem_flag);
+            }
+            buf_alloc_info.memoryTypeIndex = buf_mem_type;
+        }
+    }
+
+    VkDeviceMemory mem = nullptr;
+    VkResult res = vkAllocateMemory(_D, &this->buf_alloc_info, nullptr, &mem);
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
+
+    res = vkBindBufferMemory(_D, BUF, mem, 0);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
 
     return mem;

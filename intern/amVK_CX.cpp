@@ -647,36 +647,3 @@ const char *amVK_Utils::vulkan_result_msg(VkResult result) {
             return "ERROR: UNKNOWN VULKAN ERROR";
     }
 }
-
-
-
-
-/**
- * | -------------------------------------- |
- *  SOMETHING ABOUT LOADING Vulkan Functions 
- * | -------------------------------------- |
- * 
-
-You may need to configure the way you import Vulkan functions.
-
-By default, VMA assumes you you link statically with Vulkan API. 
-If this is not the case, #define VMA_STATIC_VULKAN_FUNCTIONS 0 before #include of the VMA implementation and use another way.
-
-You can #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1 and make sure vkGetInstanceProcAddr and vkGetDeviceProcAddr globals are defined. 
-All the remaining Vulkan functions will be fetched automatically.
-
-Finally, you can provide your own pointers to all Vulkan functions needed by VMA using structure member VmaAllocatorCreateInfo::pVulkanFunctions, 
-if you fetched them in some custom way e.g. using some loader like Volk.
-
- * [FROM https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html]
- */
-
-/**
-    https://open.spotify.com/playlist/142cbkQ47RALYjSZ1SDfkj?si=0a3c910e6a214e3c
-    https://open.spotify.com/playlist/6OlaKLLkqZMbeiYVlnYS3O?si=c9d61255910b4723
-    https://open.spotify.com/playlist/6yIn9i7Z8WutrZaCB7ixVw?si=e3a1c53adddc4eec
-    https://open.spotify.com/user/31i7ysye54yvmkkteb757x3z6zo4?si=c538a3a94a084030
-    https://open.spotify.com/playlist/4rmpEaJO1C4lODSDVTST24?si=bcdf324e080141bb
-    https://open.spotify.com/playlist/7sva0cdxDoes7IULKHdQZK?si=859584c635c249fc
-    https://open.spotify.com/playlist/5O6qx7wpZ8kcC2VuhziNSK?si=36819cd6102f4580
- */

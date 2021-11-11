@@ -52,19 +52,19 @@ project "amVK-0.1b"
     defines { "amVK_BUILD_WIN32" }
 
   -- amVK Options   [using premake FILTERS, doesn't really give much criteria of acceptance or usability.... so we made our own Module on Options]
-  newoption {
-    trigger = "amVK_AMD_VMA_SUPPORT",
-    value = "BOOLEAN",
-    description = "Vulkan Memory Allocator.... amVK_DeviceMK2 will have some VMA-Related stuffs, as VMA is Device Specific",
-    default = ON,
-    allowed = {
-      { " true/Y/1/ON",    "TRUE" },
-      { "false/N/0/OFF",   "FALSE" }
-    }
+  --newoption {
+  --  trigger = "amVK_AMD_VMA_SUPPORT",
+  --  value = "BOOLEAN",
+  --  description = "Vulkan Memory Allocator.... amVK_DeviceMK2 will have some VMA-Related stuffs, as VMA is Device Specific",
+  --  default = ON,
+  --  allowed = {
+  --    { " true/Y/1/ON",    "TRUE" },
+  --    { "false/N/0/OFF",   "FALSE" }
+  --  }
   }
   -- amVK Options Modifications
-  filter { "options:amVK_AMD_VMA_SUPPORT=true or amVK_AMD_VMA_SUPPORT=Y or amVK_AMD_VMA_SUPPORT=1 or amVK_AMD_VMA_SUPPORT=ON" }
-    defines { "amVK_AMD_VMA_SUP" }
+  --filter { "options:amVK_AMD_VMA_SUPPORT=true or amVK_AMD_VMA_SUPPORT=Y or amVK_AMD_VMA_SUPPORT=1 or amVK_AMD_VMA_SUPPORT=ON" }
+  -- defines { "amVK_AMD_VMA_SUP" }
 
   -- GET GLSLC [TEST-STUFF]
   local ENV_VK_SDK_PATH = os.getenv("VK_SDK_PATH")

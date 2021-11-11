@@ -11,7 +11,6 @@ class ImageMK2 {
     VkImage               IMG = nullptr;
     VkImageView          VIEW = nullptr;
     VkDeviceMemory     MEMORY = nullptr;
-    VmaAllocation _allocation = nullptr;
     ImageMK2() {}
     ~ImageMK2() {}
 
@@ -135,8 +134,19 @@ class ImageMK2 {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 /** 
- * \todo stop using VMA, it is safe & standard.... but we wanna be fast, not safe always.... still would be good to keep a fallback option 
  * \todo add support for Big Chunk GPU Allocation but small chunk usage.... & Copy
  * 
  * \note static stuffs inside it is like from the same concept like amVK_GraphicsPipes.... we dont wanna keep Re-Set-ing values that we dont need to
@@ -159,17 +169,15 @@ class BufferMK2 {
         else {amVK_CHECK_DEVICE(D, s_amVK_D);}
     }
 
-    VkBuffer _buffer          = nullptr;
-    VmaAllocation _allocation = nullptr;
+    VkBuffer BUFFER       = nullptr;
+    VkDeviceMemory MEMORY = nullptr;
     uint64_t _sizeByte; //maybe deprecate this.... cz the resources e.g. img, or anything really.... will prolly have their own classes. and that will/should have specific sizes. like images have width and height
 
     BufferMK2(void) {}
     ~BufferMK2(void) {}
 
     /** 
-     * \call \fn set_device() before this 
-     * 
-     * \todo here VmaCreateBuffer seems to create Buffer on the CPU-RAM.... then how do we create regular Buffer on GPU?
+     * \call \fn set_device() before this
      * 
      * TODO: INVESTIGATE: What did AMD show us as 256MB here? https://www.youtube.com/watch?v=zSG6dPq57P8&t=308s
      */
@@ -182,30 +190,30 @@ class BufferMK2 {
         CI.size = sizeByte;
         CI.usage = usage;
 
-        VmaAllocationCreateInfo alloc_info = {};
+        VkMemoryPropertyFlags flags = 0;
         switch (usage)
         {
             case VK_BUFFER_USAGE_TRANSFER_SRC_BIT:
-                alloc_info.usage = VMA_MEMORY_USAGE_CPU_ONLY;
+                flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
             case VK_BUFFER_USAGE_VERTEX_BUFFER_BIT:
-                alloc_info.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+                flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         }
 
-        vmaCreateBuffer(s_amVK_D->_allocator, &CI, &alloc_info,
-            &_buffer, &_allocation,
-            nullptr
-        );
+        vkCreateBuffer(s_amVK_D->_D, &CI, nullptr, &BUFFER);
+        MEMORY = s_amVK_D->BindBufferMemory(BUFFER, flags);
     }
 
+    /** \todo VkMemoryMapFlags */
     void copy(const void *from) {
         void* data;
-        vmaMapMemory(s_amVK_D->_allocator, _allocation, &data);
+        vkMapMemory(s_amVK_D->_D, MEMORY, 0, _sizeByte, 0, &data);
         memcpy(data, from, _sizeByte);
-        vmaUnmapMemory(s_amVK_D->_allocator, _allocation);
+        vkUnmapMemory(s_amVK_D->_D, MEMORY);
     }
 
     void destroy(void) {
-        vmaDestroyBuffer(s_amVK_D->_allocator, _buffer, _allocation);
+        vkDestroyBuffer(s_amVK_D->_D, BUFFER, nullptr);
+        vkFreeMemory(   s_amVK_D->_D, MEMORY, nullptr);
     }
 };
 
