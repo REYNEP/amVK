@@ -71,7 +71,9 @@ If you are searching on GITHUB, it Has a problem, Sometimes it won't show stuffs
 amVK_IN.hh - Common stuffs that other amVK files relies on.   this #include(s) amVK_Logger.hh, amVK_Utils.hh, amVK_Types.hh, amVK_Defines.hh & vulkan/vulkan.h .... also has `class amVK_IN` baseClass of `amVK_CX`
 
 amVK_CX.hh - This is what you should include to ***Initialize*** amVK. *See* ***ex1*** block. You can access `PD` member_var [type: `loaded_PD_info_plus_plus`, (amVK_Types.hh)] 
-amVK_CX.cpp - Implementations
+amVK_CX.cpp - 😉
+
+amVK_Device.hh - 
 
 
 ### Notes

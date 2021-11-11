@@ -1,5 +1,5 @@
-#ifndef amVK_IMG_MEM_BUF_MK2_HH
-#define amVK_IMG_MEM_BUF_MK2_HH
+#ifndef amVK_IMG_BUF_HH
+#define amVK_IMG_BUF_HH
 
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
@@ -10,6 +10,7 @@ class ImageMK2 {
   public:
     VkImage               IMG = nullptr;
     VkImageView          VIEW = nullptr;
+    VkDeviceMemory     MEMORY = nullptr;
     VmaAllocation _allocation = nullptr;
     ImageMK2() {}
     ~ImageMK2() {}
@@ -23,7 +24,7 @@ class ImageMK2 {
             VK_SAMPLE_COUNT_1_BIT,
             
             VK_IMAGE_TILING_OPTIMAL, /** [.tiling], \todo */
-            VK_IMAGE_USAGE_TRANSFER_SRC_BIT,      /** [.usage] */
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT,      /** [.usage] : keep when you gonna do vkCmdCopyBufferToImage [a.k.a Texture Inputs], also SEE `VK_IMAGE_USAGE_SAMPLED_BIT` */
             
             VK_SHARING_MODE_EXCLUSIVE, 0, nullptr, /** [.VkSharingMode] */
             VK_IMAGE_LAYOUT_UNDEFINED   /** [.initialLayout] */
@@ -39,10 +40,6 @@ class ImageMK2 {
                 0, 1  /** [.baseArrayLayer], [.layerCount] */
             }
         };
-    static inline VmaAllocationCreateInfo alloc_info = {
-            0, VMA_MEMORY_USAGE_GPU_ONLY, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT   /** flags, usage, requiredFlags */
-            /** more options available, but we ont be needing them */
-        };
 
     static inline amVK_DeviceMK2 *s_amVK_D = nullptr;
     static void set_device(amVK_DeviceMK2 *D) {
@@ -51,42 +48,70 @@ class ImageMK2 {
     }
     
 
-
     inline void create(VkFormat IMG_Format, uint32_t width, uint32_t height) {
         CI.format = IMG_Format;
         view_CI.format = IMG_Format;
         CI.extent = {width, height, 1};
-        this->_create();
+        this->_create(false);
     }
-    /** use this if you want faster perf.... say like when you wanna create same type of image thousands of times.... cz this function doesn't modify Format & extent everytime */
-    void _create(void)
-    {
+    /**
+     * you might not want to modify this static CI.... in that case we have this option 
+     * use this if you want faster perf.... say like when you wanna create same type of image thousands of times.... cz this function doesn't modify Format & extent everytime 
+     * 
+     * USES: \fn s_amVK_D->BindImageMemoryOpt(),   but BindImageMemory() has to be called befre the 'opt' once.
+     *          so call \fn create() once before.
+     * 
+     * \param last_format_n_extent_n_other_stuffs: VkDeviceMemory size is assumed to be same inside \fn BindImageMemoryOpt
+     */
+    void _create(bool last_format_n_extent_n_other_stuffs = false) {
         #ifndef amVK_RELEASE
-            if (s_amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before....");}
+            error_validation:
+            {
+                if (s_amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before.... this   or pass amVK_DeviceMK2 as param");}
+            }
         #endif
-        VkResult res = vmaCreateImage(s_amVK_D->_allocator, &this->CI, &this->alloc_info, &this->IMG, &this->_allocation, nullptr);
 
-        if (res != VK_SUCCESS) {LOG_DBG(amVK_Utils::vulkan_result_msg(res)); LOG(" vmaCreateImage failed [amASSERT]"); amASSERT(true);}
+        VkResult res = vkCreateImage(s_amVK_D->_D, &CI, nullptr, &this->IMG);
+        if (last_format_n_extent_n_other_stuffs)
+            MEMORY = s_amVK_D->BindImageMemoryOpt(this->IMG);   //allocate & bind new memory for image.
+        else 
+            MEMORY = s_amVK_D->BindImageMemory(this->IMG);
 
         view_CI.image = this->IMG;
         vkCreateImageView(s_amVK_D->_D, &this->view_CI, nullptr, &this->VIEW);
     }
 
-    /** you might not want to modify this static CI.... in that case we have this option 
+    /** 
      * \param CreateInfo: VkImageCreateInfo*
      * \param view_CreateInfo: VkImageViewCreateInfo*
      * \param amVK_D: def-value ImageMK2::s_amVK_D   [use set_device(); or s_amVK_D is nullptr]
     */
     void create(VkImageCreateInfo *CreateInfo, VkImageViewCreateInfo *view_CreateInfo, amVK_DeviceMK2 *amVK_D = ImageMK2::s_amVK_D) {
         #ifndef amVK_RELEASE
-            if (amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before.... this");}
+            error_validation:
+            {
+                if (amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before.... this   or pass amVK_DeviceMK2 as param");}
+            }
         #endif
-        VkResult res = vmaCreateImage(amVK_D->_allocator, CreateInfo, &this->alloc_info, &this->IMG, &this->_allocation, nullptr);
 
-        if (res != VK_SUCCESS) {LOG_DBG(amVK_Utils::vulkan_result_msg(res)); LOG(" vmaCreateImage failed [amASSERT]"); amASSERT(true);}
+        VkResult res = vkCreateImage(amVK_D->_D, CreateInfo, nullptr, &this->IMG);
+        MEMORY = amVK_D->BindImageMemory(this->IMG);     //allocate & bind new memory for image.
 
         view_CreateInfo->image = this->IMG;
         vkCreateImageView(amVK_D->_D, view_CreateInfo, nullptr, &this->VIEW);
+    }
+
+    inline void destroy(amVK_DeviceMK2 *amVK_D = ImageMK2::s_amVK_D) {
+        vkDestroyImageView(amVK_D->_D, this->VIEW,   nullptr);
+        vkDestroyImage(    amVK_D->_D, this->IMG,    nullptr);
+        vkFreeMemory(      amVK_D->_D, this->MEMORY, nullptr);
+    }
+
+    static inline bool destroy(VkImage img, VkImageView view, VkDeviceMemory memory, amVK_DeviceMK2 *amVK_D = ImageMK2::s_amVK_D) {
+        vkDestroyImageView(amVK_D->_D, view,   nullptr);
+        vkDestroyImage(    amVK_D->_D, img,    nullptr);
+        vkFreeMemory(      amVK_D->_D, memory, nullptr);
+        return true;
     }
 };
 
@@ -104,6 +129,9 @@ class ImageMK2 {
  * 
  *      - vblanco20-1 
  */
+
+
+
 
 
 
@@ -181,4 +209,4 @@ class BufferMK2 {
     }
 };
 
-#endif //amVK_IMG_MEM_BUF_MK2_HH
+#endif //amVK_IMG_BUF_HH

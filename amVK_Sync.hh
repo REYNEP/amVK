@@ -49,16 +49,18 @@ class amVK_Fence {
     amVK_DeviceMK2 *_amVK_D;
     VkFence _FENCE;
 
-    /** \todo add pNext & flags support  */
-    amVK_Fence(amVK_DeviceMK2 *D = nullptr) : _amVK_D(D) {
+    /**
+     * \param flags: defult: VK_FENCE_CREATE_SIGNALED_BIT - means you wait & reset on it for the first time after creation)
+     * \todo add pNext & flags support  
+     */
+    amVK_Fence(VkFenceCreateFlags flags = VK_FENCE_CREATE_SIGNALED_BIT, amVK_DeviceMK2 *D = nullptr) : _amVK_D(D) {
         if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
         else {amVK_CHECK_DEVICE(D, _amVK_D);}
 
         VkFenceCreateInfo CI = {};
             CI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
             CI.pNext = nullptr;
-        /** so we can wait on it before using it on a GPU command (for the first frame) */
-            CI.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+            CI.flags = flags;
 
         VkResult res = vkCreateFence(_amVK_D->_D, &CI, nullptr, &_FENCE);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}

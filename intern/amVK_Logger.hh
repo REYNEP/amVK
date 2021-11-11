@@ -118,7 +118,7 @@
     #include <chrono>
 
     typedef struct noob_timer__ {
-      std::chrono::steady_clock::time_point time_start = {}, time_flushPoint = {};
+      std::chrono::steady_clock::time_point time_start = {}, time_now = {};
     } noob_timer;
 
     /** Make a array of this STRUCT (like below), then pass the  .time_spent to TIMER_STORE
@@ -133,22 +133,18 @@
     } noob_timer_store;
 
 
-    #define TIMER_FLUSH(var) \
-      var.time_flushPoint = std::chrono::high_resolution_clock::now();
-
     #define TIMER_INIT(var) \
       var.time_start = std::chrono::high_resolution_clock::now();
 
-    // You can just FLUSH at the Beginning and keep LOGGING, but Logging takes ~0.0006s
     #define TIMER_LOG(var) \
-      var.time_flushPoint = std::chrono::high_resolution_clock::now(); \
-      LOG(((std::chrono::duration<double>)(var.time_now - var.time_flushPoint)).count());
+      var.time_now = std::chrono::high_resolution_clock::now(); \
+      LOG(((std::chrono::duration<double>)(var.time_now - var.time_start)).count());
 
       
     // Use something like     arrayDouble[10]     [type of variable must be 'double'  but it can be an array]
     #define TIMER_STORE(var, x) \
       var.time_now = std::chrono::high_resolution_clock::now(); \
-      x = ((std::chrono::duration<double>)(var.time_now - var.time_flushPoint)).count();
+      x = ((std::chrono::duration<double>)(var.time_now - var.time_start)).count();
 
   #endif    // amVK_TIMER
 #endif    //#ifdef INCLUDE_TIMER

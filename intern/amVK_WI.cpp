@@ -1,6 +1,6 @@
 #define amVK_WI_CPP
 #include "amVK_WI.hh"
-#include "amVK_ImgMemBuf.hh"
+#include "amVK_ImgNBuf.hh"
 
 /** 
    ╻ ╻   ┏━╸┏━┓┏┓╻┏━┓╺┳╸┏━┓╻ ╻┏━╸╺┳╸┏━┓┏━┓
@@ -131,7 +131,7 @@ VkSurfaceFormatKHR amVK_SurfaceMK2::filter_SurfaceFormat(VkSurfaceFormatKHR what
     this->get_SurfaceFormats();
     
     LOG("  [searching...] imageFormat: " << what_to_filter.format << ", imageColorSpace: " << what_to_filter.colorSpace);
-    //this->surface_formats
+
     for (int i = 0; i < surface_formats.n; i++) {
         if ((surface_formats.data[i].format     == what_to_filter.format) &&
             (surface_formats.data[i].colorSpace == what_to_filter.colorSpace)) {
@@ -315,7 +315,7 @@ void amVK_WI_MK2::post_create_swapchain(void) {
         IMGs.color_index = _amVK_RP->color_index;
         IMGs.swap_attach_index =  IMGs.color_index;   /** \todo swap_imgs could be used in other ways too */
         /** \todo    IMGs.imageless_framebuffer = false */
-        IMGs.alloc();
+        IMGs._alloc();
     }
 
     uint32_t smth = IMGs.framebuf_n;
@@ -387,11 +387,7 @@ VkImageViewCreateInfo viewCI = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullpt
         0, 1  /** [.baseArrayLayer], [.layerCount] */
     }
 };
-/** 
- * This will connect the render-pass to the images for rendering
- * 
- * \param renderPass: Rendering is done in renderPasses.... So RenderPass uses FrameBuffer's Images
- */
+
 void amVK_WI_MK2::create_Attachments(void) {
     // ----------- CREATE ATTACHMENT/IMGVIEWS FOR RENDERPASS ------------
     for (int i = 0; i < IMGs.attach_n; i++) {
@@ -416,6 +412,7 @@ void amVK_WI_MK2::create_Attachments(void) {
 
                 *(IMGs._ptr_attach(fi, i)) = xd.VIEW;
                 *(IMGs._ptr_img   (fi, i)) = xd.IMG;
+                *(IMGs._ptr_mem   (fi, i)) = xd.MEMORY;
                 LOG("Created attachment: IMGs.attachments[" << ((fi * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + fi) << "]");
             }
             LOG("");
@@ -427,9 +424,7 @@ void amVK_WI_MK2::create_Attachments(void) {
     }
 }
 
-/** 
- * create the framebuffers for the swapchain images. 
- */
+
 void amVK_WI_MK2::create_Framebuffers(void) {
     // ----------- \todo imageless_framebuffer & Separate create_Framebuffer_s------------
 
@@ -444,29 +439,26 @@ void amVK_WI_MK2::create_Framebuffers(void) {
     }
 }
 
-/** 
- * we manually do it like this.... and not like in a std::vector record kinda way, where we keep record of created stuffs....
- * cz everything inside of IMG_DATA_MK2 is designed to be in a way that, only this amVK_WI_MK2 creates....
- * like theres no way to provide framebuffer attachment EXTERNALY
- * all the attachments, VkImages & VkFrameBuffers are created in the function above
- * 
- * since we know that amVK_WI is the one that created it.... theres no need to keep track, we can just go ahead and destroy
- */
-bool amVK_WI_MK2::destroy(void) {
+
+bool amVK_WI_MK2::destroy(bool only_cleanup_for_reCreate) {
     if (_swapchain) {
       vkDeviceWaitIdle(_amVK_D->_D);
       // ----------- FrameBuffers ------------
       for (int i = 0; i < IMGs.framebuf_n; i++) {
         vkDestroyFramebuffer(_amVK_D->_D, IMGs.framebufs[i], nullptr);
       }
-      // ----------- DepthAttachments ------------
+      // ----------- DepthAttachments for now only ------------
       for (int i = 0; i < IMGs.attach_n; i++) {
         if (i == IMGs.swap_attach_index) {
             continue;   //Gotta skip Swapchain Images ones....
         }
         for (int fi = 0; fi < IMGs.framebuf_n; fi++) {
-          vkDestroyImageView(_amVK_D->_D, *( IMGs._ptr_attach(fi, i) ), nullptr);
-          vkDestroyImage(    _amVK_D->_D, *( IMGs._ptr_img   (fi, i) ), nullptr);
+          ImageMK2::destroy(
+              *( IMGs._ptr_img   (fi, i) ),
+              *( IMGs._ptr_attach(fi, i) ),
+              *( IMGs._ptr_mem   (fi, i) ),
+              _amVK_D
+          );
         }
       }
       // ----------- Swapchain Images' imageviews ------------
@@ -474,10 +466,13 @@ bool amVK_WI_MK2::destroy(void) {
         vkDestroyImageView(_amVK_D->_D, *(IMGs._ptr_attach(i, IMGs.swap_attach_index)), nullptr);
       }
       // ----------- Finally Destroy Swapchain & Free -----------
-      vkDestroySwapchainKHR(_amVK_D->_D, _swapchain, nullptr);
+      if (!only_cleanup_for_reCreate) {
+        vkDestroySwapchainKHR(_amVK_D->_D, _swapchain, nullptr);
+        LOG("Swapchain has been Destroyed! BYE BYE!");
+      }
       IMGs._free();
 
-      LOG("Framebuffers, Attachments, Images, SwapchainImages & the Swapchain   has been Destroyed!   BYE BYE!");
+      LOG("Framebuffers, Attachments, Images, SwapchainImages has been Destroyed!");
       return true;
     }
     else {return false;}

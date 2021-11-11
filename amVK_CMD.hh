@@ -37,7 +37,7 @@ class amVK_CommandBuf {
      * \param flags: Possible [VK.1.2] VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT
      */
     inline void Reset(VkCommandBufferResetFlags flags = 0) {
-        vkResetCommandBuffer(_BUF, 0);
+        vkResetCommandBuffer(_BUF, flags);
     }
 
     inline void End(void) {

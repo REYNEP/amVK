@@ -70,8 +70,6 @@ struct amVK_SurfaceMK2;
  *                           make sure that this->_amVK_D matches with the    amVK_WI->_amVK_D
  * 
  * WHY Ties to Pipeline: https://stackoverflow.com/a/55992644   \todo Go Furthur, Invertigator....
- *
- * \TODO: Should we change `calc_n_malloc` to `alloc`? 
  */
 class amVK_RenderPassMK2 {
   public:
@@ -106,11 +104,11 @@ class amVK_RenderPassMK2 {
     /** MK2 MODIFY */
 
     /** \todo make all amvk classes to have malloc as in that exact name */
-    void calc_n_malloc(void);  //Increments attachment.n  and such amVK_Arrays
-    void konfigurieren(void) {/** Do calc_n_malloc() first */set_surfaceFormat(); set_attachments(); set_attachment_refs(); set_subpasses();}
+    void calc_n_alloc(void);  //Increments attachment.n  and such amVK_Arrays
+    void konfigurieren(void) {/** Do calc_n_alloc() first */set_surfaceFormat(); set_attachments(); set_attachment_refs(); set_subpasses();}
 
     VkRenderPass create(void) {
-      if (attachment_descs.data == nullptr) {calc_n_malloc(); konfigurieren();}
+      if (attachment_descs.data == nullptr) {calc_n_alloc(); konfigurieren();}
       VkRenderPassCreateInfo the_info = {};
         the_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         the_info.attachmentCount = attachment_descs.n;

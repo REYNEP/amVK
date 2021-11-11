@@ -27,6 +27,8 @@ struct loaded_PD_info_plus_plus {
   uint32_t                             n = 0;               //'Physical Devices Count'
   amVK_Array<VkQueueFamilyProperties> *qFamily_lists = nullptr;     //'One Physical Devices can have Multiple qFamilies
 
+  VkPhysicalDeviceMemoryProperties *mem_props = nullptr;    // Used in ImagesMK2
+
   /** Plus Plus Stuffs */
   bool                           *isUsed = nullptr;
   VkPhysicalDevice                chozen = nullptr;
@@ -38,7 +40,8 @@ struct loaded_PD_info_plus_plus {
     for (uint32_t i = 0; i < n; i++) {
       if (pd == list[i]) {return i;}
     }
-    return 0xFFFFFFFF;  //NOT FOUND
+    LOG("returning UINT32_T_NULL from PD.index... smth surely will fail");
+    return UINT32_T_NULL;  //NOT FOUND
   }
 
   inline const VkQueueFamilyProperties *get_qFamilies(VkPhysicalDevice pd) {return const_cast<VkQueueFamilyProperties *> (qFamily_lists[index(pd)].data);}

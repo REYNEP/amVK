@@ -6,7 +6,7 @@
   ─ ─  │││├─┤│  │  │ ││  
   /│\  ┴ ┴┴ ┴┴─┘┴─┘└─┘└─┘
  */
-void amVK_RenderPassMK2::calc_n_malloc(void) {
+void amVK_RenderPassMK2::calc_n_alloc(void) {
     if (color_attachment) {attachment_descs.n++; attachment_refs.n++;}
     if (depth_attachment) {attachment_descs.n++; attachment_refs.n++;}
     if (single_subpass) {subpasses.n++;}

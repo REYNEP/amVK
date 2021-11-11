@@ -412,6 +412,7 @@ bool amVK_CX::enum_PhysicalDevs() {
                        +(PD_n * sizeof(VkPhysicalDeviceProperties))
                        +(PD_n * sizeof(VkPhysicalDeviceFeatures))
                        +(PD_n * sizeof(amVK_Array<VkQueueFamilyProperties>))    //sizeof this one will be 16
+                       +(PD_n * sizeof(VkPhysicalDeviceMemoryProperties))       //used in ImagesMK2
                        +(PD_n * sizeof(bool))                                   //bool to store 'isUsed' list
                        +(PD_n * sizeof(uint32_t))                               //benchMarks
                        +(PD_n * sizeof(uint32_t)));                             //index_sortedByMark
@@ -422,28 +423,30 @@ bool amVK_CX::enum_PhysicalDevs() {
     PD.features = reinterpret_cast<VkPhysicalDeviceFeatures *> (PD.props + PD_n);
     PD.qFamily_lists = reinterpret_cast< amVK_Array<VkQueueFamilyProperties>* > (PD.features + PD_n);
 
-    PD.isUsed = reinterpret_cast<bool *> (PD.qFamily_lists + PD_n);
+    PD.mem_props = reinterpret_cast<VkPhysicalDeviceMemoryProperties *> (PD.qFamily_lists + PD_n);
+
+    PD.isUsed = reinterpret_cast<bool *> (PD.mem_props + PD_n);
     PD.benchMarks = reinterpret_cast<uint32_t *> (PD.isUsed + PD_n);
     PD.index_sortedByMark = reinterpret_cast<uint32_t *> (PD.benchMarks + PD_n);
 
     /**
      * ----------- NULL / nullptr / 0 (ZERO) ------------
     for (uint32_t i = 0; i < PD_n; i++) {   
-        PD.qFamily_lists[i].data = 0;     enum_PD_qFamilies()
-        PD.isUsed[i] = false;             auto_choosePD()
-        Dont need to do this to the PD.benchMarks or PD.index_sortedByMark.... 
+        PD.qFamily_lists[i].data = 0;     //used in enum_PD_qFamilies()
+        PD.isUsed[i] = false;             //used in auto_choosePD()
     }
     */
-    memset(PD.qFamily_lists, 0, PD_n * (sizeof(amVK_Array<VkQueueFamilyProperties>) + sizeof(bool)));
+    memset(PD.qFamily_lists, 0, PD_n * sizeof(amVK_Array<VkQueueFamilyProperties>));
+    memset(PD.isUsed,        0, PD_n * sizeof(bool));
 
 
     // ----------- Get Stuffs ------------
     vkEnumeratePhysicalDevices(instance, &PD_n, PD.list);
     for (uint32_t i = 0; i < PD_n; i++) {
         vkGetPhysicalDeviceProperties(PD.list[i], (PD.props+i));
-    }
-    for (uint32_t i = 0; i < PD_n; i++) {
         vkGetPhysicalDeviceFeatures(PD.list[i], (PD.features+i));
+        
+        vkGetPhysicalDeviceMemoryProperties(PD.list[i], (PD.mem_props+i));
     }
 
     LOG_LOOP_MK1("All the Physical Devices:- ", i, PD.n, PD.props[i].deviceName);

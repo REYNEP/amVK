@@ -12,7 +12,7 @@ class ShaderInputsMK2 {
  public:
   VkPipelineLayout     layout;
   bool       usingSolo = true;  /** SOLO is the deafult */
-  bool       didMalloc = false; /** if you call NotSolo::alloc(); free(); called in Destructor*/
+  bool       did_alloc = false; /** if you call NotSolo::_alloc();    'free();' gets called in Destructor */
 
   virtual amVK_Array<VkPushConstantRange> ref_PushConsts(void) = 0;
   virtual amVK_Array<VkDescriptorSetLayout> ref_DescSets(void) = 0;
@@ -50,8 +50,6 @@ class ShaderInputsMK2 {
  *    we did this, cz not everything needs to be saved in memory
  *
  *
- * \todo change LOG_EX to BackTrace
- * \todo fix amVK_Array logics, currently ppl can like set .data to malloced space,   or initialize with a list; which causes 'new' alloc
  * \todo debug and see if amVK_GraphicsPipes ShaderOnly_pipeStore; declaration causes a call to constructor      cz we later do ShaderOnly_pipeStore = amVK_GraphicsPipes(renderPass, device); which means calling the construcotr   we dont wanna waste time
  * \todo see if ShaderOnly_pipeStore = amVK_GraphicsPipes(renderPass, device);   actually called the constructor & copy-constructor..... calling both would waste CPU time
  * TODO: Make a PARTED Docs on PIPELINE [ 😃 Use Good Fonts]
@@ -224,16 +222,16 @@ class ShaderInputsMK2_NotSolo : public ShaderInputsMK2 {
 
  public:
   ShaderInputsMK2_NotSolo(void) {usingSolo = false;}
-  void alloc(uint32_t pushConst_n, uint32_t descSet_n) {
+  void _alloc(uint32_t pushConst_n, uint32_t descSet_n) {
     void *xd = malloc((pushConst_n * sizeof(VkPushConstantRange))
                      + descSet_n * sizeof(VkDescriptorSetLayout));
     _pushConsts.data = (VkPushConstantRange *) xd;
     _descSets.data = (VkDescriptorSetLayout *) _pushConsts.data + pushConst_n;
     _pushConsts.n = pushConst_n;
     _descSets.n = descSet_n;
-    ShaderInputsMK2::didMalloc = true;
+    ShaderInputsMK2::did_alloc = true;
   }
-  ~ShaderInputsMK2_NotSolo() {if (didMalloc) {free(_pushConsts.data); didMalloc = false;}}
+  ~ShaderInputsMK2_NotSolo() {if (did_alloc) {free(_pushConsts.data); did_alloc = false;}}
 };
 
 #endif  //amVK_PIPELINE_HH

@@ -22,9 +22,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Options
 # Currently VMA must be ON
 option(amVK_AMD_VMA_SUPPORT "Vulkan Memory Allocator.... amVK_Device will have some VMA-Related stuffs, as VMA is Device Specific" ON)
-option(amVK_MK1_NOOB_LOG "kinda FUMPS stuffs like available Vulkan stuffs in the terminal like an NOOB API" OFF)
-option(amVK_HISTORY "Log every function, its kinda like a live stack_tarce" OFF)
-option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" OFF)
+option(amVK_MK1_NOOB_LOG "kinda DUMPS stuffs like 'available Vulkan exts/devices/stuffs' in the terminal like an NOOB API" OFF)
+option(amVK_HISTORY "Log every function, its kinda like a live stack_tarce" ON)
+option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" ON)
 
 #-----------------------------------------------------------------------------
 # Externs

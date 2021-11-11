@@ -26,8 +26,39 @@ bool amVK_DeviceMK2::destroy(void) {
     vkDestroyDevice(_D, nullptr);
     HEART->D_list.erase(HEART->D_list.begin() + HEART->D_list.index(this));
     
-    free(qCIs.data);  /** We only malloced once in calc_n_malloc() */
+    free(qCIs.data);  /** We only malloced once in calc_n_alloc() */
     return true;
+}
+
+
+
+
+VkDeviceMemory amVK_DeviceMK2::BindImageMemory(VkImage IMG, VkMemoryPropertyFlags flags) {
+    VkMemoryRequirements req;
+    vkGetImageMemoryRequirements(_D, IMG, &req);
+    
+    alloc_info.allocationSize  = req.size;
+
+    find_memory_type:
+    {
+        if (flags != this->img_mem_flag) {
+            alloc_info.memoryTypeIndex = amVK_M->_find_mem_type(req.memoryTypeBits, flags);
+        } else {
+            if (img_mem_type == UINT32_T_NULL) {
+                img_mem_type = amVK_M->_find_mem_type(req.memoryTypeBits, this->img_mem_flag);
+            }
+            alloc_info.memoryTypeIndex = img_mem_type;
+        }
+    }
+
+    VkDeviceMemory mem = nullptr;
+    VkResult res = vkAllocateMemory(_D, &this->alloc_info, nullptr, &mem);
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
+
+    res = vkBindImageMemory(_D, IMG, mem, 0);
+    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
+
+    return mem;
 }
 
 
@@ -61,7 +92,7 @@ static const char *amVK_DeviceExtensions[9] = {
 
 
 
-void amVK_DeviceMK2::calc_n_malloc(void) {
+void amVK_DeviceMK2::calc_n_alloc(void) {
     amFUNC_HISTORY_INTERNAL();
 
     // ----------- PreMod Settings [a.k.a Configurations] ------------
