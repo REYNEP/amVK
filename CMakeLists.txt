@@ -28,8 +28,9 @@ option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" OFF)
 set(INC
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/intern
-  VK/include    #Safe, cz we switched to SubModule
+  ${PROJECT_SOURCE_DIR}/VK/include    #Safe, cz we switched to SubModule
 )
+
 
 
 
@@ -59,6 +60,25 @@ endif()
 
 
 
+#-----------------------------------------------------------------------------
+# External Stuffs to build
+message("\namVK:")
+message("    Copying 'amVK/build_files/glslang_CMakeLists.cmake'  to  'amVK/glslang/CMakeLists.txt'")
+file(RENAME     ${PROJECT_SOURCE_DIR}/glslang/CMakeLists.txt 
+                ${PROJECT_SOURCE_DIR}/glslang/OG_CMakeLists.txt)
+file(COPY_FILE  ${PROJECT_SOURCE_DIR}/build_files/glslang_CMakeLists.cmake
+                ${PROJECT_SOURCE_DIR}/glslang/CMakeLists.txt)
+
+# We use amVK/build_files/glslang_CMakeLists.cmake file.... first copying it
+message("    add_subdirectory: glslang")
+add_subdirectory(glslang)   # TARGET: amVK_glslang
+
+file(REMOVE     ${PROJECT_SOURCE_DIR}/glslang/CMakeLists.txt)
+file(RENAME     ${PROJECT_SOURCE_DIR}/glslang/OG_CMakeLists.txt
+                ${PROJECT_SOURCE_DIR}/glslang/CMakeLists.txt)
+message("    Restored OG 'amVK/glslang/CMakeLists.txt'")
+message("")
+
 
 #-----------------------------------------------------------------------------
 # The Final Target
@@ -74,7 +94,7 @@ target_include_directories(lib-amVK PUBLIC ${INC})
 target_compile_definitions(lib-amVK PUBLIC ${DEF})
 if (WIN32)
   # TODO Change this `vulkan-1.lib` cz its from 1.2.170... updating it means redownloading vkSDK, + Also change in amGHOST_Variables.cmake
-  target_link_libraries(lib-amVK ${PLATFORM_LINKLIBS} ${PROJECT_SOURCE_DIR}/vulkan-1.lib)
+  target_link_libraries(lib-amVK ${PLATFORM_LINKLIBS} ${SPIRV} ${PROJECT_SOURCE_DIR}/vulkan-1.lib amVK_glslang)
 endif()
 install(TARGETS lib-amVK 
         DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})

@@ -48,6 +48,7 @@ struct loaded_PD_info_plus_plus {
 };
 
 /** 
+ * TODO: Rename amVK_DP -> DP
  * TODO: You can use it like    DevicePresets = amVK_DevicePreset_Graphics + amVK_DevicePreset_Compute   [We will create 1 GRAPHICS & 1 COMPUTE Queue]
  * TODO: Detailed description on what Every option Does
  * TODO: GEN3 support Multiple Flag Mixing...   like even though this is names _flags.... this for now supports 1 flag at a TIME
@@ -77,6 +78,23 @@ typedef uint32_t amVK_DevicePreset_Flags;
 
 /** amVK_DevicePreset_Flags to STRING  for print/Log purposes */
 const char *flag_2_strName(amVK_DevicePreset_Flags flag);
+
+
+typedef enum amVK_TShaderStage__ {
+  Shader_Unknown = 0,   //as in can be still determined.... or should be at least ig
+  Shader_Vertex,
+  Shader_Fragment,
+  Shader_Compute,
+
+  Shader_Geometry,
+  Shader_TessellationControl,
+  Shader_TessellationEvaluation,
+  Shader_TesC = Shader_TessellationControl,
+  Shader_TesE = Shader_TessellationEvaluation,
+
+  Shader_RT,
+  Shader_RayTracing = Shader_RT
+}amVK_ShaderStage;
 
 
 

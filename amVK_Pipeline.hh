@@ -77,6 +77,20 @@ class amVK_PipeStoreMK2 {
    * \param spvPath: You should compile any .vert or .frag and specify Full/Rel-path to EXE (.spv)
    */
   VkShaderModule load_ShaderModule(std::string &spvPath);
+  /**
+   * \todo add Multi-Shader support
+   * \todo add support for automatic VulkanVersion choosing for GLSLANG
+   * \todo fix/add preamble stuffs
+   * 
+   * \param glslPath: Full Path of glsl file
+   * \param cacheSPVPath: if '\0', glslPath's folder & name is used.... with '.spv' prefix for the SPV output
+   *                      otherwise should be a full/path/fileName.spv,      '.spv' not added implicitly then
+   */
+  VkShaderModule glslc_Shader(std::string &glslPath, amVK_ShaderStage stage = Shader_Unknown, std::string cacheSPVPath = '\0', bool cache = false);
+  VkShaderModule glslc_Shader(const char  *glslCode, amVK_ShaderStage stage = Shader_Unknown, std::string cacheSPVPath = '\0', bool cache = false);
+
+  const std::string shader_preamble = "#define maybe_has_VK_KHR_multiview 1\n"; /** https://github.com/godotengine/godot/blob/master/modules/glslang/register_types.cpp#L120   [2021 NOV 14] */
+  
   inline void destroy_ShaderModule(VkShaderModule xd) {vkDestroyShaderModule(_amVK_D->_D, xd, nullptr);}
 
   /** \see ShaderInputsMK2::create_pipelineLayout for layout */

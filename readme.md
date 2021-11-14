@@ -2,7 +2,7 @@
 
 ##### will target lots of patches till v0.0.5
 
-## [v0.0.3] Well, it builds.... [& Works... so yay!] Time Travel! 
+## [v0.0.4a] Well, it builds.... [& Works... so yay!] Time Travel! 
 use  `python make.py`  ***or***
 ```sh
 git submodule init
@@ -10,8 +10,9 @@ git submodule update
 cmake --build ./build-x64/ --target install --config release
 ```
 
-## inside ./extern   [downloaded_by_make.py]
-- vulkan-sdk-lunarg - comes with [VulkanSDK](https://www.lunarg.com/vulkan-sdk/) by LunarG
+## External Stuffs
+VK [submodule]: Khronos/Vulkan-Headers, we don't use the CMakeLists.txt, bcz this CMakeLists.txt doesn't build any library
+glslang [submodule]: Khronos/glslang: Like Godot uses it....
 
 
 #### Roadmap... i guess

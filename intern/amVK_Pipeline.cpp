@@ -1,4 +1,7 @@
 #include "amVK_Pipeline.hh"
+#include "glslang/SPIRV/GlslangToSpv.h"
+#include "glslang/Public/ShaderLang.h"
+#include <StandAlone/ResourceLimits.h>
 
 /**
  *   █▀ █░█ ▄▀█ █▀▄ █▀▀ █▀█   █▀▄▀█ █▀█ █▀▄ █░█ █░░ █▀▀
@@ -19,7 +22,7 @@ VkShaderModule amVK_PipeStoreMK2::load_ShaderModule(std::string &spvPath) {
         }
 
         size = static_cast<uint64_t> (spvFile.tellg());    //Works cz of std::ios::ate
-        spvCode = static_cast<char *> (calloc(size, 1));
+        spvCode = static_cast<char *> (malloc(size));
 
         spvFile.seekg(0);
         spvFile.read(spvCode, size);
@@ -37,7 +40,185 @@ VkShaderModule amVK_PipeStoreMK2::load_ShaderModule(std::string &spvPath) {
     if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res); LOG_EX("vkCreateShaderModule() failed"); return nullptr;}
     return A_module;
 }
+
+#include <cstring>
+VkShaderModule amVK_PipeStoreMK2::glslc_Shader(std::string &glslPath, amVK_ShaderStage stage, std::string cacheSPVPath, bool cache) {
+    //glslCode
+    uint64_t size; char *glslCode;
+
+    //READ
+    if (glslPath.size() > 0) {
+        /** open the file. With cursor at the end     TODO: Erorr Checking in DEBUG */
+        std::ifstream glslFile(glslPath, std::ios::ate | std::ios::binary);
+
+        if (!glslFile.is_open()) {
+            LOG("FAILED to OPEN FILE: " << glslPath);
+        }
+
+        size = static_cast<uint64_t> (glslFile.tellg());    //Works cz of std::ios::ate
+        glslCode = static_cast<char *> (malloc(size));
+
+        glslFile.seekg(0);
+        glslFile.read(glslCode, size);
+        glslFile.close();
+    } else {LOG("glslPath's Size isn't more than 0"); return nullptr;}
+
+
+    // .spv Output [WRITE....]
+    if (cacheSPVPath[0] == '\0') {
+        cacheSPVPath = glslPath + ".spv";
+    }
+
+
+    //Shader Stage
+    if (stage == Shader_Unknown){
+        uint32_t size = glslPath.size();
+        const char *ptr_last_4_char = &glslPath[size-1 - 4];
+             if(strcmp(ptr_last_4_char, "vert"))     stage = Shader_Vertex;
+        else if(strcmp(ptr_last_4_char, "frag"))     stage = Shader_Fragment;
+        else if(strcmp(ptr_last_4_char, "comp"))     stage = Shader_Compute;
+
+        else if(strcmp(ptr_last_4_char, "geom"))     stage = Shader_Geometry;
+        else if(strcmp(ptr_last_4_char, "tesc"))     stage = Shader_TesC;
+        else if(strcmp(ptr_last_4_char, "tese"))     stage = Shader_TesE;
+    }
+
+
+    glslc_Shader(glslCode, stage, cacheSPVPath, cache);
+}
+
+VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_ShaderStage stage, std::string cacheSPVPath, bool cache) {
+    //Shader Stage
+    EShLanguage stage_glslang;
+    switch (stage)
+    {
+        case Shader_Unknown:
+        {
+            LOG_EX("param 'stage' is Shader_Unknown.... it won't compile")
+        }
+        case Shader_Vertex:     stage_glslang = EShLangVertex;          break;
+        case Shader_Fragment:   stage_glslang = EShLangFragment;        break;
+        case Shader_Compute:    stage_glslang = EShLangCompute;         break;
+
+        case Shader_Geometry:   stage_glslang = EShLangGeometry;        break;
+        case Shader_TesC:       stage_glslang = EShLangTessControl;     break;
+        case Shader_TesE:       stage_glslang = EShLangTessEvaluation;  break;
+
+        case Shader_RT:         stage_glslang = EShLangRayGenNV;        break;
+    }
+
+    //The Shader
+    glslang::TShader   shader_glslang(stage_glslang);
+    shader_glslang.setStrings(&glslCode, 1);
+    shader_glslang.setPreamble(this->shader_preamble.c_str());
+
+    extras:
+    {
+        shader_glslang.setEnvInput( glslang::EShSourceGlsl, stage_glslang, glslang::EShClientVulkan, 120);  
+        /** 120: "#define VULKAN 120" [https://github.com/godotengine/godot/blob/8f6c16e4a459b54d6b37bc64e0bd21a361078a01/modules/glslang/register_types.cpp#L53] */
+        shader_glslang.setEnvClient(glslang::EShClientVulkan, glslang::EShTargetVulkan_1_2);
+        shader_glslang.setEnvTarget(glslang::EShTargetSpv, glslang::EShTargetSpv_1_5);
+    }
+
+    
+
+
+
+
+
+    // Compiled SPIR-V Binary
+    std::vector<uint32_t> SpirV;
+    compileShader:
+    {
+        EShMessages msg = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
+        const int DefaultVersion = 100;     //should this be like the '120' above? 🤔
+        
+        // wtf_is_this ? Preprocess? Why?
+        preprocess:
+        {
+            std::string pre_processed_code;
+            glslang::TShader::ForbidIncluder includer;  //why need this?
+
+            //preprocess
+            if (!shader_glslang.preprocess(&glslang::DefaultTBuiltInResource, DefaultVersion, ENoProfile, false, false, msg, &pre_processed_code, includer)) {
+                LOG_EX("glslang::TShader->preprocess() failed.... "
+                    << "\n    " << shader_glslang.getInfoLog()
+                    << "\n    " << shader_glslang.getInfoDebugLog()
+                );
+            }
+            //set back..
+            const char *wtf_is_this = pre_processed_code.c_str();
+            shader_glslang.setStrings(&wtf_is_this, 1);
+        }
+
+        //parse [for validating setEnv*** function inputs from earlier, ig.]
+        if (!shader_glslang.parse(&glslang::DefaultTBuiltInResource, DefaultVersion, false, msg)) {
+            LOG_EX("glslang::TShader->parse() failed.... "
+                << "\n    " << shader_glslang.getInfoLog()
+                << "\n    " << shader_glslang.getInfoDebugLog()
+            );
+        }
+
+
+
+
+        glslang::TProgram program_glslang;
+        program_glslang.addShader(&shader_glslang);
+
+        /** https://github.com/KhronosGroup/glslang/blob/4302d51868daa94e81d3002073e9265397b2e444/glslang/MachineIndependent/ShaderLang.cpp#L1988 */
+        if (!program_glslang.link(msg)) {
+            LOG_EX("glslang::TProgram->Link() failed to link shaders.... "
+                << "\n    " << program_glslang.getInfoLog()
+                << "\n    " << program_glslang.getInfoDebugLog()
+            );
+        }
+        
+        finally_compile:
+        {
+            glslang::SpvOptions spvOptions;
+            glslang::GlslangToSpv(*(program_glslang.getIntermediate(stage_glslang)), SpirV, &spvOptions);
+        }
+    }
+
+
+
+
+
+
+    // .spv Output
+    cache:
+    {
+        if (cache) {
+            std::ofstream spvFile(cacheSPVPath, std::ios::trunc | std::ios::binary);
+
+            if (!spvFile.is_open()) {
+                LOG("FAILED to OPEN .spv FILE: " << cacheSPVPath);
+            }
+
+            spvFile.write(reinterpret_cast<char *>(SpirV.data()), SpirV.size() * 4);
+        }
+    }
+}
  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
     /**  \│/  ╔═╗┬ ┬┌─┐┌┬┐┌─┐┬─┐╔═╗┌┬┐┌─┐┌─┐┌─┐┌─┐
      *   ─ ─  ╚═╗├─┤├─┤ ││├┤ ├┬┘╚═╗ │ ├─┤│ ┬├┤ └─┐
@@ -202,6 +383,19 @@ void amVK_GraphicsPipes::konfigurieren(void) {
         nullptr, 0  /** .basePipelineHandle, .basePipelineIndex */
     };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
