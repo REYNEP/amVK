@@ -79,18 +79,6 @@ elseif(UNIX)
 endif()
 
 
-# https://github.com/godotengine/godot/blob/master/thirdparty/glslang/glslang/build_info.h
-if (NOT EXISTS ${PROJECT_SOURCE_DIR}/glslang/build_info.h)
-    message("Creating ${PROJECT_SOURCE_DIR}/glslang/build_info.h")
-    execute_process(
-        COMMAND
-          python build_info.py ./ -i build_info.h.tmpl
-        WORKING_DIRECTORY 
-          ${PROJECT_SOURCE_DIR}
-        OUTPUT_FILE
-          ${PROJECT_SOURCE_DIR}/glslang/build_info.h
-    )
-endif()
 
 
 set(INC
@@ -103,3 +91,24 @@ set(INC
 
 add_library(amVK_glslang ${SRC})
 target_include_directories(amVK_glslang PUBLIC ${INC})
+
+# https://github.com/godotengine/godot/blob/master/thirdparty/glslang/glslang/build_info.h
+add_custom_command(
+    TARGET
+      amVK_glslang
+      PRE_BUILD
+    COMMAND
+      python ${PROJECT_SOURCE_DIR}/../build_files/preBuild_glslang.py ${PROJECT_SOURCE_DIR}
+    COMMENT
+      "Creating ${PROJECT_SOURCE_DIR}/glslang/build_info.h"
+    VERBATIM
+)
+
+add_custom_command(
+    TARGET
+      amVK_glslang
+      POST_BUILD
+    COMMAND
+      python ${PROJECT_SOURCE_DIR}/../build_files/postBuild_glslang.py ${PROJECT_SOURCE_DIR}
+    VERBATIM
+)
