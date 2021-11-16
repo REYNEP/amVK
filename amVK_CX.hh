@@ -46,6 +46,8 @@ class amVK_CX : public amVK_IN {
    * call \fn add_InstanceExt() before, if you want to enable 
    * 
    * CAUTION: More than 1 VkInstance is NEVER needed! [ \see 'first if-else block' of CreateInstance impl.]
+   * 
+   * \todo Remove Implicit layers & Extensions we enable/add
    */
   VkInstance CreateInstance(void);
   /**
@@ -71,7 +73,7 @@ class amVK_CX : public amVK_IN {
      /** Vulkan Layers */
       amVK_Array<VkLayerProperties> vLayerP{};
       amVK_Array<bool>    _isEnabled_vLayer{};
-      std::vector<char *> enabled_vLayers = {"VK_LAYER_KHRONOS_validation"};   //WELP, the default one.
+      std::vector<char *> enabled_vLayers = {};   //WELP, the default one.
       #ifdef amVK_RELEASE
         const bool enableDebugLayers_LunarG = false;
       #else

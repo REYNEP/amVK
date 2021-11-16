@@ -86,11 +86,18 @@ set(INC
     ${PROJECT_SOURCE_DIR}/glslang
     ${PROJECT_SOURCE_DIR}/SPIRV
     ${PROJECT_SOURCE_DIR}/StandAlone
-    ${PROJECT_SOURCE_DIR}/glslang/**    #Testing
+    #${PROJECT_SOURCE_DIR}/glslang/**    #Testing doesn't work, use file(GLOB)
 )
+
 
 add_library(amVK_glslang ${SRC})
 target_include_directories(amVK_glslang PUBLIC ${INC})
+set_target_properties(amVK_glslang
+  PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${_amVK_EXTERN_LIB}
+    LIBRARY_OUTPUT_DIRECTORY ${_amVK_EXTERN_LIB}
+    RUNTIME_OUTPUT_DIRECTORY ${_amVK_EXTERN_LIB}  #Usually is a ${CMAKE_BINARY_DIR}/bin
+)
 
 # https://github.com/godotengine/godot/blob/master/thirdparty/glslang/glslang/build_info.h
 add_custom_command(
@@ -110,5 +117,7 @@ add_custom_command(
       POST_BUILD
     COMMAND
       python ${PROJECT_SOURCE_DIR}/../build_files/postBuild_glslang.py ${PROJECT_SOURCE_DIR}
+    COMMENT
+      "Removing ${PROJECT_SOURCE_DIR}/glslang/build_info.h"
     VERBATIM
 )

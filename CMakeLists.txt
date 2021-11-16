@@ -28,6 +28,7 @@ option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" OFF)
 set(INC
   ${PROJECT_SOURCE_DIR}
   ${PROJECT_SOURCE_DIR}/intern
+  ${PROJECT_SOURCE_DIR}/extern
   ${PROJECT_SOURCE_DIR}/VK/include    #Safe, cz we switched to SubModule
 )
 
@@ -62,22 +63,7 @@ endif()
 
 #-----------------------------------------------------------------------------
 # External Stuffs to build
-message("\namVK:")
-message("    Copying 'amVK/build_files/glslang_CMakeLists.cmake'  to  'amVK/glslang/CMakeLists.txt'")
-file(RENAME     ${PROJECT_SOURCE_DIR}/glslang/CMakeLists.txt 
-                ${PROJECT_SOURCE_DIR}/glslang/OG_CMakeLists.txt)
-file(COPY_FILE  ${PROJECT_SOURCE_DIR}/build_files/glslang_CMakeLists.cmake
-                ${PROJECT_SOURCE_DIR}/glslang/CMakeLists.txt)
-
-# We use amVK/build_files/glslang_CMakeLists.cmake file.... first copying it
-message("    add_subdirectory: glslang")
-add_subdirectory(glslang)   # TARGET: amVK_glslang
-
-file(REMOVE     ${PROJECT_SOURCE_DIR}/glslang/CMakeLists.txt)
-file(RENAME     ${PROJECT_SOURCE_DIR}/glslang/OG_CMakeLists.txt
-                ${PROJECT_SOURCE_DIR}/glslang/CMakeLists.txt)
-message("    Restored OG 'amVK/glslang/CMakeLists.txt'")
-message("")
+add_subdirectory(extern)
 
 
 #-----------------------------------------------------------------------------

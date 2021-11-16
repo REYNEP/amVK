@@ -1,5 +1,3 @@
-extern
-test/extern
 build-x64
 build
 
@@ -9,6 +7,8 @@ build
 
 *.spv
 *.png
+*.zip
+*.7z
 
 lib-amVK.lib
 rtc.exe

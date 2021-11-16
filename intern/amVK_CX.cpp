@@ -46,6 +46,7 @@ VkInstance amVK_CX::CreateInstance(void) {
     // ----------- ValidationLayers for vkCreateInstance ------------
     if (enableDebugLayers_LunarG) {
         amVK_CX::enum_ValLayers();
+        add_ValLayer("VK_LAYER_KHRONOS_validation");
         the_info.enabledLayerCount = static_cast<uint32_t>(enabled_vLayers.size());
         the_info.ppEnabledLayerNames = enabled_vLayers.data();
         LOG_LOOP_MK1("Enabled Validation Layers:- ", i, enabled_vLayers.size(), enabled_vLayers[i]);

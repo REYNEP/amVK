@@ -1,7 +1,7 @@
 #include "amVK_Pipeline.hh"
 #include "glslang/SPIRV/GlslangToSpv.h"
 #include "glslang/Public/ShaderLang.h"
-#include <StandAlone/ResourceLimits.h>
+#include "glslang/StandAlone/ResourceLimits.h"
 
 /**
  *   █▀ █░█ ▄▀█ █▀▄ █▀▀ █▀█   █▀▄▀█ █▀█ █▀▄ █░█ █░░ █▀▀
@@ -84,7 +84,7 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(std::string &glslPath, amVK_Shade
     }
 
 
-    glslc_Shader(glslCode, stage, cacheSPVPath, cache);
+    return glslc_Shader(glslCode, stage, cacheSPVPath, cache);
 }
 
 VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_ShaderStage stage, std::string cacheSPVPath, bool cache) {
@@ -198,6 +198,18 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_Shader
             spvFile.write(reinterpret_cast<char *>(SpirV.data()), SpirV.size() * 4);
         }
     }
+
+
+    //Create Shader module
+    VkShaderModuleCreateInfo CI = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, 0,     /** .flags: Reserved for Future, [Who knows what they will unveil in TIME] */
+        SpirV.size() * 4, reinterpret_cast<uint32_t *>(SpirV.data())
+    };
+
+    VkShaderModule A_module;
+    VkResult res = vkCreateShaderModule(_amVK_D->_D, &CI, nullptr, &A_module);
+
+    if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res); LOG_EX("vkCreateShaderModule() failed"); return nullptr;}
+    return A_module;
 }
  
 

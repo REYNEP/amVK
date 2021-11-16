@@ -1,0 +1,9 @@
+/glslang/*
+/lib/*
+/inc/*
+
+!/lib/Debug
+!/lib/Release
+
+*.lib
+*.pdb
