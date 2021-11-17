@@ -2,8 +2,9 @@
 /lib/*
 /inc/*
 
-!/lib/Debug
-!/lib/Release
+!/lib/Debug/git_empty_dir_fix.txt
+!/lib/Release/git_empty_dir_fix.txt
+!/inc/git_empty_dir_fix.txt
 
 *.lib
 *.pdb

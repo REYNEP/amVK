@@ -90,6 +90,7 @@ set(INC
 )
 
 
+#amVK_extern_lib_glslang = amVK_glslang in extern/CMakeLists.txt
 add_library(amVK_glslang ${SRC})
 target_include_directories(amVK_glslang PUBLIC ${INC})
 set_target_properties(amVK_glslang

@@ -75,6 +75,9 @@
 /** 
  * Options to turn off parts of LOGGER, support....
  * Options that should be turned on/off from Makefiles
+ * 
+ * MK1: [old stuffs made during MK1.... amVK_CX]
+ * MK2: everything that is in MK2....
  */
 #if defined(amVK_LOG_MK1)
   #define LOG_MK1(x) LOG(x)
@@ -82,6 +85,14 @@
 #else
   #define LOG_MK1(x)
   #define LOG_LOOP_MK1(log_heading, iterator_var, loop_limit, log_inside_loop)
+#endif
+
+#if defined(amVK_LOG_MK2)
+  #define LOG_MK2(x) LOG(x)
+  #define LOG_LOOP_MK2(log_heading, iterator_var, loop_limit, log_inside_loop) LOG_LOOP(log_heading, iterator_var, loop_limit, log_inside_loop)
+#else
+  #define LOG_MK2(x)
+  #define LOG_LOOP_MK2(log_heading, iterator_var, loop_limit, log_inside_loop)
 #endif
 
 #if defined(amVK_HISTORY)

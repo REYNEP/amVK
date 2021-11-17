@@ -137,7 +137,7 @@ class amVK_RenderPassMK2 {
     void set_subpasses(void);
     /** MORE: Automated default stuffs sooooon! */
 
-  /** push_back exts, you should maintain Memory. to determine how many filled, use   \var amVK_Array.next_add_where */
+  /** push_back exts, you should maintain Memory. to determine how many filled, use   \var amVK_Array.neXt */
   public:
     void add_attachmentGEN2(VkFormat image_format, VkImageLayout finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 
                                                    VkAttachmentLoadOp loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, 

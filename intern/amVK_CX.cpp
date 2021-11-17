@@ -145,6 +145,9 @@ void amVK_CX::enum_ValLayers(void) {
 
         vLayerP.data = new VkLayerProperties[n];
         vLayerP.n = n;
+        _isEnabled_vLayer.data = static_cast<bool *> (calloc(n, 1));
+        _isEnabled_vLayer.n = n;
+
         vkEnumerateInstanceLayerProperties(&n, vLayerP.data);
     }
 
@@ -325,7 +328,7 @@ bool amVK_CX::add_InstanceExt(char *extName) {
 
 bool amVK_CX::add_ValLayer(char *vLayerName) {
     amFUNC_HISTORY();
-
+;
     uint32_t index = vLayerName_to_index(vLayerName);
     if (index == 0xFFFFFFFF) {
         LOG(vLayerName << " is not Available on this PC/Device/Computer/System whatever..... [Also check the spelling]");

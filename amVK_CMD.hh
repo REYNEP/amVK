@@ -72,7 +72,7 @@ class amVK_CommandPool {
   public:
     amVK_DeviceMK2 *_amVK_D;
     VkCommandPool _POOL;
-    amVK_Vector<VkCommandBuffer> _BUFs = amVK_Vector<VkCommandBuffer>(4);  /** For Triple buffering someone might just allocate 3.... so we have 4 */
+    amVK_ArrayDYN<VkCommandBuffer> _BUFs = amVK_ArrayDYN<VkCommandBuffer>(4);  /** For Triple buffering someone might just allocate 3.... so we have 4 */
 
 
 
@@ -104,10 +104,10 @@ class amVK_CommandPool {
             n
         };
 
-        if (_BUFs.n - _BUFs.next_add_where < n) {_BUFs.resize();}
-        uint32_t new_ones = _BUFs.next_add_where;
+        if (_BUFs.should_resize()) {_BUFs.resize();}
+        uint32_t new_ones = _BUFs.neXt;
         VkResult res = vkAllocateCommandBuffers(_amVK_D->_D, &I, &_BUFs.data[new_ones]);
-        _BUFs.next_add_where += n;
+        _BUFs.neXt += n;
 
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
         return &_BUFs.data[new_ones];
@@ -118,7 +118,7 @@ class amVK_CommandPool {
      * Don't Use Destructor, use this.... & also delete this object instance of amVK_CommandPool
      */
     void destroy(void){
-        vkFreeCommandBuffers(_amVK_D->_D, _POOL, _BUFs.next_add_where, _BUFs.data);
+        vkFreeCommandBuffers(_amVK_D->_D, _POOL, _BUFs.neXt, _BUFs.data);
         _BUFs._delete();
         vkDestroyCommandPool(_amVK_D->_D, _POOL, nullptr);
     }

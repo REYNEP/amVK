@@ -21,6 +21,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #-----------------------------------------------------------------------------
 # Options
 option(amVK_MK1_NOOB_LOG "kinda DUMPS stuffs like 'available Vulkan exts/devices/stuffs' in the terminal like an NOOB API" ON)
+option(amVK_MK2_NOOB_LOG "MK1_NOOB_LOG enables LOG_MK1.... which is used in stuffs made during MK1... amVK_CX... but this MK2 one is used for mostly everything" ON)
 option(amVK_HISTORY "Log every function, its kinda like a live stack_tarce" OFF)
 option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" OFF)
 
@@ -80,7 +81,7 @@ target_include_directories(lib-amVK PUBLIC ${INC})
 target_compile_definitions(lib-amVK PUBLIC ${DEF})
 if (WIN32)
   # TODO Change this `vulkan-1.lib` cz its from 1.2.170... updating it means redownloading vkSDK, + Also change in amGHOST_Variables.cmake
-  target_link_libraries(lib-amVK ${PLATFORM_LINKLIBS} ${SPIRV} ${PROJECT_SOURCE_DIR}/vulkan-1.lib amVK_glslang)
+  target_link_libraries(lib-amVK ${PLATFORM_LINKLIBS} ${SPIRV} ${amVK_extern_lib_vulkan} ${amVK_extern_lib_glslang})
 endif()
 install(TARGETS lib-amVK 
         DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})

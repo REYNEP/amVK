@@ -22,7 +22,7 @@ template<typename T>
 struct amVK_Array {
     T *data;    //Pointer to the first element [But we dont do/keep_track_of MALLOC, so DUH-Optimizations]
     uint32_t n;
-    uint32_t next_add_where = 0;
+    uint32_t neXt = 0;  /** ahhh. neXt (2020) FX TV-series 😄 */
 
     /** CONSTRUCTOR - More like failsafes.... */
     amVK_Array(T *D, uint32_t N) : data(D), n(N) {}
@@ -36,7 +36,7 @@ struct amVK_Array {
     inline amVK_Array<T>& operator=(const amVK_Array<T>& otherArray) { //why const? https://www.cplusplus.com/articles/y8hv0pDG/  #Const correctness
       data = otherArray.data;
       n = otherArray.n;
-      next_add_where = otherArray.next_add_where;
+      neXt = otherArray.neXt;
       return *this;
     }
 
@@ -46,14 +46,14 @@ struct amVK_Array {
       /** if (n > 0) {  Not really needed: [https://stackoverflow.com/q/1087042], tho we must delete... */
         data = new T[n];                            //do remember to delete[] yourself
         memcpy(data, ilist.begin(), n * sizeof(T));
-        next_add_where = n;
+        neXt = n;
     }
     /** For Optimization Purposes....  when called in 2 lines amVK_Array<T> smth; smth = {1, 2, 3}; */
     amVK_Array<T>& operator=(std::initializer_list<T> ilist) {
       n = ilist.size();
         data = new T[n];
         memcpy(data, ilist.begin(), n * sizeof(T));
-        next_add_where = n;
+        neXt = n;
 
       return *this;
       /** \todo maybe impl. a safe DEBUG impl. like in https://www.cplusplus.com/articles/y8hv0pDG/ */
@@ -91,13 +91,13 @@ struct amVK_Array {
   #include <typeinfo>
   /** reUse, cz we dont want it to Crash... and if doesn't have much effect */
   #define amVK_ARRAY_PUSH_BACK(var) \
-    if (var.next_add_where >= var.n) { \
+    if (var.neXt >= var.n) { \
       amVK_ARRAY_PUSH_BACK_FILLED_LOG(var.n, #var, (char *)typeid(var).name()); \
-      var.next_add_where--; \
+      var.neXt--; \
     } \
-    var.data[var.next_add_where++]
+    var.data[var.neXt++]
 #else
-  #define amVK_ARRAY_PUSH_BACK(var) var.data[var.next_add_where++]
+  #define amVK_ARRAY_PUSH_BACK(var) var.data[var.neXt++]
 #endif
 
 
@@ -110,32 +110,46 @@ struct amVK_Array {
       }
 
 
-/** .n doesn't mean size anymore.... use \fn size() */
+/** 
+ * Dynamic Array.... a.k.a std::vector
+ * .n doesn't mean size anymore.... use \fn size() 
+ */
 template<typename T> 
-struct amVK_Vector : public amVK_Array<T> {
-  amVK_Vector(uint32_t n) : amVK_Array() {
+struct amVK_ArrayDYN : public amVK_Array<T> {
+  amVK_ArrayDYN(uint32_t n) : amVK_Array() {
     data = new T[n];
-    n = n;
+    LOG_EX("amVK_ArrayDYN: " << n);
+    this->n = n;
   }
-  ~amVK_Vector() {}
+  ~amVK_ArrayDYN() {}
 
   /** Makes it 2X sized by default */
   void resize(double size_mul = 2) {
-    amVK_Vector<VkCommandBuffer> _NEW(n*size_mul);
+    LOG_EX("Resizing array :( " << n);
+    
+    amVK_ArrayDYN<T> _NEW(n*size_mul);
     memcpy(_NEW.data, this->data, n * sizeof(T));
-    //_NEW.next_add_where = this->next_add_where;
+    delete[] this->data;
 
     data = _NEW.data;
     n = _NEW.n;
   }
 
+  inline bool should_resize(void) {
+    return (bool)(neXt >= n);
+  }
+
   //Delete this object instance after calling this function
   inline void _delete(void) { delete[] data; }
 
-  inline size_t size(void) {return next_add_where;}
+  //filled
+  inline size_t size(void) {return neXt;}
+
+  //size that can fit
+  inline size_t size_alloced(void) {return n;}
 };
 
-#define amVK_VECTOR_PUSH_BACK(var) var.data[var.next_add_where++]
+#define amVK_ArrayDYN_PUSH_BACK(var) var.data[var.neXt++]
 
 
 

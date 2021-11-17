@@ -112,7 +112,7 @@ class amVK_PipeStoreMK2 {
  * 
  *     OPT-I: Create a base amVK_GraphicsPipe.... have _vert,_frag (stuffs like that)   as members of your MESH,
  *            Think of this CLASS as a NAMESPACE with bunch of MODIFY-able GLOBAL OPTIONS....
- * METAPHORE: think of it in this way....   this is amVK_GraphicsPipe.... you take PIPE/s from here & build_Pipeline.... this is the STORE for all your PIPEs
+ * METAPHORE: think of it in this way....   this is amVK_GraphicsPipe.... you take PIPE/s from here & do \fn build_Pipeline().... this is the STORE for all your PIPEs
  */
 class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
  public:

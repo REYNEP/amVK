@@ -7,12 +7,14 @@ use  `python make.py`  ***or***
 ```sh
 git submodule init
 git submodule update
+python extern/download.py   #can clone github stuffs or download from the drive link
 cmake --build ./build-x64/ --target install --config release
 ```
 
 ## External Stuffs
 VK [submodule]: Khronos/Vulkan-Headers, we don't use the CMakeLists.txt, bcz this CMakeLists.txt doesn't build any library
-glslang [submodule]: Khronos/glslang: Like Godot uses it....
+glslang [download.py]: Khronos/glslang: Like Godot uses it....
+download.py: uses (extern.zip - GDrive)[https://drive.google.com/file/d/14A_2sXYsnkEeBK6FR2Pq7AUQO1E0OB2O/view]
 
 
 #### Roadmap... i guess

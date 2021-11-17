@@ -3,14 +3,13 @@
 
 #include "vulkan/vulkan.h"
 
-
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
 #include "amVK_RenderPass.hh"
 #include "amVK_ImgNBuf.hh"
 
 
-/** so we use this cut version to catch your eyes on these settings and save sm bytes too */
+/** So we use this cut version to catch your eyes on these settings (and save sm bytes too 😉) */
 typedef struct amVK_SurfaceCaps_GEN2 { 
   uint32_t                         maxImageArrayLayers;
   VkSurfaceTransformFlagsKHR       supportedTransforms;
@@ -27,15 +26,15 @@ typedef struct amVK_SurfaceCaps_GEN2 {
  *     ╚═╝     ███████║╚██████╔╝██║  ██║██║     ██║  ██║╚██████╗███████╗██║ ╚═╝ ██║██║  ██╗███████╗
  *             ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝
  * \brief
- * RenderPass needed to filter_SurfaceFormats, in \fn amVK_RenderPassMK2::set_surfaceFormat
- *    RenderPassMK2 is where you choose Format & ColorSpace....  then the amVK_WI takes that in.... Uses those formats at `the_info` & \fn create_Attachments()
+ * RenderPass needed to filter_SurfaceFormats, in \fn amVK_RenderPassMK2::set_surfaceFormat()
+ *    RenderPassMK2 is where you choose Format & ColorSpace.... amVK_WI takes RenderPass in... & uses those formats at `the_info` & \fn create_Attachments()
  * 
  *    also \fn amVK_WI_MK2::create_Swapchain or \fn fallback_the_info needs surface information....
  * 
  * \history
- *   calling get_SurfaceFormats 2nd time smtimes game me NULL values.... (nvidia, win10) [which I didn't see happen after october 2021]  m
+ *   calling get_SurfaceFormats 2nd time smtimes gave me NULL values.... (nvidia, win10) [which I didn't see happen after october 2021]
  *      main reason we had to create this struct to store the DATA
- *      [or maybe calling with SAME uint32_t pointer the 2nd time is what causes the problems....] (but this Didn't seem to be the Case after October too....)
+ *      [.... 🤔 or maybe calling with SAME uint32_t pointer the 2nd time is what causes the problems....] (but this Didn't seem to be the Case after October too....)
  */
 struct amVK_SurfaceMK2 {
   VkSurfaceKHR _S;
@@ -180,6 +179,8 @@ typedef struct SwapchainData_GEN4 {
  * \var the_info, [MODS:] you should set values to it as you wish, but do it once.... before the first creation, 
  *                only .imageExtent and .oldSwapchain needs to be updated [in \fn createSwapchain] for reCreate
  *                \todo support for changes in reCreate
+ * 
+ * \note we dont Handle VkViewport in amVK.... cz stuffs like this should not be handled IMPLICTLY by amVK.... + amVK Uses DynamicViewport by default, [faster]
  * 
  * \note For now ColorAttachment is default - images created by swapchain is used for that
  * \todo explain/doc IMG, IMGview, SWAPCHAIN, FRAMEBUFFER & RenderPass
