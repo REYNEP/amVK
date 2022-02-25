@@ -49,7 +49,15 @@ struct amVK_SurfaceMK2 {
   amVK_Array<VkSurfaceFormatKHR> surface_formats = {};
   amVK_Array<VkPresentModeKHR>     present_modes = {};
 
-  amVK_SurfaceMK2(VkSurfaceKHR S, amVK_DeviceMK2 *D) : _S(S), _PD(D->_PD) {}
+  /** \param D: D->_PD is what's needed, you can pass that, instead of passing this amVK_DeviceMK2 */
+  amVK_SurfaceMK2(VkSurfaceKHR S, amVK_DeviceMK2 *D, bool uKnowWhatURDoing = false) : _S(S) {
+    if (D == nullptr) {
+      if (!uKnowWhatURDoing) {
+        LOG_EX("you passed in a amVK_DeviceMK2 variable which is nullptr.... [ _PD = nullptr ] has been set")
+      }
+      _PD = nullptr;
+    }
+  }
   amVK_SurfaceMK2(VkSurfaceKHR S, VkPhysicalDevice PD) : _S(S), _PD(PD) {}
   ~amVK_SurfaceMK2 () {delete[] surface_formats.data; delete[] present_modes.data;}
 
@@ -114,8 +122,8 @@ typedef struct SwapchainData_GEN4 {
     return ok;
   }
 
-  uint8_t framebuf_n = 0;    /** a.k.a:  the_info.minImageCount                    \see Default_the_info */
-  uint8_t   attach_n = 0;    /** [per: framebuf]     _amVK_RP->attachment_descs.n  \see Default_the_info */
+  uint8_t framebuf_n = 0;                 /** a.k.a:  the_info.minImageCount                    \see Default_the_info */
+  uint8_t   attach_n = 0;                 /** [per: framebuf]     _amVK_RP->attachment_descs.n  \see Default_the_info */
 
 
   bool swap_imgs_are_color_attach = true;
@@ -194,7 +202,7 @@ typedef struct SwapchainData_GEN4 {
 class amVK_WI_MK2 {
  public:
   const char           *_window;            /** Name your Window, DUH! */
-  amVK_DeviceMK2          *_amVK_D;
+  amVK_DeviceMK2       *_amVK_D;
   amVK_RenderPassMK2  *_amVK_RP;            /** [IN] used for AttachmentCreation & swapchainCI.imageFormat/ColorSpace, cz RenderPass colorAttachment.imageFormat has to match this TOO! */
   VkSurfaceKHR         _surface = nullptr;  /** [IN] */
   amVK_SurfaceMK2      *_amVK_S = nullptr;  /** [IN] \todo intention, we should delete after first swapchain/RenderPass Creation */
@@ -286,7 +294,10 @@ class amVK_WI_MK2 {
    * 
    * MODS: IMGs.attachments, IMGs.framebufs, IMGs.images
    */
-  IMG_DATA_MK2              IMGs = {};        /** sm ppl would like to call this 'attachments', but duh! this struct has everything related to those in it */
+  /** sm ppl would like to call this 'attachments', but duh! this struct has everything related to those in it */
+  IMG_DATA_MK2              IMGs = {};
+
+
 
   /** 
    *   \│/  ╔═╗┬─┐┌─┐┌┬┐┌─┐╔╗ ┬ ┬┌─┐┌─┐┌─┐┬─┐   ┬   ╔═╗┌┬┐┌┬┐┌─┐┌─┐┬ ┬┌┬┐┌─┐┌┐┌┌┬┐┌─┐
@@ -319,9 +330,9 @@ class amVK_WI_MK2 {
   uint32_t AcquireNextImage(VkSemaphore to_signal, uint64_t timeout = 1000000000) {
     VkResult res = vkAcquireNextImageKHR(_amVK_D->_D, _swapchain, timeout, to_signal, nullptr, &nExt_img);
     if (res != VK_SUCCESS) {
-        LOG_DBG("Couldn't AcquireNextImageKHR....");
-        LOG_EX("")
-        return UINT32_T_NULL;
+      LOG_DBG("Couldn't AcquireNextImageKHR....");
+      LOG_EX("")
+      return UINT32_T_NULL;
     }
     return nExt_img;
   }
@@ -333,17 +344,17 @@ class amVK_WI_MK2 {
   bool Present(VkSemaphore to_wait) {
     VkResult res;
     VkPresentInfoKHR presentInfo = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, nullptr, 
-        1, &to_wait,
-        1, &_swapchain,
-        &nExt_img,   /** 1    img per swapchain passed */
-        &res         /** 1 result per swapchain passed */
+      1, &to_wait,
+      1, &_swapchain,
+      &nExt_img,   /** 1    img per swapchain passed */
+      &res         /** 1 result per swapchain passed */
     };
     vkQueuePresentKHR(_amVK_D->get_graphics_queue(), &presentInfo);
 
     if (res != VK_SUCCESS) {
-        LOG_DBG("vkQueuePresentKHR() failed.... Serious bug....");
-        LOG_EX("");
-        return false;
+      LOG_DBG("vkQueuePresentKHR() failed.... Serious bug....");
+      LOG_EX("");
+      return false;
     }
     return true;
   }
@@ -386,13 +397,13 @@ class amVK_WI_MK2 {
    * vkCmdEndRenderPass just takes 1 param.... VkCommandBuffer, so we dont have a func for that
    */
   void Begin_RenderPass(VkCommandBuffer cmdBuf, VkSubpassContents idk = VK_SUBPASS_CONTENTS_INLINE) {
-      rpInfo.framebuffer = IMGs.framebufs[nExt_img];
-      rpInfo.renderArea = { /** its same data type as scissor*/
-          {0, 0}, /** [.offset] (x, y) */
-          _extent
-      };
+    rpInfo.framebuffer = IMGs.framebufs[nExt_img];
+    rpInfo.renderArea = { /** its same data type as scissor*/
+      {0, 0}, /** [.offset] (x, y) */
+      _extent
+    };
       
-      vkCmdBeginRenderPass(cmdBuf, &rpInfo, idk);
+    vkCmdBeginRenderPass(cmdBuf, &rpInfo, idk);
   }
 };
 

@@ -6,7 +6,7 @@
 #include <cstring>          // strcmp()     [cstdlib in .cpp]
 #include <vector>
 
-#ifdef amVK_CPP             // amVK_CX.cpp file
+#ifdef amVK_CX_CPP             // amVK_CX.cpp file
   #define amVK_LOGGER_IMPLIMENTATION  // amASSERT() impl.
 #endif
 #include "amVK_IN.hh"       // amVK_IN, #define HEART, HEART_CX,   amVK_Logger.hh, amVK_Types.hh, amVK_Utils.hh
@@ -64,21 +64,21 @@ class amVK_CX : public amVK_IN {
    *  █░█ ▄▀█ █▀█ █▀
    *  ▀▄▀ █▀█ █▀▄ ▄█
    */
-     /** instance Extension */
-      amVK_Array<VkExtensionProperties>             IEP{};   //'Instance Extension' Properties     [Available to this System]
-      amVK_Array<bool>                  _isEnabled_iExt{};
-      amVK_Array<VkExtensionProperties> _req_surface_ep{};   // 'Surface Extension' Properties     [for now we know this will be 2; \see filter_SurfaceExts(), allocated there]
-      std::vector<char *>                 enabled_iExts{};   // USE add_ValLayer
+  /** instance Extension */
+    amVK_Array<VkExtensionProperties>             IEP{};   //'Instance Extension' Properties     [Available to this System]
+    amVK_Array<bool>                  _isEnabled_iExt{};
+    amVK_Array<VkExtensionProperties> _req_surface_ep{};   // 'Surface Extension' Properties     [for now we know this will be 2; \see filter_SurfaceExts(), allocated there]
+    std::vector<char *>                 enabled_iExts{};   // USE add_ValLayer
 
-     /** Vulkan Layers */
-      amVK_Array<VkLayerProperties> vLayerP{};
-      amVK_Array<bool>    _isEnabled_vLayer{};
-      std::vector<char *> enabled_vLayers = {};   //WELP, the default one.
-      #ifdef amVK_RELEASE
-        const bool enableDebugLayers_LunarG = false;
-      #else
-        const bool enableDebugLayers_LunarG = true;
-      #endif
+  /** Vulkan Layers */
+    amVK_Array<VkLayerProperties> vLayerP{};
+    amVK_Array<bool>    _isEnabled_vLayer{};
+    std::vector<char *> enabled_vLayers = {};   //WELP, the default one.
+    #ifdef amVK_RELEASE
+      const bool enableDebugLayers_LunarG = false;
+    #else
+      const bool enableDebugLayers_LunarG = true;
+    #endif
 
 
   /**
@@ -131,10 +131,15 @@ class amVK_CX : public amVK_IN {
   /**
    * sets into PD (member var)
    * \return true if already/successfully loaded.... false if enum_PhysicalDevs \returns false
-   * \param force_load: pretty much sure you get this one ;)
+   * \param force_load: [if already loaded] pretty much sure you get this one ;)
    * \param auto_choose: does benchmark too, if not already done
    */
   bool load_PD_info(bool force_load, bool auto_choose);
+  amVK_Array<VkPhysicalDevice> get_PD_array() {
+    if (PD.list == nullptr) { load_PD_info(false, true); }
+    return amVK_Array<VkPhysicalDevice>(PD.list, PD.n, PD.n);
+  }
+  
   /**
    * sets into PD (member var)
    * \return false if vkEnumeratePhysicalDevices \returns 0 physical device....

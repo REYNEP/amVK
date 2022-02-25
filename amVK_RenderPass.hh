@@ -95,6 +95,7 @@ class amVK_RenderPassMK2 {
     amVK_Array<VkAttachmentReference>     attachment_refs = {};
     amVK_Array<VkSubpassDescription>            subpasses = {};
 
+    /** Needed for choosing a SurfaceFormat.... */
     amVK_SurfaceMK2 *demoSurfaceExt = nullptr;
     amVK_RenderPassMK2(amVK_SurfaceMK2 *S, amVK_DeviceMK2 *D = nullptr) : demoSurfaceExt(S) {
       if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
@@ -109,6 +110,7 @@ class amVK_RenderPassMK2 {
 
     VkRenderPass create(void) {
       if (attachment_descs.data == nullptr) {calc_n_alloc(); konfigurieren();}
+      
       VkRenderPassCreateInfo the_info = {};
         the_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         the_info.attachmentCount = attachment_descs.n;

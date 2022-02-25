@@ -1,21 +1,48 @@
 #define amVK_DEVICE_CPP
 #include "amVK_Device.hh"
 
+
+amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur_exts_n, uint32_t ur_qCIs_n, VkPhysicalDevice PD) : _flag(DevicePreset), _PD(PD) {
+    if (DevicePreset == amVK_DP_UNDEFINED) {
+        LOG("[amVK_DP_UNDEFINED] Thats not supported for now....");
+    }
+    
+    if (PD == nullptr) {
+        /** ---------- \requires amVK_CX::PD to have the data ---------- */
+        if (!HEART->PD.list) {HEART->load_PD_info(false, true);}
+
+        /** PD.chozen gets autoChozen by 'load_PD_info' as the 2nd Param above was true */
+        _PD = HEART->PD.chozen;
+        LOG("GPU SELECTED (Automatically):- "  << HEART->PD.props[HEART->PD.index(HEART->PD.chozen)].deviceName);
+    }
+
+    if (ur_qCIs_n > 100) {LOG("[amVK_DeviceMK2 Constructor] ur_qCIs_n > 100..... capping to 100"); ur_qCIs_n = 100;}
+    if (ur_exts_n > 200) {LOG("[amVK_DeviceMK2 Constructor] ur_exts_n > 200.... capping to  200"); ur_exts_n = 200;}
+    /** internal stuffs Adds on top of it */
+    this->qCIs.n = ur_qCIs_n;
+    this->exts.n = ur_exts_n;
+
+    this->konfigurieren();
+}
+
 bool amVK_DeviceMK2::create(void) {
     VkDeviceCreateInfo the_info = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, nullptr, 0,
-        qCIs.n, qCIs.data,          0, nullptr, /* [Deprecated] Layer */
-        exts.n, exts.data,
+        qCIs.neXt, qCIs.data,          0, nullptr, /* [Deprecated] Layer */
+        exts.neXt, exts.data,
         &req_ftrs
     };
 
-    //Occupies Almost 20MB
     VkResult res = vkCreateDevice(_PD, &the_info, nullptr, &this->_D );
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateDevice() failed, time to call the devs, it's an highly unstable emergency. amASSERT"); amASSERT(true); return false;}
 
     LOG("VkDevice Created! Yessssss, Time Travel! \n");
 
     HEART->D_list.push_back(this);
-    HEART->PD.isUsed[HEART->PD.chozen_index] = true;  /** \todo DOC This heavily.... after adding support for Multi Device */
+    if (!HEART->PD.isUsed[HEART->PD.chozen_index]) {
+         HEART->PD.isUsed[HEART->PD.chozen_index] = true;  /** \todo DOC This heavily.... after adding support for Multi Device */
+
+         amVK_M = new MemoryMK2(_PD);
+    }
     
     return true;
 }
@@ -100,23 +127,6 @@ VkDeviceMemory amVK_DeviceMK2::BindBufferMemory(VkBuffer BUF, VkMemoryPropertyFl
 
 
 
-/** Also    \see amVK_DeviceExtensionsBools     in the HEADER */
-static const char *amVK_DeviceExtensions[9] = {
-  "VK_NONE_undefined",
-  /** amVK_DevicePreset_Graphics */
-  "VK_KHR_swapchain",
-  /** amVK_DevicePreset_Encode_Decode */
-  "VK_KHR_video_decode_queue",
-  "VK_KHR_video_encode_queue",
-  "VK_KHR_video_queue",
-  /** amVK_DevicePreset_Image_Shaders | amVK_DevicePreset_Compositor */
-  "VK_KHR_image_format_lists",
-  /** VK_KHR_PERFORMANCE_QUERY", */
-  /** amVK_DevicePreset_RayTracing */
-  "VK_KHR_ray_query",
-  "VK_KHR_ray_tracing_pipeline"
-};
-
 
 
 void amVK_DeviceMK2::calc_n_alloc(void) {
@@ -178,7 +188,7 @@ void amVK_DeviceMK2::set_qCIs(void) {
     // ----------- FIND Device qFamily INFO & SUP ------------
     find_req_qFAMs:
     {
-        for (int i = 0, lim = qFAM_list.size(); i < lim; i++) {
+        for (int i = 0, lim = qFAM_list.n; i < lim; i++) {
             // We try to find if any qFAM support ONLY DEDICATED qTYPE   [bcz: https://www.reddit.com/r/vulkan/comments/bw47tg/comment/epvnikg/]
             VkQueueFlags qFLAGS = qFAM_list[i].queueFlags;
             
@@ -199,7 +209,7 @@ void amVK_DeviceMK2::set_qCIs(void) {
     modifications:
     {
         if (req_Queues & VK_QUEUE_GRAPHICS_BIT) { //amVK_DevicePreset_Graphics
-            if (_graphics_qFAM == 0xFFFFFFFF) {LOG_EX("Couldn't Find any GRAPHICS qFamily"); mod_err = true;}
+            if (_graphics_qFAM == 0xFFFFFFFF) {LOG_EX("Couldn't Find any GRAPHICS qFamily"); konfigurieren_err = true;}
             amVK_ARRAY_PUSH_BACK(qCIs) = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
@@ -210,7 +220,7 @@ void amVK_DeviceMK2::set_qCIs(void) {
             };
         }
         if (req_Queues & VK_QUEUE_COMPUTE_BIT) {  //amVK_DevicePreset_Compute
-            if (!_compute_qFAM == 0xFFFFFFFF) {LOG_EX("Couldn't Find any COMPUTE qFamily"); mod_err = true;}
+            if (!_compute_qFAM == 0xFFFFFFFF) {LOG_EX("Couldn't Find any COMPUTE qFamily"); konfigurieren_err = true;}
             amVK_ARRAY_PUSH_BACK(qCIs) = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
@@ -224,6 +234,29 @@ void amVK_DeviceMK2::set_qCIs(void) {
 }
 
 
+#define _DEVICE_EXTS_SORTED_N 11
+static const char *_deviceExtensions_sorted[_DEVICE_EXTS_SORTED_N] = {  /** must Correspond to amVK_DeviceExtensionsBools items */
+  /** VK_KHR */
+  "_image_format_list",
+  "_imageless_framebuffer",
+
+  "_maintenance2",
+
+  "_performance_query",
+
+  "_ray_query",
+  "_ray_tracing_pipeline",
+
+  "_swapchain",     /** amVK_DevicePreset_Graphics */
+
+  "_video_decode_queue",
+  "_video_encode_queue",
+  "_video_queue",
+
+  /** VK_EXT */
+  "_memory_budget"
+};
+
 /**
     \│/  ┌─┐─┐ ┬┌┬┐┌─┐
     ─ ─  ├┤ ┌┴┬┘ │ └─┐
@@ -232,42 +265,56 @@ void amVK_DeviceMK2::set_qCIs(void) {
 void amVK_DeviceMK2::set_exts(void) {
     amFUNC_HISTORY_INTERNAL();
 
-    amVK_Array<VkExtensionProperties> sup_exts = {};
-    vkEnumerateDeviceExtensionProperties(_PD, nullptr, &sup_exts.n, nullptr);
-    sup_exts.data = new VkExtensionProperties[sup_exts.n];
-    vkEnumerateDeviceExtensionProperties(_PD, nullptr, &sup_exts.n, sup_exts.data);
+    amVK_Array<VkExtensionProperties> _xd = {};
+    vkEnumerateDeviceExtensionProperties(_PD, nullptr, &_xd.n, nullptr);
+    _xd.data = new VkExtensionProperties[_xd.n];
+    vkEnumerateDeviceExtensionProperties(_PD, nullptr, &_xd.n, _xd.data);
+
+    LOG_LOOP_MK2("Device Extensions:- ", i, _xd.n, _xd.data[i].extensionName);
 
     // ----------- FIND Device Exts SUP ------------
-    amVK_DeviceExtensionsBools isSup = {};
-    find_sup_exts: 
+    find_xd: 
     {
-        uint32_t found_n = 0;
+        uint32_t last_found = 0;
+        bool *sup_exts_p = reinterpret_cast<bool *> (&sup_exts);
 
-        for (int i = 0, lim = sup_exts.n; i < lim; i++) {
-            if (found_n == exts.n) break;
+        /** this is better than doing a HashMap, if _xd.data is sorted.... */
 
-            /** most of the time the first 6 CHARS will match, so.... */
-            if (strcmp(&sup_exts.data[i].extensionName[6], "_swapchain")) {
-                isSup.VK_KHR_SWAPCHAIN = true;
-                found_n++;
+        for (uint32_t k = 0; k < _DEVICE_EXTS_SORTED_N; k++) {
+            for (int i = last_found, lim = _xd.n; i < lim; i++) {
+                /** most of the time the first 6 CHARS will match, so.... */
+                if (strcmp(&_xd.data[i].extensionName[6], _deviceExtensions_sorted[k]) == 0) {
+                    LOG_MK2(i << " " << _deviceExtensions_sorted[k]);
+                    *(sup_exts_p + k) = true;
+                    last_found = i;
+                    goto nextOne;
+                }
             }
-            /** else if ()
-             * MORE SOON, For now only amVK_DevicePreset_Graphics */
+            for (int i = 0, lim = last_found; i < lim; i++) {
+                if (strcmp(&_xd.data[i].extensionName[6], _deviceExtensions_sorted[k]) == 0) {
+                    LOG_MK2(i << "   " << _deviceExtensions_sorted[k]);
+                    *(sup_exts_p + k) = true;
+                    last_found = i;
+                    goto nextOne;
+                }
+            }
+
+            nextOne: continue;
         }
     }
-    delete[] sup_exts.data;
+    delete[] _xd.data;
 
     find_req_exts:
     {
         const bool *req_exts_p = reinterpret_cast<bool *> (&req_exts);
-        const bool *sup_exts_p = reinterpret_cast<bool *> (&isSup);
+        const bool *sup_exts_p = reinterpret_cast<bool *> (&sup_exts);
         bool result_success = true;
 
         for (int i = 0; i < sizeof(req_exts); i++) {
             if (req_exts_p[i] && !sup_exts_p[i]) {
-                LOG_EX("Device Extension: \u0027" << amVK_DeviceExtensions[i] << "isn't supported....");
+                LOG_EX("Device EXT: \u0027" << _deviceExtensions_sorted[i] << "isn't supported.... but is needed by chozen amVK_DevicePresetFlags");
                 result_success = false;
-                mod_err = true;
+                konfigurieren_err = true;
             }
         }
     }
@@ -276,7 +323,7 @@ void amVK_DeviceMK2::set_exts(void) {
     modifications:
     {
         if (req_exts.VK_KHR_SWAPCHAIN) {
-            amVK_ARRAY_PUSH_BACK(exts) = const_cast<char *>(amVK_DeviceExtensions[1]);
+            amVK_ARRAY_PUSH_BACK(exts) = "VK_KHR_swapchain";
         }
     }
 }

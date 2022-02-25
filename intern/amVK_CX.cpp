@@ -1,4 +1,4 @@
-#define amVK_CPP
+#define amVK_CX_CPP
 #include "amVK_CX.hh"
 #include "amVK_Device.hh"
 #include <cstdlib>          // calloc() & malloc()  [Needed in .cpp only]
@@ -69,7 +69,7 @@ VkInstance amVK_CX::CreateInstance(void) {
      * https://developer.blender.org/T68990 & https://developer.blender.org/P1590
      */
 
-    amVK_CX::instance = instance;   LOG("VkInstance Created!");
+    amVK_CX::instance = instance;   LOG("VkInstance Created! \n");
     return instance;
 }
 
@@ -91,7 +91,7 @@ void amVK_CX::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
 
     // ----------- Muhaha, we use OUR Own stuffs.... if nullptr ------------
     if (appInfo == nullptr) {
-        LOG("(amVK Dev Blubbering: muHahahaha, you didn't think about VkApplicationInfo, I am definitely gonna use that for Advertising purposes)");
+        LOG_MK1("(amVK Dev Blubbering: muHahahaha, you didn't think about VkApplicationInfo, I am definitely gonna use that for Advertising purposes)");
 
         VkApplicationInfo newAppInfo{};
         newAppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -108,7 +108,7 @@ void amVK_CX::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
     }
     appInfo->pEngineName = "amVK";
     appInfo->engineVersion = VK_MAKE_VERSION(0, 0, 3);
-    LOG("amVK Engine Version 0.0.3 \n\n");
+    LOG("amVK Engine Version 0.0.3");
     
     amVK_CX::vk_appInfo = *(appInfo);
 }
@@ -310,7 +310,7 @@ bool amVK_CX::add_InstanceExt(char *extName) {
 
     uint32_t index = amVK_CX::iExtName_to_index(extName);
     if (index == 0xFFFFFFFF) {  //Error Checking
-        LOG(extName << " is not Supported on this PC/Device/Computer/System whatever.... [Also check the spelling]");
+        LOG("Instance EXT: " << extName << " isn't sup. on this PC/Device/Computer/System whatever....");
         return false;
     }
 
@@ -378,7 +378,7 @@ bool amVK_CX::load_PD_info(bool force_load, bool auto_choose) {
             free(PD.list); PD = {};     // Zero Initialize
             goto load_PD;
         }
-        return true;
+        return &PD;
     }
 
     load_PD:
@@ -393,7 +393,7 @@ bool amVK_CX::load_PD_info(bool force_load, bool auto_choose) {
         if(auto_choose) {this->auto_choosePD();}    //Does Benchmark TOO!
 
         LOG_MK1("Loaded PD_info \n");
-        return true;
+        return &PD;
     }
 }
 
@@ -571,6 +571,7 @@ bool amVK_CX::auto_choosePD(void) {
  * Error Messages From [kh-reg-vk/specs/1.2-extensions/man/html/VkResult.html]
  * \see impl in amVK.cpp
  * BASED-ON: Glfw
+ *  I later fusioned some words... or added simplified details
  */
 const char *amVK_Utils::vulkan_result_msg(VkResult result) {
     switch (result)
@@ -641,7 +642,7 @@ const char *amVK_Utils::vulkan_result_msg(VkResult result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             return "A surface has changed in such a way that it is no longer compatible with the swapchain [Code: VK_ERROR_OUT_OF_DATE_KHR]";
         case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:
-            return "The display used by a swapchain does not use the same presentable image layout [Code: VK_ERROR_INCOMPATIBLE_DISPLAY_KHR]";
+            return "The display used by a swapchain does not use the same presentable ImageLayout [Code: VK_ERROR_INCOMPATIBLE_DISPLAY_KHR]";
 
         case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:
             return "The requested window is already connected to a VkSurfaceKHR, or to some other non-Vulkan API [Code: VK_ERROR_NATIVE_WINDOW_IN_USE_KHR]";

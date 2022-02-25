@@ -50,10 +50,10 @@ class amVK_Fence {
     VkFence _FENCE;
 
     /**
-     * \param flags: defult: VK_FENCE_CREATE_SIGNALED_BIT - means you wait & reset on it for the first time after creation)
+     * \param flags: VK_FENCE_CREATE_SIGNALED_BIT - means you wait & reset on it for the first time after creation)
      * \todo add pNext & flags support  
      */
-    amVK_Fence(VkFenceCreateFlags flags = VK_FENCE_CREATE_SIGNALED_BIT, amVK_DeviceMK2 *D = nullptr) : _amVK_D(D) {
+    amVK_Fence(VkFenceCreateFlags flags, amVK_DeviceMK2 *D = nullptr) : _amVK_D(D) {
         if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
         else {amVK_CHECK_DEVICE(D, _amVK_D);}
 

@@ -130,7 +130,7 @@ VkSurfaceFormatKHR amVK_SurfaceMK2::filter_SurfaceFormat(VkSurfaceFormatKHR what
 
     this->get_SurfaceFormats();
     
-    LOG("  [searching...] imageFormat: " << what_to_filter.format << ", imageColorSpace: " << what_to_filter.colorSpace);
+    LOG_MK2("  [searching...] imageFormat: " << what_to_filter.format << ", imageColorSpace: " << what_to_filter.colorSpace);
 
     for (int i = 0; i < surface_formats.n; i++) {
         if ((surface_formats.data[i].format     == what_to_filter.format) &&
@@ -356,9 +356,9 @@ void amVK_WI_MK2::post_create_swapchain(void) {
 
         VkResult res = vkCreateImageView(_amVK_D->_D, &CI, nullptr, IMGs._ptr_attach(i, IMGs.swap_attach_index));
         if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res);}
-        LOG("[Swapchain]_ IMGs.attachments[" << (((uint64_t)IMGs._ptr_attach(i, IMGs.swap_attach_index) - (uint64_t)IMGs._ptr_attach(0, IMGs.swap_attach_index)) / (uint64_t)8) << "]");
+        LOG_MK2("[Swapchain]_ IMGs.attachments[" << (((uint64_t)IMGs._ptr_attach(i, IMGs.swap_attach_index) - (uint64_t)IMGs._ptr_attach(0, IMGs.swap_attach_index)) / (uint64_t)8) << "]");
     }
-    LOG("");
+    LOG_MK2("");
 }
 
 
@@ -395,7 +395,7 @@ void amVK_WI_MK2::create_Attachments(void) {
             continue;
         }
 
-        //We dont modify ImageMK2::CI & view_CI values
+        //We dont modify ImageMK2::CI & view_CI values, so we have our custom 'imgCI' & 'viewCI'
         imgCI.extent = {_extent.width, _extent.height, 1};
         imgCI.samples = _amVK_RP->samples;
 
@@ -413,9 +413,9 @@ void amVK_WI_MK2::create_Attachments(void) {
                 *(IMGs._ptr_attach(fi, i)) = xd.VIEW;
                 *(IMGs._ptr_img   (fi, i)) = xd.IMG;
                 *(IMGs._ptr_mem   (fi, i)) = xd.MEMORY;
-                LOG("Created attachment: IMGs.attachments[" << ((fi * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + fi) << "]");
+                LOG_MK2("Created attachment: IMGs.attachments[" << ((fi * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + fi) << "]");
             }
-            LOG("");
+            LOG_MK2("");
 
             ClearValues: {
                 _set_RenderPassClearVals();

@@ -4,8 +4,6 @@
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
 
-class amVK_CommandPool;
-
 /** 
  * \todo DO something like in here: https://github.com/inexorgame/vulkan-renderer/tree/master/include/inexor/vulkan-renderer/wrapper/command_buffer.hpp 
  * only here cz, you might wanna write faster code.... This doesn't tie any internal stuffs, not even amVK_CommandPool.... manage that yourself!
@@ -16,21 +14,26 @@ class amVK_CommandBuf {
     amVK_CommandBuf(VkCommandBuffer BUF) : _BUF(BUF) {}
     ~amVK_CommandBuf() {}
 
+
+    VkCommandBufferBeginInfo info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, nullptr,
+        0, nullptr  /** [.flags], [.pInheritanceInfo] secondary cmdbufs */
+    };
+
     /**
      * If u r gonna record cmdbuf every frame, use VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
      * it’s best if Vulkan knows that this command will only execute once, as it can allow for great optimization by the driver.'
      * 
      * \todo secondary cmdbufs
      */
-    void Begin(VkCommandBufferUsageFlags flags) {
-        VkCommandBufferBeginInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            info.pNext = nullptr;
-            info.pInheritanceInfo = nullptr;     /** secondary cmdbufs */
-            info.flags = flags;
+    bool Begin(VkCommandBufferUsageFlags flags) {
+        info.flags = flags;
 
         VkResult res = vkBeginCommandBuffer(_BUF, &info);
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return;}
+        if (res != VK_SUCCESS) {
+            LOG_EX(amVK_Utils::vulkan_result_msg(res)); 
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -99,12 +102,18 @@ class amVK_CommandPool {
     /** \todo use LEVEL_SECONDARY, which are used in Extreme MultiThreading Optimized scenarios  
      * \see VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT] */
     VkCommandBuffer *AllocBufs(uint8_t n) {
+        if (n == 0) {
+            LOG_EX("param uint8_t n == 0, Defauly choosing 1");
+            n = 1;
+        } else {
+            //LOG("AllocBufs:- " << static_cast<uint32_t>(n));
+        }
         VkCommandBufferAllocateInfo I = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
             _POOL, VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             n
         };
 
-        if (_BUFs.should_resize()) {_BUFs.resize();}
+        if (_BUFs.neXt + n >= _BUFs.n) {_BUFs.resize();}
         uint32_t new_ones = _BUFs.neXt;
         VkResult res = vkAllocateCommandBuffers(_amVK_D->_D, &I, &_BUFs.data[new_ones]);
         _BUFs.neXt += n;

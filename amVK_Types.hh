@@ -102,21 +102,26 @@ typedef enum amVK_TShaderStage__ {
    ╻ ╻   ╺┳┓┏━╸╻ ╻╻┏━╸┏━╸   ┏━╸╻ ╻╺┳╸┏━╸┏┓╻┏━┓╻┏━┓┏┓╻┏━┓
    ╺╋╸    ┃┃┣╸ ┃┏┛┃┃  ┣╸    ┣╸ ┏╋┛ ┃ ┣╸ ┃┗┫┗━┓┃┃ ┃┃┗┫┗━┓
    ╹ ╹   ╺┻┛┗━╸┗┛ ╹┗━╸┗━╸   ┗━╸╹ ╹ ╹ ┗━╸╹ ╹┗━┛╹┗━┛╹ ╹┗━┛
+   a STRING-ARRAY in [amVK_Device.cpp] Corresponds to this, so only add to the bottom, and dont delete anything
 */
 typedef struct amVK_BExtensions__ {
-  bool VK_NONE_UNDEFINED = false;
-  
+  bool VK_KHR_IMAGE_FORMAT_LIST = false;
+  bool VK_KHR_IMAGELESS_FRAMEBUFFER = false;
+
+  bool VK_KHR_MAINTENANCE2 = false;
+
+  bool VK_KHR_PERFORMANCE_QUERY = false;
+
+  bool VK_KHR_RAY_QUERY = false;
+  bool VK_KHR_RAY_TRACING_PIPELINE = false;
+
   bool VK_KHR_SWAPCHAIN = false;
-  /** amVK_DevicePreset_Encode_Decode */
+
   bool VK_KHR_VIDEO_DECODE_QUEUE = false;
   bool VK_KHR_VIDEO_ENCODE_QUEUE = false;
   bool VK_KHR_VIDEO_QUEUE = false;
-  /** amVK_DevicePreset_Image_Shaders | amVK_DevicePreset_Compositor */
-  bool VK_KHR_IMAGE_FORMAT_LISTS = false;
-  /** bool VK_KHR_PERFORMANCE_QUERY = false; */
-  /** amVK_DevicePreset_RayTracing */
-  bool VK_KHR_RAY_QUERY = false;
-  bool VK_KHR_RAY_TRACING_PIPELINE = false;
+
+  bool VK_EXT_MEMORY_BUDGET = false;
 } amVK_DeviceExtensionsBools;
 
 

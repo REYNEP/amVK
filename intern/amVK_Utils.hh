@@ -26,6 +26,7 @@ struct amVK_Array {
 
     /** CONSTRUCTOR - More like failsafes.... */
     amVK_Array(T *D, uint32_t N) : data(D), n(N) {}
+    amVK_Array(T *D, uint32_t N, uint32_t NEXT) : data(D), n(N), neXt(NEXT) {}
     amVK_Array(void) {data = nullptr; n = 0;}
     ~amVK_Array() {}
 
@@ -75,10 +76,15 @@ struct amVK_Array {
     }
     */
 
-    inline size_t size(void) {return static_cast<size_t>(n);}
+    //filled
+    inline size_t size(void) {return static_cast<size_t>(neXt);}
+    inline size_t size_filled(void) {return static_cast<size_t>(neXt);}
+
+    //size that can fit
+    inline size_t size_alloced(void) {return static_cast<size_t>(n);}
 };
 #ifndef amVK_RELEASE
-  #ifdef amVK_CPP
+  #ifdef amVK_CX_CPP
     void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name, char *type_id_name) { 
       if (n == 0) { LOG_EX("amVK_Array<> " << var_name << ".n = 0;" << "Did you malloc? amASSERT here" << std::endl << "typeid(" << var_name << ").name() :- " << type_id_name);
                     amASSERT(true); }
@@ -118,7 +124,6 @@ template<typename T>
 struct amVK_ArrayDYN : public amVK_Array<T> {
   amVK_ArrayDYN(uint32_t n) : amVK_Array() {
     data = new T[n];
-    LOG_EX("amVK_ArrayDYN: " << n);
     this->n = n;
   }
   ~amVK_ArrayDYN() {}
@@ -141,12 +146,6 @@ struct amVK_ArrayDYN : public amVK_Array<T> {
 
   //Delete this object instance after calling this function
   inline void _delete(void) { delete[] data; }
-
-  //filled
-  inline size_t size(void) {return neXt;}
-
-  //size that can fit
-  inline size_t size_alloced(void) {return n;}
 };
 
 #define amVK_ArrayDYN_PUSH_BACK(var) var.data[var.neXt++]
@@ -173,6 +172,20 @@ namespace amVK_Utils {
  * \see impl in amVK.cpp
  */
 const char *vulkan_result_msg(VkResult result);
+
+/**
+ * well.... 😉 see the implementation
+ * \param how_far: How many bits [not BYTES] you wanna see
+ * \param ptr: pointer to first bit   [a.k.a BYTE Technically]
+ */
+void memview2b(void *ptr, uint32_t how_far);
+
+/**
+ * BYTE    0: The Sign, NEGATIVE if '1', POSITIVE if '0'
+ * BYTE  1-7: The Exponent, 1.0 = [0]01111111   [first zero is SIGN],    2.0 = [0]10000000, 4.0 = [0]10000001, 0.5 = [0]01111110
+ * BYTE 8-31: The Mantisse....
+ */
+void view_fp32(float fp32);
 
 
 

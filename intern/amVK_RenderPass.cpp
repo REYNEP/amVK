@@ -79,9 +79,9 @@ void amVK_RenderPassMK2::set_attachments(void) {
         VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         VK_ATTACHMENT_STORE_OP_DONT_CARE,
 
-        /** [.initialLayout]   - we don't know or care about the starting layout of the attachment */
+        /** [.initialLayout]   - we don't know or care about the starting ImageLayout of the attachment */
         VK_IMAGE_LAYOUT_UNDEFINED,
-        /** [.finalLayout]     - after the renderpass ends, the image has to be on a layout ready for display */
+        /** [.finalLayout]     - after the renderpass ends, the image has to be on a ImageLayout ready for display */
         VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
     };
 
@@ -106,7 +106,7 @@ void amVK_RenderPassMK2::set_attachments(void) {
       ╹ ╹   ╹ ╹┗━┛ ╹ ┗━╸╹   ┗━╸╹ ╹ ╹ ┗━┛┗━┛ ╹ 
     
 
-     * The Vulkan driver will perform the layout transitions for us when using the renderpass. 
+     * The Vulkan driver will perform the ImageLayout transitions for us when using the renderpass. 
      * If we weren’t using a renderpass (drawing from compute shaders) we would need to do the same transitions explicitly.
      * 
      * NOTE: IMPORTANT:

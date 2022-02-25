@@ -1,4 +1,5 @@
 #### amVK is not a Renderer.... make your own using amVK, thats the Idea. amVK is just a Thin layer on top of Khronos-Vulkan-API
+#### MULTI-DEVICE (VkDevice) isn't Supported...
 
 ##### will target lots of patches till v0.0.5
 
@@ -104,7 +105,7 @@ amVK_Device.hh -
            
   - ***Vars:***
     1. \internal type members are like _amVK_D, _amVK_RP etc. </br>
-    2. \private vars are like _pushConst, _descSet, [will have ' _' prefix.]</br>
+    2. \private vars are like _pushConst, _dSetLayout, [will have ' _' prefix.]</br>
                    
     3. \vars decl. inside funcs are like 'python_snake_case' mostly. </br> but can be 'camelCase' or anything, doesn't matter really!
 

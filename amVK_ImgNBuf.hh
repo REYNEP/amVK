@@ -5,7 +5,11 @@
 #include "amVK_Device.hh"
 
 
-/** for now the Template below... [static vars] represent a 1 time image that could be used as an ShaderInput, you will need to change it for other kinds of usage */
+/** 
+ * for now the Template below... [static vars] represent a 1 time image that could be used as an ShaderInput, you will need to change it for other kinds of usage 
+ * 
+ * NOTE: Images has to be vkCmdCopyBufferToImage too!
+ */
 class ImageMK2 {
   public:
     VkImage               IMG = nullptr;
@@ -13,6 +17,12 @@ class ImageMK2 {
     VkDeviceMemory     MEMORY = nullptr;
     ImageMK2() {}
     ~ImageMK2() {}
+
+    static inline amVK_DeviceMK2 *s_amVK_D = nullptr;
+    static void set_device(amVK_DeviceMK2 *D) {
+        if (D == nullptr) {amVK_SET_activeD(s_amVK_D);}
+        else {amVK_CHECK_DEVICE(D, s_amVK_D);}
+    }
 
 
     static inline VkImageCreateInfo CI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, nullptr, 0,   /** Feel free to change any of these.... before you call create() */
@@ -40,11 +50,6 @@ class ImageMK2 {
             }
         };
 
-    static inline amVK_DeviceMK2 *s_amVK_D = nullptr;
-    static void set_device(amVK_DeviceMK2 *D) {
-        if (D == nullptr) {amVK_SET_activeD(s_amVK_D);}
-        else {amVK_CHECK_DEVICE(D, s_amVK_D);}
-    }
     
 
     inline void create(VkFormat IMG_Format, uint32_t width, uint32_t height) {
@@ -66,7 +71,7 @@ class ImageMK2 {
         #ifndef amVK_RELEASE
             error_validation:
             {
-                if (s_amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before.... this   or pass amVK_DeviceMK2 as param");}
+                if (s_amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before this.... ");}
             }
         #endif
 

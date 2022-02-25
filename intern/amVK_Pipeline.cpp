@@ -3,6 +3,17 @@
 #include "glslang/Public/ShaderLang.h"
 #include "glslang/StandAlone/ResourceLimits.h"
 
+
+amVK_PipeStoreMK2::amVK_PipeStoreMK2(amVK_DeviceMK2 *D) : _amVK_D(D) { 
+    amFUNC_HISTORY();
+    if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
+    else {amVK_CHECK_DEVICE(D, _amVK_D);}
+
+    if (!this->is_glslang_init) {
+        glslang::InitializeProcess();
+    }
+}
+
 /**
  *   █▀ █░█ ▄▀█ █▀▄ █▀▀ █▀█   █▀▄▀█ █▀█ █▀▄ █░█ █░░ █▀▀
  *   ▄█ █▀█ █▀█ █▄▀ ██▄ █▀▄   █░▀░█ █▄█ █▄▀ █▄█ █▄▄ ██▄
@@ -55,11 +66,18 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(std::string &glslPath, amVK_Shade
             LOG("FAILED to OPEN FILE: " << glslPath);
         }
 
-        size = static_cast<uint64_t> (glslFile.tellg());    //Works cz of std::ios::ate
+        size = static_cast<uint64_t> (glslFile.tellg()) + 1;    //Works cz of std::ios::ate
         glslCode = static_cast<char *> (malloc(size));
 
+        glslCode[size-1] = '\0';
         glslFile.seekg(0);
         glslFile.read(glslCode, size);
+
+        char firstline[10] = "#version\0"; *((uint64_t *)firstline) = *((uint64_t *)glslCode);
+        if (strcmp(firstline, "#version") != 0) {
+            LOG("First line of shader: " << glslPath << " isn't '#version'   :- " << firstline);
+        }
+
         glslFile.close();
     } else {LOG("glslPath's Size isn't more than 0"); return nullptr;}
 
@@ -73,14 +91,18 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(std::string &glslPath, amVK_Shade
     //Shader Stage
     if (stage == Shader_Unknown){
         uint32_t size = glslPath.size();
-        const char *ptr_last_4_char = &glslPath[size-1 - 4];
-             if(strcmp(ptr_last_4_char, "vert"))     stage = Shader_Vertex;
-        else if(strcmp(ptr_last_4_char, "frag"))     stage = Shader_Fragment;
-        else if(strcmp(ptr_last_4_char, "comp"))     stage = Shader_Compute;
+        const char *ptr_last_4_char = &glslPath[size-4];
+            LOG(ptr_last_4_char);
+             if(strcmp(ptr_last_4_char, "vert") == 0)     stage = Shader_Vertex;
+        else if(strcmp(ptr_last_4_char, "frag") == 0)     stage = Shader_Fragment;
+        else if(strcmp(ptr_last_4_char, "comp") == 0)     stage = Shader_Compute;
 
-        else if(strcmp(ptr_last_4_char, "geom"))     stage = Shader_Geometry;
-        else if(strcmp(ptr_last_4_char, "tesc"))     stage = Shader_TesC;
-        else if(strcmp(ptr_last_4_char, "tese"))     stage = Shader_TesE;
+        else if(strcmp(ptr_last_4_char, "geom") == 0)     stage = Shader_Geometry;
+        else if(strcmp(ptr_last_4_char, "tesc") == 0)     stage = Shader_TesC;
+        else if(strcmp(ptr_last_4_char, "tese") == 0)     stage = Shader_TesE;
+        else {
+            LOG("glslc_Shader Param 'stage' isn't given.... amVK couldn't determine what stage it was");
+        }
     }
 
 
@@ -107,6 +129,8 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_Shader
         case Shader_RT:         stage_glslang = EShLangRayGenNV;        break;
     }
 
+
+    //GLSLang was initialized in CONSTRUCTOR
     //The Shader
     glslang::TShader   shader_glslang(stage_glslang);
     shader_glslang.setStrings(&glslCode, 1);
@@ -133,19 +157,22 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_Shader
         EShMessages msg = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
         const int DefaultVersion = 100;     //should this be like the '120' above? 🤔
         
+
+        std::string pre_processed_code;
         // wtf_is_this ? Preprocess? Why?
         preprocess:
         {
-            std::string pre_processed_code;
             glslang::TShader::ForbidIncluder includer;  //why need this?
 
             //preprocess
+            LOG("glslang is really Old School3");
             if (!shader_glslang.preprocess(&glslang::DefaultTBuiltInResource, DefaultVersion, ENoProfile, false, false, msg, &pre_processed_code, includer)) {
                 LOG_EX("glslang::TShader->preprocess() failed.... "
                     << "\n    " << shader_glslang.getInfoLog()
                     << "\n    " << shader_glslang.getInfoDebugLog()
                 );
             }
+            LOG("glslang is really Old School4");
             //set back..
             const char *wtf_is_this = pre_processed_code.c_str();
             shader_glslang.setStrings(&wtf_is_this, 1);
@@ -161,7 +188,7 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_Shader
 
 
 
-
+        LOG("glslang is really Old School2");
         glslang::TProgram program_glslang;
         program_glslang.addShader(&shader_glslang);
 
@@ -173,10 +200,19 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_Shader
             );
         }
         
+        LOG("glslang is really Old School");
         finally_compile:
         {
             glslang::SpvOptions spvOptions;
-            glslang::GlslangToSpv(*(program_glslang.getIntermediate(stage_glslang)), SpirV, &spvOptions);
+                spvOptions.generateDebugInfo = true;
+                spvOptions.stripDebugInfo = true;
+                spvOptions.disableOptimizer = false;
+                spvOptions.optimizeSize = false;
+                spvOptions.disassemble = true;
+                spvOptions.validate = true;
+            spv::SpvBuildLogger logger;
+            glslang::GlslangToSpv(*(program_glslang.getIntermediate(stage_glslang)), SpirV, &logger, &spvOptions);
+            LOG(logger.getAllMessages());
         }
     }
 
@@ -201,8 +237,10 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_Shader
 
 
     //Create Shader module
+    uint32_t *shouldThisStayinMemory = (uint32_t *) malloc(SpirV.size() * 4);
+    memcpy(shouldThisStayinMemory, SpirV.data(), SpirV.size() * 4);
     VkShaderModuleCreateInfo CI = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, 0,     /** .flags: Reserved for Future, [Who knows what they will unveil in TIME] */
-        SpirV.size() * 4, reinterpret_cast<uint32_t *>(SpirV.data())
+        SpirV.size() * 4, shouldThisStayinMemory
     };
 
     VkShaderModule A_module;
@@ -243,9 +281,9 @@ VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
         LOG("amVK_GraphicsPipe:- No Vertex Shader.");
     } else if (frag == nullptr) {
         LOG("amVK_GraphicsPipe:- No Fragment Shader.");
-    } else if (shaderInputs == nullptr) {
-        LOG_EX("amVK_GraphicsPipe::shaderInputs == nullptr;  No shaderInputs [a.k.a PipelineLayout]. \n" << 
-               "create & assign 'new' ShaderInputsMK2 to it & create_PipelineLayout [before build_pipeline]");
+    } else if (shaderInputsLayout == nullptr) {
+        LOG_EX("amVK_GraphicsPipe::shaderInputsLayout == nullptr;  No shaderInputs [a.k.a PipelineLayout]. \n" << 
+               "create ShaderInputsMK2.... call create_PipelineLayout [before build_pipeline]   see ShaderInputsMK2::layout");
     }
 
                  amVK_Array<VkPipelineShaderStageCreateInfo> ShaderStages = {};  ShaderStages.n = 2;
@@ -263,7 +301,7 @@ VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
 
     the_info.stageCount = ShaderStages.n;
     the_info.pStages = ShaderStages.data;
-    the_info.layout = shaderInputs->layout;
+    the_info.layout = shaderInputsLayout;
     the_info.renderPass = _amVK_RP->_RP;
     the_info.subpass = 0;
     the_info.basePipelineHandle = VK_NULL_HANDLE;
@@ -311,7 +349,7 @@ void amVK_GraphicsPipes::konfigurieren(void) {
      *      --------------------------------------------------------------------------
      */
     OG.DynamicViewportNScissor = {VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, nullptr, 0,
-        viewportCount, nullptr, viewportCount, nullptr   /** viewportCount [def: 1], pViewports, scissorCount [def: 1], pScissors */
+        viewportCount, nullptr, scissorCount, nullptr   /** viewportCount [def: 1], pViewports, scissorCount [def: 0], pScissors */
     };
 
     /**  \│/  ╔╦╗┬ ┬┬ ┌┬┐┬╔═╗┌─┐┌┬┐┌─┐┬  ┬┌┐┌┌─┐  ┌─╔╦╗╔═╗╔═╗╔═╗─┐
@@ -394,44 +432,4 @@ void amVK_GraphicsPipes::konfigurieren(void) {
         0,          /** .subpass */
         nullptr, 0  /** .basePipelineHandle, .basePipelineIndex */
     };
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/** 
- *   █▀█ █ █▀█ █▀▀ █░░ █ █▄░█ █▀▀   █░░ ▄▀█ █▄█ █▀█ █░█ ▀█▀
- *   █▀▀ █ █▀▀ ██▄ █▄▄ █ █░▀█ ██▄   █▄▄ █▀█ ░█░ █▄█ █▄█ ░█░
- */ 
-void ShaderInputsMK2::create_PipelineLayout(VkDevice D) {
-    /** TrianglePipeLineLayout, May be needed in So many other Vulkan Functions */
-    VkPipelineLayoutCreateInfo CI{};
-      CI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-      CI.pNext = nullptr;
-    /** empty defaults */
-      CI.flags = 0;
-
-    /** ref_PushConsts() might return {valid_address, 0},    but bcz n is 0, valid_address will be ignored */
-    amVK_Array<VkPushConstantRange> pushConsts = ref_PushConsts();
-    amVK_Array<VkDescriptorSetLayout> descSets = ref_DescSets();
-      CI.setLayoutCount = descSets.n;
-    /** bcz our shader has no inputs, but we will soon add something to here. */
-      CI.pSetLayouts = descSets.data;
-      CI.pushConstantRangeCount = pushConsts.n;
-      CI.pPushConstantRanges = pushConsts.data;
-
-    VkResult res = vkCreatePipelineLayout(D, &CI, nullptr, &layout);
-    if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG_EX("vkCreatePipelineLayout() failed");}
 }

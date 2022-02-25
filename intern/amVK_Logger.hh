@@ -3,10 +3,11 @@
  * Preprocessor RESC-1: https://sourceforge.net/p/predef/wiki/OperatingSystems/ 
  * MSVC Has Got a Huge amount of Predefined Macros:- https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
  */
-#ifndef amVK_LOGGER_HH
+#ifndef amVK_LOGGER_HH  // Include Guard for Entire File
 #define amVK_LOGGER_HH
 
 #include <iostream>
+//{0.10, 0.64, 0.64, 1.0}, /* SOCK_GEOMETRY */
 
 /** Basic LOGGER */
 #define LOG(x) std::cout << x << std::endl
@@ -123,9 +124,6 @@
  *     ╚═╝     ██╔╝ ██╗   ██║   ██║  ██║██║  ██║
  *             ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝
  */
-#ifdef INCLUDE_TIMER
-  #ifndef amVK_TIMER
-  #define amVK_TIMER
     #include <chrono>
 
     typedef struct noob_timer__ {
@@ -156,9 +154,6 @@
     #define TIMER_STORE(var, x) \
       var.time_now = std::chrono::high_resolution_clock::now(); \
       x = ((std::chrono::duration<double>)(var.time_now - var.time_start)).count();
-
-  #endif    // amVK_TIMER
-#endif    //#ifdef INCLUDE_TIMER
 
 
 
@@ -211,9 +206,6 @@
  *      Couldn't find any CRASH LOG for linux  [https://github.com/obsproject/obs-studio/issues?q=+label%3ALinux++crash]
  *      BUT macOS SEGFAULT SystemTrace info is really COOL [https://github.com/obsproject/obs-studio/issues/4112]
  */
-#ifdef amVK_LOGGER_BLI_ASSERT
-#ifndef amVK_ASSERT
-#define amVK_ASSERT
     
 #if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
   void BLI_system_backtrace(FILE *fp);   //There are Other Cool usable BLI_*_* functions too inside #ifdef amVK_LOGGER_IMPLIMENTATION
@@ -680,8 +672,8 @@
     }
     /* end BLI_system_backtrace */
   #endif  //WIN32 || __linux__
-#endif    //amVK_LOGGER_IMPLIMENTATION
+#endif    // amVK_LOGGER_IMPLIMENTATION
 
-#endif    //amVK_ASSERT
-#endif    //amVK_LOGGER_BLI_ASSERT
-#endif    //amVK_LOGGER_HH
+
+
+#endif    // amVK_LOGGER_HH

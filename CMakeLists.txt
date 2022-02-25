@@ -20,8 +20,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #-----------------------------------------------------------------------------
 # Options
-option(amVK_MK1_NOOB_LOG "kinda DUMPS stuffs like 'available Vulkan exts/devices/stuffs' in the terminal like an NOOB API" ON)
-option(amVK_MK2_NOOB_LOG "MK1_NOOB_LOG enables LOG_MK1.... which is used in stuffs made during MK1... amVK_CX... but this MK2 one is used for mostly everything" ON)
+option(amVK_MK1_NOOB_LOG "kinda DUMPS stuffs like 'available Vulkan exts/devices/stuffs' in the terminal like an NOOB API" OFF)
+option(amVK_MK2_NOOB_LOG "MK1_NOOB_LOG enables LOG_MK1.... which is used in stuffs made during MK1... amVK_CX... but this MK2 one is used for mostly everything" OFF)
 option(amVK_HISTORY "Log every function, its kinda like a live stack_tarce" OFF)
 option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" OFF)
 
@@ -52,6 +52,9 @@ endif()
 if(amVK_MK1_NOOB_LOG)
   list(APPEND   DEF   amVK_LOG_MK1)
 endif()
+if(amVK_MK2_NOOB_LOG)
+  list(APPEND   DEF   amVK_LOG_MK2)
+endif()
 if(amVK_HISTORY)
   list(APPEND   DEF   amVK_HISTORY)
 endif()
@@ -76,6 +79,19 @@ add_library(lib-amVK
   intern/amVK_WI.cpp 
   intern/amVK_RenderPass.cpp 
   intern/amVK_Pipeline.cpp
+
+  intern/amVK_Utils.cpp
+
+  #so that Intellisense Works.... + Compilation boost-up
+  amVK_CX.hh
+  amVK_Device.hh
+  amVK_Types.hh
+  amVK_WI.hh
+  amVK_RenderPass.hh
+  amVK_Pipeline.hh
+  amVK_CMD.hh
+  amVK_Sync.hh
+  amVK_RendererT1.hh
 )
 target_include_directories(lib-amVK PUBLIC ${INC})
 target_compile_definitions(lib-amVK PUBLIC ${DEF})
@@ -90,5 +106,6 @@ install(TARGETS lib-amVK
 #-----------------------------------------------------------------------------
 # UnSet Options:
 unset(amVK_MK1_NOOB_LOG CACHE)
+unset(amVK_MK2_NOOB_LOG CACHE)
 unset(amVK_HISTORY CACHE)
 unset(amVK_HISTORY_INTERNAL CACHE)

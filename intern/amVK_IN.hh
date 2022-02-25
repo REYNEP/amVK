@@ -81,7 +81,7 @@ class amVK_IN {
     }
 
     /** called by amVK_CX CONSTRUCTOR */
-    amVK_IN(void) {heart = this; LOG("amVK_IN::heart set! \n");}
+    amVK_IN(void) {heart = this; LOG("amVK_IN::heart set!");}
     ~amVK_IN() {}
 };
 
