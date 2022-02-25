@@ -37,8 +37,8 @@ typedef struct amVK_SurfaceCaps_GEN2 {
  *      [.... 🤔 or maybe calling with SAME uint32_t pointer the 2nd time is what causes the problems....] (but this Didn't seem to be the Case after October too....)
  */
 struct amVK_SurfaceMK2 {
-  VkSurfaceKHR _S;
-  VkPhysicalDevice _PD;
+  VkSurfaceKHR S;
+  VkPhysicalDevice PD;
 
   /** 
    * \brief
@@ -50,15 +50,18 @@ struct amVK_SurfaceMK2 {
   amVK_Array<VkPresentModeKHR>     present_modes = {};
 
   /** \param D: D->_PD is what's needed, you can pass that, instead of passing this amVK_DeviceMK2 */
-  amVK_SurfaceMK2(VkSurfaceKHR S, amVK_DeviceMK2 *D, bool uKnowWhatURDoing = false) : _S(S) {
+  amVK_SurfaceMK2(VkSurfaceKHR S, amVK_DeviceMK2 *D, bool uKnowWhatURDoing = false) : S(S) {
     if (D == nullptr) {
       if (!uKnowWhatURDoing) {
         LOG_EX("you passed in a amVK_DeviceMK2 variable which is nullptr.... [ _PD = nullptr ] has been set")
       }
-      _PD = nullptr;
+      PD = nullptr;
+    }
+    else {
+      PD = D->PD;
     }
   }
-  amVK_SurfaceMK2(VkSurfaceKHR S, VkPhysicalDevice PD) : _S(S), _PD(PD) {}
+  amVK_SurfaceMK2(VkSurfaceKHR S, VkPhysicalDevice PD) : S(S), PD(PD) {}
   ~amVK_SurfaceMK2 () {delete[] surface_formats.data; delete[] present_modes.data;}
 
 
@@ -110,9 +113,9 @@ typedef struct SwapchainData_GEN4 {
   VkImage            *images = nullptr;   /**     VkImage[attach_n][n]   includes vkGetSwapchainImagesKHR  [swap_imgs]   */
   VkDeviceMemory        *mem = nullptr;   /**            [attach_n][n]   Doesn't include swapchain ones....              */
                                           /**                                  n = framebuf_n                            */
-  inline VkImage        *_ptr_img(uint8_t framebuf_i, uint8_t attach_i) {return (     images + (attach_i * framebuf_n) + framebuf_i);}
-  inline VkDeviceMemory *_ptr_mem(uint8_t framebuf_i, uint8_t attach_i) {return (        mem + (attach_i * framebuf_n) + framebuf_i);}
-  inline VkImageView *_ptr_attach(uint8_t framebuf_i, uint8_t attach_i) {return (attachments + (framebuf_i * attach_n) + attach_i);}
+  inline VkImage        *i_ptr_img(uint8_t framebuf_i, uint8_t attach_i) {return (     images + (attach_i * framebuf_n) + framebuf_i);}
+  inline VkDeviceMemory *i_ptr_mem(uint8_t framebuf_i, uint8_t attach_i) {return (        mem + (attach_i * framebuf_n) + framebuf_i);}
+  inline VkImageView *i_ptr_attach(uint8_t framebuf_i, uint8_t attach_i) {return (attachments + (framebuf_i * attach_n) + attach_i);}
   //Use macros below this struct, if you wanna access vars above
 
   inline bool check_index(        uint8_t framebuf_i, uint8_t attach_i) {
@@ -132,8 +135,8 @@ typedef struct SwapchainData_GEN4 {
   
 
   bool alloc_called = false;
-  bool _alloc(void);
-  bool _free(void) {
+  bool i_alloc(void);
+  bool i_free(void) {
     if (alloc_called) {free(attachments); alloc_called = false; return true;} 
     else {LOG_EX("alloc_called == false"); return false;}
   }
@@ -201,14 +204,14 @@ typedef struct SwapchainData_GEN4 {
  */
 class amVK_WI_MK2 {
  public:
-  const char           *_window;            /** Name your Window, DUH! */
-  amVK_DeviceMK2       *_amVK_D;
-  amVK_RenderPassMK2  *_amVK_RP;            /** [IN] used for AttachmentCreation & swapchainCI.imageFormat/ColorSpace, cz RenderPass colorAttachment.imageFormat has to match this TOO! */
-  VkSurfaceKHR         _surface = nullptr;  /** [IN] */
-  amVK_SurfaceMK2      *_amVK_S = nullptr;  /** [IN] \todo intention, we should delete after first swapchain/RenderPass Creation */
+  const char           *m_windowName;            /** Name your Window, DUH! */
+  amVK_DeviceMK2       *amVK_D;
+  amVK_RenderPassMK2  *amVK_RP;            /** [IN] used for AttachmentCreation & swapchainCI.imageFormat/ColorSpace, cz RenderPass colorAttachment.imageFormat has to match this TOO! */
+  VkSurfaceKHR         surface = nullptr;  /** [IN] */
+  amVK_SurfaceMK2      *amVK_S = nullptr;  /** [IN] \todo intention, we should delete after first swapchain/RenderPass Creation */
 
-  VkSwapchainKHR    _swapchain = nullptr;   /** [OUT], not meant to be modified by you */
-  VkExtent2D           _extent = {};        /** [OUT], from \fn createSwapchain, updated as you reCreate */
+  VkSwapchainKHR    swapchain = nullptr;   /** [OUT], not meant to be modified by you */
+  VkExtent2D           extent = {};        /** [OUT], from \fn createSwapchain, updated as you reCreate */
 
 
   VkSwapchainCreateInfoKHR the_info = {};   /** [MOD-MAIN] Not many vars needs to be modified for a reCreate */
@@ -233,10 +236,10 @@ class amVK_WI_MK2 {
     /** \todo VUID-VkSwapchainCreateInfoKHR-imageUsage-parameter */
 
     /** these two are configurable in amVK_RenderPassMK2....  You really shouldn't Change these two here for this the_info */
-    the_info.imageFormat            = _amVK_RP->final_imageFormat;     /** Morelike, the GPU Wants to know what you wanna send to the DISPLAY */
-    the_info.imageColorSpace        = _amVK_RP->final_imageColorSpace; /** RENDERPASS attachment description [amVK_RenderPass::final_image_format/colorspace] has to match these TOO! */
+    the_info.imageFormat            = amVK_RP->final_imageFormat;     /** Morelike, the GPU Wants to know what you wanna send to the DISPLAY */
+    the_info.imageColorSpace        = amVK_RP->final_imageColorSpace; /** RENDERPASS attachment description [amVK_RenderPass::final_image_format/colorspace] has to match these TOO! */
 
-    the_info.surface                = _surface;
+    the_info.surface                = surface;
     if (the_info.sType == (VkStructureType)0) swapchain_CI_generic_mods();
   }
   /** not everything you see above is supported everywhere.... so we do smth like 'filtering' */
@@ -328,7 +331,7 @@ class amVK_WI_MK2 {
    * \note Acquired image can only be freed once you call vkQueuePresent()
    */
   uint32_t AcquireNextImage(VkSemaphore to_signal, uint64_t timeout = 1000000000) {
-    VkResult res = vkAcquireNextImageKHR(_amVK_D->_D, _swapchain, timeout, to_signal, nullptr, &nExt_img);
+    VkResult res = vkAcquireNextImageKHR(amVK_D->D, swapchain, timeout, to_signal, nullptr, &nExt_img);
     if (res != VK_SUCCESS) {
       LOG_DBG("Couldn't AcquireNextImageKHR....");
       LOG_EX("")
@@ -345,11 +348,11 @@ class amVK_WI_MK2 {
     VkResult res;
     VkPresentInfoKHR presentInfo = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, nullptr, 
       1, &to_wait,
-      1, &_swapchain,
+      1, &swapchain,
       &nExt_img,   /** 1    img per swapchain passed */
       &res         /** 1 result per swapchain passed */
     };
-    vkQueuePresentKHR(_amVK_D->get_graphics_queue(), &presentInfo);
+    vkQueuePresentKHR(amVK_D->get_graphics_queue(), &presentInfo);
 
     if (res != VK_SUCCESS) {
       LOG_DBG("vkQueuePresentKHR() failed.... Serious bug....");
@@ -371,21 +374,21 @@ class amVK_WI_MK2 {
    * \todo support for more than 2 Attachments.... 
    * \todo ImageLess Framebuffer Support
    */
-  void _set_RenderPassClearVals(void) {
-    clearValues = new VkClearValue[_amVK_RP->attachment_descs.n]; 
+  void set_RenderPassClearVals(void) {
+    clearValues = new VkClearValue[amVK_RP->attachment_descs.n]; 
 
-    clearValues[_amVK_RP->color_index] = { 0.0f, 0.0f, 0.0f, 1.0f }; /** Color */
+    clearValues[amVK_RP->color_index] = { 0.0f, 0.0f, 0.0f, 1.0f }; /** Color */
 
-    if (_amVK_RP->attachment_descs.n >= 2) {
-      clearValues[_amVK_RP->depth_index] = { 1.f }; /** Depth */
+    if (amVK_RP->attachment_descs.n >= 2) {
+      clearValues[amVK_RP->depth_index] = { 1.f }; /** Depth */
     }
     /** More Attachment Support soon */
 
-    rpInfo.clearValueCount = _amVK_RP->attachment_descs.n;
+    rpInfo.clearValueCount = amVK_RP->attachment_descs.n;
     rpInfo.pClearValues = clearValues;
   }
   VkRenderPassBeginInfo rpInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, nullptr,
-    _amVK_RP->_RP, nullptr /** [.framebuffer] */
+    amVK_RP->RP, nullptr /** [.framebuffer] */
   };
 
   /**
@@ -400,7 +403,7 @@ class amVK_WI_MK2 {
     rpInfo.framebuffer = IMGs.framebufs[nExt_img];
     rpInfo.renderArea = { /** its same data type as scissor*/
       {0, 0}, /** [.offset] (x, y) */
-      _extent
+      extent
     };
       
     vkCmdBeginRenderPass(cmdBuf, &rpInfo, idk);
@@ -414,7 +417,7 @@ class amVK_WI_MK2 {
    ╹ ╹   ╹╹ ╹┗━┛╺━╸╺┻┛╹ ╹ ╹ ╹ ╹   ╹ ╹┗━╸┗━╸┗━┛┗━╸
  */
 #ifdef amVK_WI_CPP
-  bool IMG_DATA_MK2::_alloc(void) {  //malloc
+  bool IMG_DATA_MK2::i_alloc(void) {  //malloc
     if (alloc_called) {
       LOG("amVK_WI.IMGs.alloc_called == true;  seems like its already ALLOCATED!!!!       [we not allocating] ");
       return false;

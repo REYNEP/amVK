@@ -22,40 +22,40 @@
  */
 class amVK_RD {
   public:
-    uint32_t qFam;  /** Graphics [a.k.a Draw] QueueFamily [qFamily is as per PhysicalDevice (vulkan)] */
-    static inline VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;   /** does smth related to synchronization for SubmitInfo SEMAs*/
-    VkSubmitInfo _whatever;
-    VkQueue _Q;
+    uint32_t m_qFam;  /** Graphics [a.k.a Draw] QueueFamily [qFamily is as per PhysicalDevice (vulkan)] */
+    static inline VkPipelineStageFlags s_waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;   /** does smth related to synchronization for SubmitInfo SEMAs*/
+    VkSubmitInfo m_whatever;
+    VkQueue m_Q;
 
-    amVK_Fence _queueFence;     /** Don't get confused by trying to relate qFam to this.... its like qFam (PhysicalDevice QueueFamily) is like a Group of Queues.... */
-    amVK_Semaphore _presentSemaphore;
-    amVK_Semaphore  _renderSemaphore;
+    amVK_Fence m_queueFence;     /** Don't get confused by trying to relate qFam to this.... its like qFam (PhysicalDevice QueueFamily) is like a Group of Queues.... */
+    amVK_Semaphore m_presentSemaphore;
+    amVK_Semaphore  m_renderSemaphore;
 
-    amVK_CommandPool _cmdPool;
-    amVK_CommandBuf  _cmdBuf;
+    amVK_CommandPool m_cmdPool;
+    amVK_CommandBuf  m_cmdBuf;
     /** This can be optimized as hell, I guess.... */
     amVK_RD(amVK_DeviceMK2 *amVK_D) : 
-        qFam( amVK_D->get_graphics_qFamily() ),
-        _cmdPool( amVK_CommandPool(qFam, amVK_D) ),
-        _cmdBuf(  amVK_CommandBuf (*(_cmdPool.AllocBufs(1)))),
+        m_qFam( amVK_D->get_graphics_qFamily() ),
+        m_cmdPool( amVK_CommandPool(m_qFam, amVK_D) ),
+        m_cmdBuf(  amVK_CommandBuf (*(m_cmdPool.AllocBufs(1)))),
 
-        _queueFence(VK_FENCE_CREATE_SIGNALED_BIT, amVK_D),
-        _presentSemaphore(amVK_D),
-         _renderSemaphore(amVK_D),
+        m_queueFence(VK_FENCE_CREATE_SIGNALED_BIT, amVK_D),
+        m_presentSemaphore(amVK_D),
+         m_renderSemaphore(amVK_D),
 
-        _Q(amVK_D->get_graphics_queue()),
-        _whatever({VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr,
-            1, &_presentSemaphore._SEMA, /** wait */
-            &waitStage,
-            1, &_cmdBuf._BUF,
-            1, &_renderSemaphore._SEMA   /** signal */
+        m_Q(amVK_D->get_graphics_queue()),
+        m_whatever({VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr,
+            1, &m_presentSemaphore.SEMA, /** wait */
+            &s_waitStage,
+            1, &m_cmdBuf.BUF,
+            1, &m_renderSemaphore.SEMA   /** signal */
         })
     {
 
     }
 
     /** Current selected RenderWindow */
-    static inline amVK_WI_MK2 *last_WI = nullptr;
+    static inline amVK_WI_MK2 *s_last_WI = nullptr;
 
     /** 
      * Call this, then vkCmdSetViewport, vkCmdSetScissor, 
@@ -66,24 +66,24 @@ class amVK_RD {
      * \param WI: Select the window/framebuffer to render to
      */
     void Render_BeginRecord(amVK_WI_MK2 *WI) {
-        this->last_WI = WI;
-        _queueFence.wait();
-        _queueFence.reset();
-        WI->AcquireNextImage(_presentSemaphore._SEMA, 1000000000);
+        this->s_last_WI = WI;
+        m_queueFence.wait();
+        m_queueFence.reset();
+        WI->AcquireNextImage(m_presentSemaphore.SEMA, 1000000000);
 
-        _cmdBuf.Reset(0);
-        _cmdBuf.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        m_cmdBuf.Reset(0);
+        m_cmdBuf.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-        WI->Begin_RenderPass(_cmdBuf._BUF, VK_SUBPASS_CONTENTS_INLINE);  // AcquireNextImage() before it.... Framebuffer selected here
+        WI->Begin_RenderPass(m_cmdBuf.BUF, VK_SUBPASS_CONTENTS_INLINE);  // AcquireNextImage() before it.... Framebuffer selected here
     }
     void EndRecord_N_Submit(void) {
-        vkCmdEndRenderPass(_cmdBuf._BUF);
-        _cmdBuf.End();
+        vkCmdEndRenderPass(m_cmdBuf.BUF);
+        m_cmdBuf.End();
 
-        VkResult res = vkQueueSubmit(_Q, 1, &_whatever, _queueFence._FENCE);  /** fenceOne blocks till vkCmd*s finishes [Will get RESET on its own ig] */
+        VkResult res = vkQueueSubmit(m_Q, 1, &m_whatever, m_queueFence.FENCE);  /** fenceOne blocks till vkCmd*s finishes [Will get RESET on its own ig] */
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return;}
 
-        last_WI->Present(_renderSemaphore._SEMA);   // Finally Present to the Window, a.k.a SwapBuffers or Refresh Screen
+        s_last_WI->Present(m_renderSemaphore.SEMA);   // Finally Present to the Window, a.k.a SwapBuffers or Refresh Screen
     }
 
   protected:

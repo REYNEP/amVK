@@ -2,7 +2,7 @@
 #include "amVK_Device.hh"
 
 
-amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur_exts_n, uint32_t ur_qCIs_n, VkPhysicalDevice PD) : _flag(DevicePreset), _PD(PD) {
+amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur_exts_n, uint32_t ur_qCIs_n, VkPhysicalDevice PD) : flag(DevicePreset), PD(PD) {
     if (DevicePreset == amVK_DP_UNDEFINED) {
         LOG("[amVK_DP_UNDEFINED] Thats not supported for now....");
     }
@@ -12,7 +12,7 @@ amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur
         if (!HEART->PD.list) {HEART->load_PD_info(false, true);}
 
         /** PD.chozen gets autoChozen by 'load_PD_info' as the 2nd Param above was true */
-        _PD = HEART->PD.chozen;
+        PD = HEART->PD.chozen;
         LOG("GPU SELECTED (Automatically):- "  << HEART->PD.props[HEART->PD.index(HEART->PD.chozen)].deviceName);
     }
 
@@ -32,7 +32,7 @@ bool amVK_DeviceMK2::create(void) {
         &req_ftrs
     };
 
-    VkResult res = vkCreateDevice(_PD, &the_info, nullptr, &this->_D );
+    VkResult res = vkCreateDevice(this->PD, &the_info, nullptr, &this->D );
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateDevice() failed, time to call the devs, it's an highly unstable emergency. amASSERT"); amASSERT(true); return false;}
 
     LOG("VkDevice Created! Yessssss, Time Travel! \n");
@@ -41,7 +41,7 @@ bool amVK_DeviceMK2::create(void) {
     if (!HEART->PD.isUsed[HEART->PD.chozen_index]) {
          HEART->PD.isUsed[HEART->PD.chozen_index] = true;  /** \todo DOC This heavily.... after adding support for Multi Device */
 
-         amVK_M = new MemoryMK2(_PD);
+         amVK_M = new MemoryMK2(this->PD);
     }
     
     return true;
@@ -49,7 +49,7 @@ bool amVK_DeviceMK2::create(void) {
 
 bool amVK_DeviceMK2::destroy(void) {
     /** \todo BackUP_StackTrace.... to get written if program closes.... */
-    vkDestroyDevice(_D, nullptr);
+    vkDestroyDevice(this->D, nullptr);
     HEART->D_list.erase(HEART->D_list.begin() + HEART->D_list.index(this));
     
     free(qCIs.data);  /** We only malloced once in calc_n_alloc() */
@@ -61,7 +61,7 @@ bool amVK_DeviceMK2::destroy(void) {
 
 VkDeviceMemory amVK_DeviceMK2::BindImageMemory(VkImage IMG, VkMemoryPropertyFlags flags) {
     VkMemoryRequirements req;
-    vkGetImageMemoryRequirements(_D, IMG, &req);
+    vkGetImageMemoryRequirements(this->D, IMG, &req);
     
     img_alloc_info.allocationSize  = req.size;
 
@@ -78,10 +78,10 @@ VkDeviceMemory amVK_DeviceMK2::BindImageMemory(VkImage IMG, VkMemoryPropertyFlag
     }
 
     VkDeviceMemory mem = nullptr;
-    VkResult res = vkAllocateMemory(_D, &this->img_alloc_info, nullptr, &mem);
+    VkResult res = vkAllocateMemory(this->D, &this->img_alloc_info, nullptr, &mem);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
 
-    res = vkBindImageMemory(_D, IMG, mem, 0);
+    res = vkBindImageMemory(this->D, IMG, mem, 0);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
 
     return mem;
@@ -89,7 +89,7 @@ VkDeviceMemory amVK_DeviceMK2::BindImageMemory(VkImage IMG, VkMemoryPropertyFlag
 
 VkDeviceMemory amVK_DeviceMK2::BindBufferMemory(VkBuffer BUF, VkMemoryPropertyFlags flags) {
     VkMemoryRequirements req;
-    vkGetBufferMemoryRequirements(_D, BUF, &req);
+    vkGetBufferMemoryRequirements(this->D, BUF, &req);
     
     buf_alloc_info.allocationSize  = req.size;
 
@@ -106,10 +106,10 @@ VkDeviceMemory amVK_DeviceMK2::BindBufferMemory(VkBuffer BUF, VkMemoryPropertyFl
     }
 
     VkDeviceMemory mem = nullptr;
-    VkResult res = vkAllocateMemory(_D, &this->buf_alloc_info, nullptr, &mem);
+    VkResult res = vkAllocateMemory(this->D, &this->buf_alloc_info, nullptr, &mem);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
 
-    res = vkBindBufferMemory(_D, BUF, mem, 0);
+    res = vkBindBufferMemory(this->D, BUF, mem, 0);
     if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
 
     return mem;
@@ -135,14 +135,14 @@ void amVK_DeviceMK2::calc_n_alloc(void) {
     // ----------- PreMod Settings [a.k.a Configurations] ------------
     configure_preMod_settings_based_on_presets:
     {
-        if (_flag & amVK_DP_GRAPHICS) {
+        if (this->flag & amVK_DP_GRAPHICS) {
             req_Queues += VK_QUEUE_GRAPHICS_BIT;
             qCIs.n++;
 
             req_exts.VK_KHR_SWAPCHAIN = true;
             exts.n++;
         }
-        if (_flag & amVK_DP_COMPUTE) {
+        if (this->flag & amVK_DP_COMPUTE) {
             req_Queues += VK_QUEUE_COMPUTE_BIT;
             qCIs.n++;
         }
@@ -174,7 +174,7 @@ void amVK_DeviceMK2::calc_n_alloc(void) {
 void amVK_DeviceMK2::set_qCIs(void) {
     amFUNC_HISTORY_INTERNAL();
 
-    uint32_t PD_index = HEART->PD.index(_PD);
+    uint32_t PD_index = HEART->PD.index(this->PD);
     amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
 
 
@@ -265,12 +265,12 @@ static const char *_deviceExtensions_sorted[_DEVICE_EXTS_SORTED_N] = {  /** must
 void amVK_DeviceMK2::set_exts(void) {
     amFUNC_HISTORY_INTERNAL();
 
-    amVK_Array<VkExtensionProperties> _xd = {};
-    vkEnumerateDeviceExtensionProperties(_PD, nullptr, &_xd.n, nullptr);
-    _xd.data = new VkExtensionProperties[_xd.n];
-    vkEnumerateDeviceExtensionProperties(_PD, nullptr, &_xd.n, _xd.data);
+    amVK_Array<VkExtensionProperties> xd = {};
+    vkEnumerateDeviceExtensionProperties(this->PD, nullptr, &xd.n, nullptr);
+    xd.data = new VkExtensionProperties[xd.n];
+    vkEnumerateDeviceExtensionProperties(this->PD, nullptr, &xd.n, xd.data);
 
-    LOG_LOOP_MK2("Device Extensions:- ", i, _xd.n, _xd.data[i].extensionName);
+    LOG_LOOP_MK2("Device Extensions:- ", i, xd.n, xd.data[i].extensionName);
 
     // ----------- FIND Device Exts SUP ------------
     find_xd: 
@@ -278,12 +278,12 @@ void amVK_DeviceMK2::set_exts(void) {
         uint32_t last_found = 0;
         bool *sup_exts_p = reinterpret_cast<bool *> (&sup_exts);
 
-        /** this is better than doing a HashMap, if _xd.data is sorted.... */
+        /** this is better than doing a HashMap, if xd.data is sorted.... */
 
         for (uint32_t k = 0; k < _DEVICE_EXTS_SORTED_N; k++) {
-            for (int i = last_found, lim = _xd.n; i < lim; i++) {
+            for (int i = last_found, lim = xd.n; i < lim; i++) {
                 /** most of the time the first 6 CHARS will match, so.... */
-                if (strcmp(&_xd.data[i].extensionName[6], _deviceExtensions_sorted[k]) == 0) {
+                if (strcmp(&xd.data[i].extensionName[6], _deviceExtensions_sorted[k]) == 0) {
                     LOG_MK2(i << " " << _deviceExtensions_sorted[k]);
                     *(sup_exts_p + k) = true;
                     last_found = i;
@@ -291,7 +291,7 @@ void amVK_DeviceMK2::set_exts(void) {
                 }
             }
             for (int i = 0, lim = last_found; i < lim; i++) {
-                if (strcmp(&_xd.data[i].extensionName[6], _deviceExtensions_sorted[k]) == 0) {
+                if (strcmp(&xd.data[i].extensionName[6], _deviceExtensions_sorted[k]) == 0) {
                     LOG_MK2(i << "   " << _deviceExtensions_sorted[k]);
                     *(sup_exts_p + k) = true;
                     last_found = i;
@@ -302,7 +302,7 @@ void amVK_DeviceMK2::set_exts(void) {
             nextOne: continue;
         }
     }
-    delete[] _xd.data;
+    delete[] xd.data;
 
     find_req_exts:
     {
@@ -337,13 +337,13 @@ void amVK_DeviceMK2::set_exts(void) {
 void amVK_DeviceMK2::set_ftrs(void) {
     amFUNC_HISTORY_INTERNAL();
 
-    uint32_t PD_index = HEART->PD.index(_PD);
+    uint32_t PD_index = HEART->PD.index(this->PD);
     VkPhysicalDeviceFeatures sup_ftrs = HEART->PD.features[PD_index];
 
     // ----------- Main MODs ------------
     modifications:
     {
-        if (_flag & amVK_DP_3DEngine) {
+        if (this->flag & amVK_DP_3DEngine) {
             if (sup_ftrs.geometryShader) req_ftrs.geometryShader = true;
             if (sup_ftrs.tessellationShader) req_ftrs.tessellationShader = true;
         }
@@ -366,7 +366,7 @@ void amVK_DeviceMK2::set_ftrs(void) {
   amVK_DeviceMK2 *vec_amVK_Device::operator[](VkDevice D) {
     amVK_DeviceMK2 **data = this->data();
     for (int i = 0, lim = this->size(); i < lim; i++) {
-      if (data[i]->_D == D) {
+      if (data[i]->D == D) {
         return data[i];
       }
     }

@@ -4,10 +4,10 @@
 #include "glslang/StandAlone/ResourceLimits.h"
 
 
-amVK_PipeStoreMK2::amVK_PipeStoreMK2(amVK_DeviceMK2 *D) : _amVK_D(D) { 
+amVK_PipeStoreMK2::amVK_PipeStoreMK2(amVK_DeviceMK2 *D) : amVK_D(D) { 
     amFUNC_HISTORY();
-    if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
-    else {amVK_CHECK_DEVICE(D, _amVK_D);}
+    if (D == nullptr) {amVK_SET_activeD(amVK_D);}
+    else {amVK_CHECK_DEVICE(D, amVK_D);}
 
     if (!this->is_glslang_init) {
         glslang::InitializeProcess();
@@ -46,7 +46,7 @@ VkShaderModule amVK_PipeStoreMK2::load_ShaderModule(std::string &spvPath) {
     };
 
     VkShaderModule A_module;
-    VkResult res = vkCreateShaderModule(_amVK_D->_D, &CI, nullptr, &A_module);
+    VkResult res = vkCreateShaderModule(amVK_D->D, &CI, nullptr, &A_module);
 
     if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res); LOG_EX("vkCreateShaderModule() failed"); return nullptr;}
     return A_module;
@@ -244,7 +244,7 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_Shader
     };
 
     VkShaderModule A_module;
-    VkResult res = vkCreateShaderModule(_amVK_D->_D, &CI, nullptr, &A_module);
+    VkResult res = vkCreateShaderModule(amVK_D->D, &CI, nullptr, &A_module);
 
     if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res); LOG_EX("vkCreateShaderModule() failed"); return nullptr;}
     return A_module;
@@ -302,13 +302,13 @@ VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
     the_info.stageCount = ShaderStages.n;
     the_info.pStages = ShaderStages.data;
     the_info.layout = shaderInputsLayout;
-    the_info.renderPass = _amVK_RP->_RP;
+    the_info.renderPass = amVK_RP->RP;
     the_info.subpass = 0;
     the_info.basePipelineHandle = VK_NULL_HANDLE;
 
     /** it's easy to error out on create graphics pipeline, so we handle it a bit better than the common VK_CHECK case */
     VkPipeline newPipeline;
-    if (vkCreateGraphicsPipelines(_amVK_D->_D, VK_NULL_HANDLE, 1, &the_info, nullptr, &newPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(amVK_D->D, VK_NULL_HANDLE, 1, &the_info, nullptr, &newPipeline) != VK_SUCCESS) {
         LOG("failed to create pipeline\n");
         return nullptr; /** TODO: Better Error Handling */
     }
@@ -428,7 +428,7 @@ void amVK_GraphicsPipes::konfigurieren(void) {
         &OG.ColorBlend,
         &OG.DynamicWhat,
         nullptr,    /** .layout, set in build_pipeline(); */
-        _amVK_RP->_RP,
+        amVK_RP->RP,
         0,          /** .subpass */
         nullptr, 0  /** .basePipelineHandle, .basePipelineIndex */
     };

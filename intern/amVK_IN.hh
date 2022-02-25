@@ -42,8 +42,14 @@ class vec_amVK_Device : public std::vector<amVK_DeviceMK2 *> {
 
 /** 
  * Since amVK_CX has a lot of things, decided to separate these, cz are used in many amVK files.... 
- * only used as amVK_CX base/parent class 
+ * So this file only contains stuffs that are INTERNALLY needed.... e.g. PD, D_list, instance, activeD
+ * only used as amVK_CX base/parent class
  * 
+ * amVK_IN doesn;t need to be a ABSTRACT CLASS [class that has at least 1 PURE-VIRTUAL FUNCTION....]
+ *   but we decided to keep it this way.... cz amVK_IN shouldn't be created alone.... on its own
+ *   so made the load_PD_info virtul....
+ *   & other functions as well, cz why not,,,?
+ *
  * \note Don't COnvert/TypeCast amVK_CX to this.... you should refer to these vars below from an amVK_CX object
  */
 class amVK_IN {
@@ -55,30 +61,9 @@ class amVK_IN {
     static inline vec_amVK_Device                D_list = {};
     loaded_PD_info_plus_plus                         PD = {};   /** \ref amVK_Types.hh, call \fn load_PD_info() before */
 
-
-    virtual VkInstance CreateInstance(void) = 0;
-    virtual bool add_InstanceExt(char *extName) = 0;
-    virtual bool add_ValLayer(char *vLayerName) = 0;
-    virtual bool DestroyInstance(void) = 0;
-
-    virtual bool check_VkSupport(void) = 0; /** \todo */
-    virtual void set_VkApplicationInfo(VkApplicationInfo *appInfo = nullptr) = 0;
-
-    /**
-     * sets into PD (member var)
-     * \return true if already/successfully loaded.... false if enum_PhysicalDevs \returns false
-     * \param force_load: pretty much sure you get this one ;)
-     * \param auto_choose: does benchmark too, if not already done
-     * 
-     * \todo our benchmark just sucks....
-     */
+    /** \see amVK_CX.hh for func docs */
     virtual bool load_PD_info(bool force_load, bool auto_choose) = 0;
-
-
-    /** Only way to set activeD, function not internally called.... */
-    void activate_device(amVK_DeviceMK2 *D) {
-      if (D_list.doesExist(D)) activeD = D;
-    }
+    virtual void activate_device(amVK_DeviceMK2 *D) = 0; /** if (D_list.doesExist(D)) activeD = D; */
 
     /** called by amVK_CX CONSTRUCTOR */
     amVK_IN(void) {heart = this; LOG("amVK_IN::heart set!");}

@@ -7,20 +7,20 @@
    ╺╋╸   ┃  ┃ ┃┃┗┫┗━┓ ┃ ┣┳┛┃ ┃┃   ┃ ┃ ┃┣┳┛
    ╹ ╹   ┗━╸┗━┛╹ ╹┗━┛ ╹ ╹┗╸┗━┛┗━╸ ╹ ┗━┛╹┗╸
  */
-amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D) : _window(window), _amVK_D(D), _amVK_S(S), _surface(S->_S), _amVK_RP(RP) {
+amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D) : m_windowName(window), amVK_D(D), amVK_S(S), surface(S->S), amVK_RP(RP) {
          if (window == nullptr) { LOG_EX("Please dont pass nullptr, ERROR/WARNING Logs will look messy, this is used to let you know which window ");
                                   window = "nullptr";}
     if           (D == nullptr) { LOG_EX("[param]        amVK_DeviceMK2 *D      is nullptr.... name: " << window); }
-    else if (D->_PD == nullptr) { LOG_EX("[param]        amVK_DeviceMK2 *D->_PD is nullptr.... name: " << window); }
+    else if (D->PD == nullptr) { LOG_EX("[param]        amVK_DeviceMK2 *D->_PD is nullptr.... name: " << window); }
          if (     S == nullptr) { LOG_EX("[param]       amVK_SurfaceMK2 *S      is nullptr.... name: " << window); }
          if (    RP == nullptr) { LOG_EX("[param]    amVK_RenderPassMK2 *RP     is nullptr.... name: " << window); }
 
 
-    if (_amVK_S->_PD != _amVK_D->_PD) {
+    if (amVK_S->PD != amVK_D->PD) {
         LOG_DBG("[param]       \u0027amVK_SurfaceMK2 *S->VkSurface _S\u0027, wasn't created on the same PhysicalDevice as _amVK_Device->_PD....  This will probably fail....");
         LOG_EX("");
     }
-    amASSERT(!_amVK_S->is_presenting_sup());
+    amASSERT(!amVK_S->is_presenting_sup());
 
     Default_the_info();
     fallback_the_info();
@@ -30,12 +30,12 @@ amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPass
 
 /** \see \fn amVK_SurfaceMK2::is_presenting_sup() */
 uint32_t amVK_SurfaceMK2::present_qFam(void) {
-    uint32_t PD_index = HEART->PD.index(_PD);
+    uint32_t PD_index = HEART->PD.index(PD);
     amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
 
     VkBool32 sup = false;
     for (int i = 0, lim = qFAM_list.n; i < lim; i++) {
-        vkGetPhysicalDeviceSurfaceSupportKHR(_PD, i, _S, &sup);
+        vkGetPhysicalDeviceSurfaceSupportKHR(PD, i, S, &sup);
         if (sup == true) { present_qFamily = i;  found_present_qFamily = true; }
     }
 
@@ -69,8 +69,8 @@ void amVK_SurfaceMK2::get_SurfaceFormats(bool print) {
      *  The DRIVER Handles these IMPLICITLY:, you just need to let the DRIVER know what you are chosing now later on */
 
     amVK_Array<VkSurfaceFormatKHR> tmp_surface_formats = {};
-    vkGetPhysicalDeviceSurfaceFormatsKHR(_PD, _S, &tmp_surface_formats.n, nullptr);              tmp_surface_formats.data = new VkSurfaceFormatKHR[tmp_surface_formats.n];
-    vkGetPhysicalDeviceSurfaceFormatsKHR(_PD, _S, &tmp_surface_formats.n, tmp_surface_formats.data);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(PD, S, &tmp_surface_formats.n, nullptr);              tmp_surface_formats.data = new VkSurfaceFormatKHR[tmp_surface_formats.n];
+    vkGetPhysicalDeviceSurfaceFormatsKHR(PD, S, &tmp_surface_formats.n, tmp_surface_formats.data);
 
     /** calling get_SurfaceFormats 2nd time gives NULL values.... (nvidia, win10) */
     if (tmp_surface_formats.data != nullptr && tmp_surface_formats.n > 0) {
@@ -88,7 +88,7 @@ void amVK_SurfaceMK2::get_SurfaceFormats(bool print) {
  */
 amVK_SurfaceCaps amVK_SurfaceMK2::get_SurfaceCapabilities_II(void) {
     VkSurfaceCapabilitiesKHR surfaceCaps;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_PD, _S, &surfaceCaps);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(PD, S, &surfaceCaps);
     
     amVK_SurfaceCaps caps;
     caps.maxImageArrayLayers = surfaceCaps.maxImageArrayLayers;
@@ -100,8 +100,8 @@ amVK_SurfaceCaps amVK_SurfaceMK2::get_SurfaceCapabilities_II(void) {
 }
 void amVK_SurfaceMK2::get_PresentModes(void) {
     amVK_Array<VkPresentModeKHR> tmp_present_modes = {};
-    vkGetPhysicalDeviceSurfacePresentModesKHR(_PD, _S, &tmp_present_modes.n, nullptr);           tmp_present_modes.data = new VkPresentModeKHR[tmp_present_modes.n];
-    vkGetPhysicalDeviceSurfacePresentModesKHR(_PD, _S, &tmp_present_modes.n, tmp_present_modes.data);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(PD, S, &tmp_present_modes.n, nullptr);           tmp_present_modes.data = new VkPresentModeKHR[tmp_present_modes.n];
+    vkGetPhysicalDeviceSurfacePresentModesKHR(PD, S, &tmp_present_modes.n, tmp_present_modes.data);
 
     if (tmp_present_modes.data != nullptr && tmp_present_modes.n > 0) {
         present_modes = tmp_present_modes;
@@ -174,8 +174,8 @@ VkSurfaceFormatKHR amVK_SurfaceMK2::filter_SurfaceFormat(VkSurfaceFormatKHR what
  */
 void amVK_WI_MK2::fallback_the_info(void) {
     // ----------- PRESENT MODE SUPPORTED ------------
-        _amVK_S->get_PresentModes();
-        amVK_Array<VkPresentModeKHR> present_modes = _amVK_S->present_modes;
+        amVK_S->get_PresentModes();
+        amVK_Array<VkPresentModeKHR> present_modes = amVK_S->present_modes;
 
         bool found_immediate = false;
         amVK_ARRAY_IS_ELEMENT(present_modes, found_immediate, the_info.presentMode);
@@ -186,7 +186,7 @@ void amVK_WI_MK2::fallback_the_info(void) {
 
     // ----------- IMAGE COUNT SUPPORTED ------------
         VkSurfaceCapabilitiesKHR surfaceCaps;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_amVK_D->_PD, _surface, &surfaceCaps);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(amVK_D->PD, surface, &surfaceCaps);
 
         uint32_t target_img_cnt = the_info.minImageCount + surfaceCaps.minImageCount;
         if (target_img_cnt > surfaceCaps.maxImageCount) {
@@ -210,16 +210,16 @@ void amVK_WI_MK2::fallback_the_info(void) {
 
 
      // ----------- SURFACE FORMAT SUPPORTED ------------
-        VkSurfaceFormatKHR _final = _amVK_S->filter_SurfaceFormat({the_info.imageFormat, the_info.imageColorSpace});
+        VkSurfaceFormatKHR _final = amVK_S->filter_SurfaceFormat({the_info.imageFormat, the_info.imageColorSpace});
         the_info.imageFormat = _final.format;
         the_info.imageColorSpace = _final.colorSpace;
 
         /** RenderPass filters too.... but why not make it future proof double check.... cz i dont feel like coming here and changing stuffs inside this function. */
-        if (the_info.imageFormat != _amVK_RP->final_imageFormat) {
-            LOG("amVK_WI_MK2.the_info.imageFormat != _amVK_RP->final_imageFormat" << std::endl << "will result in wrong colors" << "Window: " << _window);
+        if (the_info.imageFormat != amVK_RP->final_imageFormat) {
+            LOG("amVK_WI_MK2.the_info.imageFormat != _amVK_RP->final_imageFormat" << std::endl << "will result in wrong colors" << "Window: " << m_windowName);
         }
-        if (the_info.imageColorSpace != _amVK_RP->final_imageColorSpace) {
-            LOG("amVK_WI_MK2.the_info.imageColorSpace != _amVK_RP->final_imageColorSpace" << std::endl << "will result in wrong colors" << "Window: " << _window);
+        if (the_info.imageColorSpace != amVK_RP->final_imageColorSpace) {
+            LOG("amVK_WI_MK2.the_info.imageColorSpace != _amVK_RP->final_imageColorSpace" << std::endl << "will result in wrong colors" << "Window: " << m_windowName);
         }
 }
 
@@ -237,22 +237,22 @@ VkSwapchainKHR amVK_WI_MK2::create_Swapchain(bool check_the_info) {
     VkSurfaceCapabilitiesKHR surfaceCaps;
     // ----------- get_SurfaceExtent() ------------
     get_SurfaceExtent: {
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_amVK_D->_PD, _surface, &surfaceCaps);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(amVK_D->PD, surface, &surfaceCaps);
         /** maxImageExtent is not How much GPU can support, its more like HOW MUCH the SURFACE actually Needs  [even tho it says CAPABILITIES] */
-        _extent = surfaceCaps.minImageExtent;
+        extent = surfaceCaps.minImageExtent;
         LOG("");
-        LOG("Swapchain Extent: (" << _extent.width << ", " << _extent.height << ")");
+        LOG("Swapchain Extent: (" << extent.width << ", " << extent.height << ")");
     }
 
     uint8_t imageCount_fix = surfaceCaps.minImageCount; /** be safe & sound */
     the_info.minImageCount += imageCount_fix;   /** Decremented at func end */
 
-    the_info.imageExtent            = {_extent.width, _extent.height};
-    the_info.oldSwapchain           = _swapchain;
+    the_info.imageExtent            = {extent.width, extent.height};
+    the_info.oldSwapchain           = swapchain;
 
     finally: {
-        vkDeviceWaitIdle(_amVK_D->_D);          /** a lot of people says its better to just wait for the device to be idle, but why */
-        VkResult res = vkCreateSwapchainKHR(_amVK_D->_D, &the_info, nullptr, &_swapchain);
+        vkDeviceWaitIdle(amVK_D->D);          /** a lot of people says its better to just wait for the device to be idle, but why */
+        VkResult res = vkCreateSwapchainKHR(amVK_D->D, &the_info, nullptr, &swapchain);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateSwapchainKHR() failed"); amASSERT(true); return nullptr;}
         
         if (the_info.oldSwapchain) {LOG("Swapchain ReCreated.");}
@@ -263,7 +263,7 @@ VkSwapchainKHR amVK_WI_MK2::create_Swapchain(bool check_the_info) {
     }
 
     the_info.minImageCount -= imageCount_fix;   /** lets not make people confused after create_swapchain(); returns.... so we reset */
-    return _swapchain;
+    return swapchain;
 }
 
 /** More like EXTENDED FEATURE.... kinda stuffs */
@@ -307,19 +307,19 @@ void amVK_WI_MK2::swapchain_CI_generic_mods(void) {
 void amVK_WI_MK2::post_create_swapchain(void) {
     if (!IMGs.alloc_called) {
         uint32_t swap_imgs_n = 0;
-        vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &swap_imgs_n, nullptr);
+        vkGetSwapchainImagesKHR(amVK_D->D, swapchain, &swap_imgs_n, nullptr);
         LOG("Swapchain Images N: " << swap_imgs_n);
         
         IMGs.framebuf_n = (uint8_t) swap_imgs_n;
-        IMGs.attach_n = _amVK_RP->attachment_descs.n;
-        IMGs.color_index = _amVK_RP->color_index;
+        IMGs.attach_n = amVK_RP->attachment_descs.n;
+        IMGs.color_index = amVK_RP->color_index;
         IMGs.swap_attach_index =  IMGs.color_index;   /** \todo swap_imgs could be used in other ways too */
         /** \todo    IMGs.imageless_framebuffer = false */
-        IMGs._alloc();
+        IMGs.i_alloc();
     }
 
     uint32_t smth = IMGs.framebuf_n;
-    vkGetSwapchainImagesKHR(_amVK_D->_D, _swapchain, &smth, IMGs._ptr_img(0, IMGs.swap_attach_index));
+    vkGetSwapchainImagesKHR(amVK_D->D, swapchain, &smth, IMGs.i_ptr_img(0, IMGs.swap_attach_index));
 
     VkImageViewCreateInfo CI = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, 0,
         nullptr,    /** .image - set in the loop below */
@@ -352,11 +352,11 @@ void amVK_WI_MK2::post_create_swapchain(void) {
     };
 
     for (uint32_t i = 0; i < IMGs.framebuf_n; i++) {
-        CI.image = IMGs._ptr_img(0, IMGs.swap_attach_index)[i];
+        CI.image = IMGs.i_ptr_img(0, IMGs.swap_attach_index)[i];
 
-        VkResult res = vkCreateImageView(_amVK_D->_D, &CI, nullptr, IMGs._ptr_attach(i, IMGs.swap_attach_index));
+        VkResult res = vkCreateImageView(amVK_D->D, &CI, nullptr, IMGs.i_ptr_attach(i, IMGs.swap_attach_index));
         if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res);}
-        LOG_MK2("[Swapchain]_ IMGs.attachments[" << (((uint64_t)IMGs._ptr_attach(i, IMGs.swap_attach_index) - (uint64_t)IMGs._ptr_attach(0, IMGs.swap_attach_index)) / (uint64_t)8) << "]");
+        LOG_MK2("[Swapchain]_ IMGs.attachments[" << (((uint64_t)IMGs.i_ptr_attach(i, IMGs.swap_attach_index) - (uint64_t)IMGs.i_ptr_attach(0, IMGs.swap_attach_index)) / (uint64_t)8) << "]");
     }
     LOG_MK2("");
 }
@@ -396,29 +396,29 @@ void amVK_WI_MK2::create_Attachments(void) {
         }
 
         //We dont modify ImageMK2::CI & view_CI values, so we have our custom 'imgCI' & 'viewCI'
-        imgCI.extent = {_extent.width, _extent.height, 1};
-        imgCI.samples = _amVK_RP->samples;
+        imgCI.extent = {extent.width, extent.height, 1};
+        imgCI.samples = amVK_RP->samples;
 
         finally_create:
         {
             for (int fi = 0; fi < IMGs.framebuf_n; fi++) {
-                imgCI.format = _amVK_RP->attachment_descs[i].format;
-                imgCI.usage  = image_layout_2_usageflags(_amVK_RP->attachment_descs[i].finalLayout);
-                viewCI.format = _amVK_RP->attachment_descs[i].format;
-                viewCI.subresourceRange.aspectMask = image_layout_2_aspectMask(_amVK_RP->attachment_descs[i].finalLayout);
+                imgCI.format = amVK_RP->attachment_descs[i].format;
+                imgCI.usage  = image_layout_2_usageflags(amVK_RP->attachment_descs[i].finalLayout);
+                viewCI.format = amVK_RP->attachment_descs[i].format;
+                viewCI.subresourceRange.aspectMask = image_layout_2_aspectMask(amVK_RP->attachment_descs[i].finalLayout);
 
                 ImageMK2 xd;
-                xd.create(&imgCI, &viewCI, _amVK_D);   //Creates Image + View
+                xd.create(&imgCI, &viewCI, amVK_D);   //Creates Image + View
 
-                *(IMGs._ptr_attach(fi, i)) = xd.VIEW;
-                *(IMGs._ptr_img   (fi, i)) = xd.IMG;
-                *(IMGs._ptr_mem   (fi, i)) = xd.MEMORY;
+                *(IMGs.i_ptr_attach(fi, i)) = xd.VIEW;
+                *(IMGs.i_ptr_img   (fi, i)) = xd.IMG;
+                *(IMGs.i_ptr_mem   (fi, i)) = xd.MEMORY;
                 LOG_MK2("Created attachment: IMGs.attachments[" << ((fi * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + fi) << "]");
             }
             LOG_MK2("");
 
             ClearValues: {
-                _set_RenderPassClearVals();
+                set_RenderPassClearVals();
             }
         }
     }
@@ -429,23 +429,23 @@ void amVK_WI_MK2::create_Framebuffers(void) {
     // ----------- \todo imageless_framebuffer & Separate create_Framebuffer_s------------
 
     VkFramebufferCreateInfo fb_info = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, nullptr, 0,
-        _amVK_RP->_RP, _amVK_RP->attachment_descs.n, nullptr, /** [.pAttachments] set in the loop below */
-        _extent.width, _extent.height, 1 /** [.layers] */
+        amVK_RP->RP, amVK_RP->attachment_descs.n, nullptr, /** [.pAttachments] set in the loop below */
+        extent.width, extent.height, 1 /** [.layers] */
     };
 
     for (int fi = 0, lim = IMGs.framebuf_n; fi < lim; fi++) {
-        fb_info.pAttachments = IMGs._ptr_attach(fi, 0);
-        vkCreateFramebuffer(_amVK_D->_D, &fb_info, nullptr, &IMGs.framebufs[fi]);
+        fb_info.pAttachments = IMGs.i_ptr_attach(fi, 0);
+        vkCreateFramebuffer(amVK_D->D, &fb_info, nullptr, &IMGs.framebufs[fi]);
     }
 }
 
 
 bool amVK_WI_MK2::destroy(bool only_cleanup_for_reCreate) {
-    if (_swapchain) {
-      vkDeviceWaitIdle(_amVK_D->_D);
+    if (swapchain) {
+      vkDeviceWaitIdle(amVK_D->D);
       // ----------- FrameBuffers ------------
       for (int i = 0; i < IMGs.framebuf_n; i++) {
-        vkDestroyFramebuffer(_amVK_D->_D, IMGs.framebufs[i], nullptr);
+        vkDestroyFramebuffer(amVK_D->D, IMGs.framebufs[i], nullptr);
       }
       // ----------- DepthAttachments for now only ------------
       for (int i = 0; i < IMGs.attach_n; i++) {
@@ -454,23 +454,23 @@ bool amVK_WI_MK2::destroy(bool only_cleanup_for_reCreate) {
         }
         for (int fi = 0; fi < IMGs.framebuf_n; fi++) {
           ImageMK2::destroy(
-              *( IMGs._ptr_img   (fi, i) ),
-              *( IMGs._ptr_attach(fi, i) ),
-              *( IMGs._ptr_mem   (fi, i) ),
-              _amVK_D
+              *( IMGs.i_ptr_img   (fi, i) ),
+              *( IMGs.i_ptr_attach(fi, i) ),
+              *( IMGs.i_ptr_mem   (fi, i) ),
+              amVK_D
           );
         }
       }
       // ----------- Swapchain Images' imageviews ------------
       for (int i = 0; i < IMGs.framebuf_n; i++) {
-        vkDestroyImageView(_amVK_D->_D, *(IMGs._ptr_attach(i, IMGs.swap_attach_index)), nullptr);
+        vkDestroyImageView(amVK_D->D, *(IMGs.i_ptr_attach(i, IMGs.swap_attach_index)), nullptr);
       }
       // ----------- Finally Destroy Swapchain & Free -----------
       if (!only_cleanup_for_reCreate) {
-        vkDestroySwapchainKHR(_amVK_D->_D, _swapchain, nullptr);
+        vkDestroySwapchainKHR(amVK_D->D, swapchain, nullptr);
         LOG("Swapchain has been Destroyed! BYE BYE!");
       }
-      IMGs._free();
+      IMGs.i_free();
 
       LOG("Framebuffers, Attachments, Images, SwapchainImages has been Destroyed!");
       return true;

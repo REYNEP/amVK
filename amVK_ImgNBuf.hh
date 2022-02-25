@@ -25,7 +25,7 @@ class ImageMK2 {
     }
 
 
-    static inline VkImageCreateInfo CI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, nullptr, 0,   /** Feel free to change any of these.... before you call create() */
+    static inline VkImageCreateInfo s_CI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, nullptr, 0,   /** Feel free to change any of these.... before you call create() */
             VK_IMAGE_TYPE_2D, 
             VK_FORMAT_UNDEFINED, {},    /** [.extent] */
 
@@ -38,7 +38,7 @@ class ImageMK2 {
             VK_SHARING_MODE_EXCLUSIVE, 0, nullptr, /** [.VkSharingMode] */
             VK_IMAGE_LAYOUT_UNDEFINED   /** [.initialLayout] */
         };
-    static inline VkImageViewCreateInfo view_CI = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, 0,
+    static inline VkImageViewCreateInfo s_view_CI = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, 0,
             nullptr, VK_IMAGE_VIEW_TYPE_2D,
             VK_FORMAT_UNDEFINED,
 
@@ -53,9 +53,9 @@ class ImageMK2 {
     
 
     inline void create(VkFormat IMG_Format, uint32_t width, uint32_t height) {
-        CI.format = IMG_Format;
-        view_CI.format = IMG_Format;
-        CI.extent = {width, height, 1};
+        s_CI.format = IMG_Format;
+        s_view_CI.format = IMG_Format;
+        s_CI.extent = {width, height, 1};
         this->_create(false);
     }
     /**
@@ -75,14 +75,14 @@ class ImageMK2 {
             }
         #endif
 
-        VkResult res = vkCreateImage(s_amVK_D->_D, &CI, nullptr, &this->IMG);
+        VkResult res = vkCreateImage(s_amVK_D->D, &s_CI, nullptr, &this->IMG);
         if (last_format_n_extent_n_other_stuffs)
             MEMORY = s_amVK_D->BindImageMemoryOpt(this->IMG);   //allocate & bind new memory for image.
         else 
             MEMORY = s_amVK_D->BindImageMemory(this->IMG);
 
-        view_CI.image = this->IMG;
-        vkCreateImageView(s_amVK_D->_D, &this->view_CI, nullptr, &this->VIEW);
+        s_view_CI.image = this->IMG;
+        vkCreateImageView(s_amVK_D->D, &this->s_view_CI, nullptr, &this->VIEW);
     }
 
     /** 
@@ -98,23 +98,23 @@ class ImageMK2 {
             }
         #endif
 
-        VkResult res = vkCreateImage(amVK_D->_D, CreateInfo, nullptr, &this->IMG);
+        VkResult res = vkCreateImage(amVK_D->D, CreateInfo, nullptr, &this->IMG);
         MEMORY = amVK_D->BindImageMemory(this->IMG);     //allocate & bind new memory for image.
 
         view_CreateInfo->image = this->IMG;
-        vkCreateImageView(amVK_D->_D, view_CreateInfo, nullptr, &this->VIEW);
+        vkCreateImageView(amVK_D->D, view_CreateInfo, nullptr, &this->VIEW);
     }
 
     inline void destroy(amVK_DeviceMK2 *amVK_D = ImageMK2::s_amVK_D) {
-        vkDestroyImageView(amVK_D->_D, this->VIEW,   nullptr);
-        vkDestroyImage(    amVK_D->_D, this->IMG,    nullptr);
-        vkFreeMemory(      amVK_D->_D, this->MEMORY, nullptr);
+        vkDestroyImageView(amVK_D->D, this->VIEW,   nullptr);
+        vkDestroyImage(    amVK_D->D, this->IMG,    nullptr);
+        vkFreeMemory(      amVK_D->D, this->MEMORY, nullptr);
     }
 
     static inline bool destroy(VkImage img, VkImageView view, VkDeviceMemory memory, amVK_DeviceMK2 *amVK_D = ImageMK2::s_amVK_D) {
-        vkDestroyImageView(amVK_D->_D, view,   nullptr);
-        vkDestroyImage(    amVK_D->_D, img,    nullptr);
-        vkFreeMemory(      amVK_D->_D, memory, nullptr);
+        vkDestroyImageView(amVK_D->D, view,   nullptr);
+        vkDestroyImage(    amVK_D->D, img,    nullptr);
+        vkFreeMemory(      amVK_D->D, memory, nullptr);
         return true;
     }
 };
@@ -204,21 +204,21 @@ class BufferMK2 {
                 flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         }
 
-        vkCreateBuffer(s_amVK_D->_D, &CI, nullptr, &BUFFER);
+        vkCreateBuffer(s_amVK_D->D, &CI, nullptr, &BUFFER);
         MEMORY = s_amVK_D->BindBufferMemory(BUFFER, flags);
     }
 
     /** \todo VkMemoryMapFlags */
     void copy(const void *from) {
         void* data;
-        vkMapMemory(s_amVK_D->_D, MEMORY, 0, _sizeByte, 0, &data);
+        vkMapMemory(s_amVK_D->D, MEMORY, 0, _sizeByte, 0, &data);
         memcpy(data, from, _sizeByte);
-        vkUnmapMemory(s_amVK_D->_D, MEMORY);
+        vkUnmapMemory(s_amVK_D->D, MEMORY);
     }
 
     void destroy(void) {
-        vkDestroyBuffer(s_amVK_D->_D, BUFFER, nullptr);
-        vkFreeMemory(   s_amVK_D->_D, MEMORY, nullptr);
+        vkDestroyBuffer(s_amVK_D->D, BUFFER, nullptr);
+        vkFreeMemory(   s_amVK_D->D, MEMORY, nullptr);
     }
 };
 

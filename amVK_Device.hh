@@ -30,9 +30,9 @@ class amVK_DeviceMK2; //This is a Forward Declaration. Now amVK_IN.hh checks if 
  */
 class amVK_DeviceMK2 {
   public:
-    VkDevice _D = nullptr;
-    VkPhysicalDevice _PD;
-    amVK_DevicePreset_Flags _flag = amVK_DP_UNDEFINED;
+    VkDevice D = nullptr;
+    VkPhysicalDevice PD;
+    amVK_DevicePreset_Flags flag = amVK_DP_UNDEFINED;
 
     /**
      * \param DevicePreset: \see amVK_TDevicePreset....  [its more like, when  \param CI is nullptr, we gotta use sm deafault options right....]
@@ -69,7 +69,7 @@ class amVK_DeviceMK2 {
       uint32_t _graphics_qFAM = 0xFFFFFFFF,             _compute_qFAM = 0xFFFFFFFF;
       uint32_t get_compute_qFamily(void)  {return this->_compute_qFAM;}
       uint32_t get_graphics_qFamily(void) {return this->_graphics_qFAM;}
-      VkQueue  get_graphics_queue(void)   {VkQueue Q = nullptr; vkGetDeviceQueue(_D, this->_graphics_qFAM, 0, &Q); return Q;}
+      VkQueue  get_graphics_queue(void)   {VkQueue Q = nullptr; vkGetDeviceQueue(D, this->_graphics_qFAM, 0, &Q); return Q;}
 
     /** Extensions & Features */
       amVK_DeviceExtensionsBools req_exts = {};   /** Extensions */
@@ -120,8 +120,8 @@ class amVK_DeviceMK2 {
       //alloc_info.memoryTypeIndex = img_mem_type;  already should be set
 
       VkDeviceMemory mem = nullptr;
-      vkAllocateMemory(_D, &this->img_alloc_info, nullptr, &mem);
-      vkBindImageMemory(_D, IMG, mem, 0);
+      vkAllocateMemory(D, &this->img_alloc_info, nullptr, &mem);
+      vkBindImageMemory(D, IMG, mem, 0);
       return mem;
     }
 

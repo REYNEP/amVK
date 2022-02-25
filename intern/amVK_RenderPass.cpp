@@ -23,12 +23,12 @@ void amVK_RenderPassMK2::calc_n_alloc(void) {
         attachment_refs.data = reinterpret_cast<VkAttachmentReference *> (attachment_descs.data + attachment_descs.n);
               subpasses.data = reinterpret_cast <VkSubpassDescription *> ( attachment_refs.data + attachment_refs.n);
 
-        _malloced = true;
+        is_malloced = true;
     }
 }
 
 bool amVK_RenderPassMK2::clean_mods(void) {
-    if(_malloced) {free(attachment_descs.data);}
+    if(is_malloced) {free(attachment_descs.data);}
     return true;
 }
 

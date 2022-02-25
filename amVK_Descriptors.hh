@@ -64,7 +64,7 @@ class amVK_DSetLayout {
     bool create(amVK_DeviceMK2 *amVK_D, uint32_t n, VkDescriptorSetLayoutBinding *pBindings) {
         setInfo.bindingCount = n;
         setInfo.pBindings = pBindings;
-        VkResult res = vkCreateDescriptorSetLayout(amVK_D->_D, &setInfo, nullptr, &_SetLayout);
+        VkResult res = vkCreateDescriptorSetLayout(amVK_D->D, &setInfo, nullptr, &_SetLayout);
 
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false;}
         else {return true;}
@@ -72,7 +72,7 @@ class amVK_DSetLayout {
 
     /** \todo since this part requires DEVICE, move into RTC_DSET.... */
     inline void destroy(amVK_DeviceMK2 *amVK_D) {
-        vkDestroyDescriptorSetLayout(amVK_D->_D, _SetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(amVK_D->D, _SetLayout, nullptr);
     }
 };
 
@@ -109,33 +109,33 @@ class amVK_DSetGroup {
  */
 class amVK_DeadPool {
   public:
-    VkDescriptorPool _DPool = nullptr;  /** Different from DeadPool 🙃 */
-    amVK_DeviceMK2 *_amVK_D = nullptr;
+    VkDescriptorPool DPool = nullptr;  /** Different from DeadPool 🙃 */
+    amVK_DeviceMK2 *amVK_D = nullptr;
 
-    static inline VkDescriptorPoolSize sizes[1] = { 
+    static inline VkDescriptorPoolSize s_sizes[1] = { 
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10},    /** A SET can have multiple Bindings, which can have multiple 'DESCRIPTOR's of this type \todo How many is safe & okay? \see maxDescriptorSetSampledImages */
      // {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         10},    /** But at a Total, all DescriptorSET's all BINDINGs combined will not cross more than 10 Image Samplers */
      // {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         10},    /** REF: https://stackoverflow.com/a/64540804  */
     };
-    static inline VkDescriptorPoolCreateInfo CI = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr, 0,
-        10, 1, sizes   /** maxSets, poolSizeCount, pPoolSizes */
+    static inline VkDescriptorPoolCreateInfo s_CI = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO, nullptr, 0,
+        10, 1, s_sizes   /** maxSets, poolSizeCount, pPoolSizes */
     };
 
 
     inline bool create(void) {
-        if (_DPool != nullptr) { LOG_EX("Descriptor Pool [_DPool] has already been created"); return false;}
+        if (DPool != nullptr) { LOG_EX("Descriptor Pool [_DPool] has already been created"); return false;}
         
-        VkResult res = vkCreateDescriptorPool(_amVK_D->_D, &CI, nullptr, &_DPool);
+        VkResult res = vkCreateDescriptorPool(amVK_D->D, &s_CI, nullptr, &DPool);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false;}
         else {return true;}
     }
 
 
     /** Functions */
-    amVK_DeadPool(amVK_DeviceMK2 *amVK_D) {_amVK_D = amVK_D;}
+    amVK_DeadPool(amVK_DeviceMK2 *amVK_D) : amVK_D(amVK_D) {}
     ~amVK_DeadPool(void) {}
-    inline void destroy(void) {vkDestroyDescriptorPool(_amVK_D->_D, _DPool, nullptr);}
-    inline void reset(VkDescriptorPoolResetFlags flags) {vkResetDescriptorPool(_amVK_D->_D, _DPool, flags);}
+    inline void destroy(void) {vkDestroyDescriptorPool(amVK_D->D, DPool, nullptr);}
+    inline void reset(VkDescriptorPoolResetFlags flags) {vkResetDescriptorPool(amVK_D->D, DPool, flags);}
     /** \see free() in RTC_DSET */
 
 
@@ -149,26 +149,26 @@ class amVK_DeadPool {
      * This is Separate, cz you might wanna set once, and then keep allocating multiple times. 
      * + INLINE optimizes it a lot 
      */
-    inline bool Settings(uint32_t nLayouts, VkDescriptorSetLayout *pLayouts) {
-        allocInfo.descriptorPool = _DPool;
+    inline bool settings(uint32_t nLayouts, VkDescriptorSetLayout *pLayouts) {
+        allocInfo.descriptorPool = DPool;
         allocInfo.descriptorSetCount = nLayouts;
         allocInfo.pSetLayouts = pLayouts;
     }
-    inline amVK_DSetGroup Allocate(void) {
+    inline amVK_DSetGroup allocate(void) {
         VkDescriptorSet *Sets = new VkDescriptorSet[allocInfo.descriptorSetCount];
 
-        vkAllocateDescriptorSets(this->_amVK_D->_D, &allocInfo, Sets);
-        return {_DPool, amVK_Array<VkDescriptorSet>(Sets, allocInfo.descriptorSetCount)};
+        vkAllocateDescriptorSets(this->amVK_D->D, &allocInfo, Sets);
+        return {DPool, amVK_Array<VkDescriptorSet>(Sets, allocInfo.descriptorSetCount)};
     }
 
 
-    inline VkDescriptorSet Allocate_Single(VkDescriptorSetLayout SetLayout) {
-        allocInfo.descriptorPool = _DPool;
+    inline VkDescriptorSet allocate_Single(VkDescriptorSetLayout SetLayout) {
+        allocInfo.descriptorPool = DPool;
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &SetLayout;
 
         VkDescriptorSet Set = nullptr;
-        VkResult res = vkAllocateDescriptorSets(this->_amVK_D->_D, &allocInfo, &Set);
+        VkResult res = vkAllocateDescriptorSets(this->amVK_D->D, &allocInfo, &Set);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
         
         return Set;

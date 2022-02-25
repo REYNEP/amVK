@@ -10,8 +10,8 @@
  */
 class amVK_CommandBuf {
   public:
-    VkCommandBuffer _BUF;
-    amVK_CommandBuf(VkCommandBuffer BUF) : _BUF(BUF) {}
+    VkCommandBuffer BUF;
+    amVK_CommandBuf(VkCommandBuffer BUF) : BUF(BUF) {}
     ~amVK_CommandBuf() {}
 
 
@@ -25,10 +25,10 @@ class amVK_CommandBuf {
      * 
      * \todo secondary cmdbufs
      */
-    bool Begin(VkCommandBufferUsageFlags flags) {
+    bool begin(VkCommandBufferUsageFlags flags) {
         info.flags = flags;
 
-        VkResult res = vkBeginCommandBuffer(_BUF, &info);
+        VkResult res = vkBeginCommandBuffer(BUF, &info);
         if (res != VK_SUCCESS) {
             LOG_EX(amVK_Utils::vulkan_result_msg(res)); 
             return false;
@@ -39,12 +39,12 @@ class amVK_CommandBuf {
     /**
      * \param flags: Possible [VK.1.2] VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT
      */
-    inline void Reset(VkCommandBufferResetFlags flags = 0) {
-        vkResetCommandBuffer(_BUF, flags);
+    inline void reset(VkCommandBufferResetFlags flags = 0) {
+        vkResetCommandBuffer(BUF, flags);
     }
 
-    inline void End(void) {
-        vkEndCommandBuffer(_BUF);
+    inline void end(void) {
+        vkEndCommandBuffer(BUF);
     }
 };
 
@@ -73,16 +73,16 @@ class amVK_CommandBuf {
  */
 class amVK_CommandPool {
   public:
-    amVK_DeviceMK2 *_amVK_D;
-    VkCommandPool _POOL;
-    amVK_ArrayDYN<VkCommandBuffer> _BUFs = amVK_ArrayDYN<VkCommandBuffer>(4);  /** For Triple buffering someone might just allocate 3.... so we have 4 */
+    amVK_DeviceMK2 *amVK_D;
+    VkCommandPool POOL;
+    amVK_ArrayDYN<VkCommandBuffer> BUFs = amVK_ArrayDYN<VkCommandBuffer>(4);  /** For Triple buffering someone might just allocate 3.... so we have 4 */
 
 
 
     /** \todo add pNext & flags support, \todo Add support for Multi-Threaded CommandPool    [Start Here: https://stackoverflow.com/questions/53438692/creating-multiple-command-pools-per-thread-in-vulkan]*/
-    amVK_CommandPool(uint32_t qFamily, amVK_DeviceMK2 *D = nullptr) : _amVK_D(D) {
-        if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
-        else {amVK_CHECK_DEVICE(D, _amVK_D);}
+    amVK_CommandPool(uint32_t qFamily, amVK_DeviceMK2 *D = nullptr) : amVK_D(D) {
+        if (D == nullptr) {amVK_SET_activeD(amVK_D);}
+        else {amVK_CHECK_DEVICE(D, amVK_D);}
 
         VkCommandPoolCreateInfo CI = {};
             CI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -92,7 +92,7 @@ class amVK_CommandPool {
          *  Lets us use   vkResetCommandBuffer() later On     [ VUID-vkResetCommandBuffer-commandBuffer-00046 ]*/
             CI.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-        VkResult res = vkCreateCommandPool(_amVK_D->_D, &CI, nullptr, &_POOL);
+        VkResult res = vkCreateCommandPool(amVK_D->D, &CI, nullptr, &POOL);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
     }
     ~amVK_CommandPool() {}
@@ -101,25 +101,25 @@ class amVK_CommandPool {
 
     /** \todo use LEVEL_SECONDARY, which are used in Extreme MultiThreading Optimized scenarios  
      * \see VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT] */
-    VkCommandBuffer *AllocBufs(uint8_t n) {
+    VkCommandBuffer *alloc_Bufs(uint8_t n) {
         if (n == 0) {
             LOG_EX("param uint8_t n == 0, Defauly choosing 1");
             n = 1;
         } else {
-            //LOG("AllocBufs:- " << static_cast<uint32_t>(n));
+            //LOG("alloc_Bufs:- " << static_cast<uint32_t>(n));
         }
         VkCommandBufferAllocateInfo I = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, nullptr,
-            _POOL, VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            POOL, VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             n
         };
 
-        if (_BUFs.neXt + n >= _BUFs.n) {_BUFs.resize();}
-        uint32_t new_ones = _BUFs.neXt;
-        VkResult res = vkAllocateCommandBuffers(_amVK_D->_D, &I, &_BUFs.data[new_ones]);
-        _BUFs.neXt += n;
+        if (BUFs.neXt + n >= BUFs.n) {BUFs.resize();}
+        uint32_t new_ones = BUFs.neXt;
+        VkResult res = vkAllocateCommandBuffers(amVK_D->D, &I, &BUFs.data[new_ones]);
+        BUFs.neXt += n;
 
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
-        return &_BUFs.data[new_ones];
+        return &BUFs.data[new_ones];
     }
 
 
@@ -127,9 +127,9 @@ class amVK_CommandPool {
      * Don't Use Destructor, use this.... & also delete this object instance of amVK_CommandPool
      */
     void destroy(void){
-        vkFreeCommandBuffers(_amVK_D->_D, _POOL, _BUFs.neXt, _BUFs.data);
-        _BUFs._delete();
-        vkDestroyCommandPool(_amVK_D->_D, _POOL, nullptr);
+        vkFreeCommandBuffers(amVK_D->D, POOL, BUFs.neXt, BUFs.data);
+        BUFs._delete();
+        vkDestroyCommandPool(amVK_D->D, POOL, nullptr);
     }
 };
 

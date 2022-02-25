@@ -19,30 +19,30 @@
  */
 class ShaderInputsMK2 {
  public:
-  static inline VkPipelineLayout       layout = nullptr;
-  static inline VkPipelineLayoutCreateInfo CI = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr, 0};
+  static inline VkPipelineLayout       S_layout = nullptr;
+  static inline VkPipelineLayoutCreateInfo s_CI = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr, 0};
 
   ShaderInputsMK2(void) {}
   ~ShaderInputsMK2(void) {}
 
   static inline void set_Info(uint32_t pushCount, VkPushConstantRange *pPushConstantRanges, uint32_t setLayoutCount, VkDescriptorSetLayout *pSetLayouts) {
-    CI.pushConstantRangeCount = pushCount;
-    CI.pPushConstantRanges = pPushConstantRanges;
-    CI.setLayoutCount = setLayoutCount;
-    CI.pSetLayouts = pSetLayouts;
+    s_CI.pushConstantRangeCount = pushCount;
+    s_CI.pPushConstantRanges = pPushConstantRanges;
+    s_CI.setLayoutCount = setLayoutCount;
+    s_CI.pSetLayouts = pSetLayouts;
   }
 
   /**
    * Destroy using vkDestroyPipelineLayout()
    */
   static inline VkPipelineLayout create_PipelineLayout(VkDevice D) {
-    VkResult res = vkCreatePipelineLayout(D, &CI, nullptr, &layout);
+    VkResult res = vkCreatePipelineLayout(D, &s_CI, nullptr, &S_layout);
     if (res != VK_SUCCESS) { 
       LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG_EX("vkCreatePipelineLayout() failed"); 
     }
-    return layout;
+    return S_layout;
   }
-  static inline VkPipelineLayout create_PipelineLayout(amVK_DeviceMK2 *amVK_D) { return create_PipelineLayout(amVK_D->_D);}
+  static inline VkPipelineLayout create_PipelineLayout(amVK_DeviceMK2 *amVK_D) { return create_PipelineLayout(amVK_D->D);}
 };
 
 
@@ -76,7 +76,7 @@ class ShaderInputsMK2 {
  */
 class amVK_PipeStoreMK2 {
  public:
-  amVK_DeviceMK2 *_amVK_D;
+  amVK_DeviceMK2 *amVK_D;
   VkPipelineLayout shaderInputsLayout; /** MUST */
   VkPipelineCreateFlags flags;  /** :WIP: */
 
@@ -107,7 +107,7 @@ class amVK_PipeStoreMK2 {
                                               /** https://github.com/godotengine/godot/blob/8f6c16e4a459b54d6b37bc64e0bd21a361078a01/modules/glslang/register_types.cpp#L193-L195 */
   const std::string shader_preamble = "#define maybe_has_VK_KHR_multiview 1\n"; /** https://github.com/godotengine/godot/blob/master/modules/glslang/register_types.cpp#L120   [2021 NOV 14] */
   
-  inline void destroy_ShaderModule(VkShaderModule xd) {vkDestroyShaderModule(_amVK_D->_D, xd, nullptr);}
+  inline void destroy_ShaderModule(VkShaderModule xd) {vkDestroyShaderModule(amVK_D->D, xd, nullptr);}
 
   /** \see ShaderInputsMK2::create_pipelineLayout for layout */
 };
@@ -138,8 +138,8 @@ class amVK_PipeStoreMK2 {
  */
 class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
  public:
-  amVK_RenderPassMK2 *_amVK_RP;       /** [IN, MUST] */
-  amVK_GraphicsPipes(amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D) : _amVK_RP(RP), amVK_PipeStoreMK2(D) {if (RP == nullptr) {LOG_EX("Param 'RP': nullptr ....  build_pipeline() will fail ");}}
+  amVK_RenderPassMK2 *amVK_RP;       /** [IN, MUST] */
+  amVK_GraphicsPipes(amVK_RenderPassMK2 *amVK_RP, amVK_DeviceMK2 *D) : amVK_RP(amVK_RP), amVK_PipeStoreMK2(D) {if (amVK_RP == nullptr) {LOG_EX("Param 'RP': nullptr ....  build_pipeline() will fail ");}}
 
   /** \todo Add support for Tesselation & Geometry which can be optional */
   VkShaderModule vert = nullptr;     /** [IN, MUST] */
@@ -263,7 +263,7 @@ class amVK_ComputePipes : public amVK_PipeStoreMK2 {
 class amVK_Pipeline {
   public:
     /** \fn Destroy() makes is nullptr */
-    VkPipeline            _P = nullptr;
+    VkPipeline             P = nullptr;
     VkPipelineLayout  layout = nullptr;
     VkShaderModule vert = nullptr;
     VkShaderModule frag = nullptr;
@@ -287,16 +287,16 @@ class amVK_Pipeline {
         vkDestroyShaderModule(D, frag, nullptr);
         
         //seems this below implicitly destroyes ShaderModules
-        if      (_P) {vkDestroyPipeline(D, _P, nullptr);}
+        if      (this->P) {vkDestroyPipeline(D, this->P, nullptr);}
         else {LOG_EX("Seems the pipeline [amVK_Pipeline::_P] is already destroyed");}
 
         if (layout) {vkDestroyPipelineLayout(D, layout, nullptr);}
         else {LOG_EX("Seems the pipelien layout [layout]   is already destroyed");}
 
-        _P = nullptr;
+        this->P = nullptr;
         return true;
     }
-    inline bool destroy(amVK_DeviceMK2 *amVK_D) {return destroy(amVK_D->_D);}
+    inline bool destroy(amVK_DeviceMK2 *amVK_D) {return destroy(amVK_D->D);}
 
     /** 
      * \todo update to support any kinda pipestore like compute, currently param PS is amVK_GraphicsPipes
@@ -315,13 +315,13 @@ class amVK_Pipeline {
         frag = PS->glslc_Shader(spvFileName_Common + ".frag", Shader_Fragment);
         
         set_ShaderInputs();
-        layout = ShaderInputsMK2::create_PipelineLayout(PS->_amVK_D);
+        layout = ShaderInputsMK2::create_PipelineLayout(PS->amVK_D);
 
         PS->vert = vert;
         PS->frag = frag;
         PS->shaderInputsLayout = layout;
 
-        _P = PS->build_Pipeline();
+        this->P = PS->build_Pipeline();
     }
 
   protected:

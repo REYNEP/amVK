@@ -73,8 +73,8 @@ struct amVK_SurfaceMK2;
  */
 class amVK_RenderPassMK2 {
   public:
-    VkRenderPass           _RP = nullptr;
-    amVK_DeviceMK2       *_amVK_D = nullptr;
+    VkRenderPass           RP = nullptr;
+    amVK_DeviceMK2    *amVK_D = nullptr;
 
     VkSampleCountFlagBits            samples = VK_SAMPLE_COUNT_1_BIT;         /** [MSAA MultiSample] \todo Can depthAttachment use DIfferent Sample numebr? */
     VkFormat           final_imageFormat     = amVK_SWAPCHAIN_IMAGE_FORMAT;   /** \see amVK_Types.hh */
@@ -90,7 +90,7 @@ class amVK_RenderPassMK2 {
     uint8_t       depth_index = 0xFF;  /** 0xFF = Error code, variable mainly used for \fn set_subpasses, set in \fn set_attachment_refs */
     /** For now only these 2 are implicitly supported.... & amVK_WI::create_framebuffer depends on this */
 
-    bool            _malloced = false;
+    bool          is_malloced = false;
     amVK_Array<VkAttachmentDescription>  attachment_descs = {};
     amVK_Array<VkAttachmentReference>     attachment_refs = {};
     amVK_Array<VkSubpassDescription>            subpasses = {};
@@ -98,8 +98,8 @@ class amVK_RenderPassMK2 {
     /** Needed for choosing a SurfaceFormat.... */
     amVK_SurfaceMK2 *demoSurfaceExt = nullptr;
     amVK_RenderPassMK2(amVK_SurfaceMK2 *S, amVK_DeviceMK2 *D = nullptr) : demoSurfaceExt(S) {
-      if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
-      else {amVK_CHECK_DEVICE(D, _amVK_D);}
+      if (D == nullptr) {amVK_SET_activeD(amVK_D);}
+      else {amVK_CHECK_DEVICE(D, amVK_D);}
       amASSERT(!S);
     }
     /** MK2 MODIFY */
@@ -118,15 +118,15 @@ class amVK_RenderPassMK2 {
         the_info.subpassCount = subpasses.n;
         the_info.pSubpasses = subpasses.data;
 
-      VkResult res = vkCreateRenderPass(_amVK_D->_D, &the_info, nullptr, &_RP);
+      VkResult res = vkCreateRenderPass(amVK_D->D, &the_info, nullptr, &RP);
       LOG("RenderPass created! Yes, Time TRAVEL!!!!");
       amASSERT(res != VK_SUCCESS);
-      return _RP;
+      return RP;
     }
 
     /** CLEAN-UP / DESTRUCTOR */
     ~amVK_RenderPassMK2() {}
-    bool destroy(void) {vkDestroyRenderPass(_amVK_D->_D, _RP, nullptr); clean_mods(); return true;}
+    bool destroy(void) {vkDestroyRenderPass(amVK_D->D, RP, nullptr); clean_mods(); return true;}
     bool clean_mods(void);
 
   /** Only call these functions once.... by calling konfigurieren() these can do the basic Setup for you.

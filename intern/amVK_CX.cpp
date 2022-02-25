@@ -1,17 +1,14 @@
 #define amVK_CX_CPP
 #include "amVK_CX.hh"
-#include "amVK_Device.hh"
+#include <cstring>          // strcmp()    [iExtName_to_index]
 #include <cstdlib>          // calloc() & malloc()  [Needed in .cpp only]
 
-/**
+/** 
  * This file was created on Last week of JUNE 2021     ;)        [Now its SEPT 23, 2021,   v0.0.1 (first GITHUB)]
- * \see ./.readme/amVK.md
- * if you are inspecting this file, make sure, you use    'function collapse'   option
- * I came across a Cool theme for VSCODE: EvaTheme
- * also ANSI Decorative Fonts: [i am pretty sure the NAME is misused]   \see ASCIIDecorator by helixquar and 'Convert To ASCII Art' by BitBelt... I also se my CUSTOM ONE ;) 
+ *    A-WRINKLE: if you are inspecting this file, make sure, you use    'function collapse'   option
  */
 
-VkInstance amVK_CX::CreateInstance(void) {
+VkInstance amVK_CX::create_Instance(void) {
     amFUNC_HISTORY();
 
     if (amVK_CX::instance != nullptr) { 
@@ -25,13 +22,8 @@ VkInstance amVK_CX::CreateInstance(void) {
 
 
     // ----------- Extensions for vkCreateInstance ------------
-    amVK_CX::enum_InstanceExts();           //Loads into  IEP      [Force_Load]
-    amVK_CX::filter_SurfaceExts();          // _req_surface_ep
-    amVK_CX::add_InstanceExt(_req_surface_ep[0].extensionName);
-    amVK_CX::add_InstanceExt(_req_surface_ep[1].extensionName);
-    amVK_CX::add_InstanceExt("VK_EXT_debug_report");
-    amVK_CX::add_InstanceExt("VK_EXT_debug_utils");
-    LOG_LOOP_MK1("Enabled Instance Extensions:- ", i, enabled_iExts.size(), enabled_iExts[i]);
+    // Moved to CONSTRUCTOR....
+    LOG_LOOP_MK1("Enabled Instance Extensions:- ", i, m_enabled_iExts.size(), m_enabled_iExts[i]);
 
 
     // ----------- CreateInfo for vkCreateInstance ------------
@@ -39,17 +31,17 @@ VkInstance amVK_CX::CreateInstance(void) {
     the_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     the_info.pApplicationInfo = &(amVK_CX::vk_appInfo);
     //the_info.pNext = nullptr;  the_info.flags [KHR Says 'reserved for future'] [No need to care about these 2 for now]
-    the_info.enabledExtensionCount = static_cast<uint32_t>(enabled_iExts.size());
-    the_info.ppEnabledExtensionNames = enabled_iExts.data();
+    the_info.enabledExtensionCount = static_cast<uint32_t>(m_enabled_iExts.size());
+    the_info.ppEnabledExtensionNames = m_enabled_iExts.data();
 
 
     // ----------- ValidationLayers for vkCreateInstance ------------
-    if (enableDebugLayers_LunarG) {
+    if (m_enableDebugLayers_LunarG) {
         amVK_CX::enum_ValLayers();
         add_ValLayer("VK_LAYER_KHRONOS_validation");
-        the_info.enabledLayerCount = static_cast<uint32_t>(enabled_vLayers.size());
-        the_info.ppEnabledLayerNames = enabled_vLayers.data();
-        LOG_LOOP_MK1("Enabled Validation Layers:- ", i, enabled_vLayers.size(), enabled_vLayers[i]);
+        the_info.enabledLayerCount = static_cast<uint32_t>(m_enabled_vLayers.size());
+        the_info.ppEnabledLayerNames = m_enabled_vLayers.data();
+        LOG_LOOP_MK1("Enabled Validation Layers:- ", i, m_enabled_vLayers.size(), m_enabled_vLayers[i]);
     }
 
 
@@ -75,7 +67,7 @@ VkInstance amVK_CX::CreateInstance(void) {
 
 
 
-bool amVK_CX::DestroyInstance(void) {
+bool amVK_CX::destroy_Instance(void) {
     amFUNC_HISTORY();
 
     vkDestroyInstance(instance, nullptr);
@@ -107,8 +99,8 @@ void amVK_CX::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
         appInfo = &newAppInfo;
     }
     appInfo->pEngineName = "amVK";
-    appInfo->engineVersion = VK_MAKE_VERSION(0, 0, 3);
-    LOG("amVK Engine Version 0.0.3");
+    appInfo->engineVersion = VK_MAKE_VERSION(0, 0, 4);
+    LOG("amVK Engine Version 0.0.4");
     
     amVK_CX::vk_appInfo = *(appInfo);
 }
@@ -139,19 +131,19 @@ void amVK_CX::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
 void amVK_CX::enum_ValLayers(void) {
     amFUNC_HISTORY_INTERNAL();
 
-    if (vLayerP.n == 0) {
+    if (m_vLayerP.n == 0) {
         uint32_t n;
         vkEnumerateInstanceLayerProperties(&n, NULL);
 
-        vLayerP.data = new VkLayerProperties[n];
-        vLayerP.n = n;
-        _isEnabled_vLayer.data = static_cast<bool *> (calloc(n, 1));
-        _isEnabled_vLayer.n = n;
+        m_vLayerP.data = new VkLayerProperties[n];
+        m_vLayerP.n = n;
+        m_isEnabled_vLayer.data = static_cast<bool *> (calloc(n, 1));
+        m_isEnabled_vLayer.n = n;
 
-        vkEnumerateInstanceLayerProperties(&n, vLayerP.data);
+        vkEnumerateInstanceLayerProperties(&n, m_vLayerP.data);
     }
 
-    LOG_LOOP_MK1("All Available Layers:- ", i, vLayerP.n, vLayerP[i].layerName);
+    LOG_LOOP_MK1("All Available Layers:- ", i, m_vLayerP.n, m_vLayerP[i].layerName);
     //Also see validationLayers_LunarG in FORBIDEN VARIABLES Section
 }
 
@@ -163,22 +155,22 @@ bool amVK_CX::enum_InstanceExts(bool do_log, VkExtensionProperties **pointer_iep
     vkEnumerateInstanceExtensionProperties(nullptr, &n, nullptr);
     LOG_MK1(n << " Instance extensions supported\n");
 
-    IEP.data = new VkExtensionProperties[n];   
-    IEP.n = n;    
-    _isEnabled_iExt.data = static_cast<bool *> (calloc(n, 1));
-    _isEnabled_iExt.n = n;
+    m_IEP.data = new VkExtensionProperties[n];   
+    m_IEP.n = n;    
+    m_isEnabled_iExt.data = static_cast<bool *> (calloc(n, 1));
+    m_isEnabled_iExt.n = n;
 
-    VkResult res = vkEnumerateInstanceExtensionProperties(nullptr, &n, IEP.data);
+    VkResult res = vkEnumerateInstanceExtensionProperties(nullptr, &n, m_IEP.data);
     if (res != VK_SUCCESS) {
         LOG_EX("vkEnumerateInstanceExtensionProperties() Failed.... \nVulkan Result Message:- " << amVK_Utils::vulkan_result_msg(res) << std::endl);
         return false;
     }
  
     // ----------- LOG/ENUMERATE (to CommandLine) ------------
-    if (do_log) {  LOG_LOOP_MK1("All the Instance Extensions:- ", i, IEP.n, IEP[i].extensionName); }
+    if (do_log) {  LOG_LOOP_MK1("All the Instance Extensions:- ", i, m_IEP.n, m_IEP[i].extensionName); }
 
-    if (pointer_iep != nullptr)             {   *(pointer_iep) = IEP.data; }
-    if (pointer_iec != nullptr)             {   *(pointer_iec) = IEP.n; }
+    if (pointer_iep != nullptr)             {   *(pointer_iep) = m_IEP.data; }
+    if (pointer_iec != nullptr)             {   *(pointer_iec) = m_IEP.n; }
 
     return true;
 }
@@ -186,7 +178,7 @@ bool amVK_CX::enum_InstanceExts(bool do_log, VkExtensionProperties **pointer_iep
 bool amVK_CX::filter_SurfaceExts(void) {
     amFUNC_HISTORY_INTERNAL();
 
-    if (IEP.n == 0) {
+    if (m_IEP.n == 0) {
         LOG_EX("Call enum_InstanceExts() before calling this, and make sure that function worked OK....");
         return false;
     }
@@ -233,10 +225,10 @@ bool amVK_CX::filter_SurfaceExts(void) {
 
     bool *flagsSurfaceExtsPtr = reinterpret_cast<bool *> (&(flagsSurfaceExts));     //flagsSurfaceExts is a STRUCT... we dont know how many BOOL i'll end up having... so we take mem_address and use like array
     for (uint32_t i = 0; i < xd_size; i++) {
-        for (uint32_t j = 0; j < IEP.n; j++) {
-            if (strcmp(IEP[j].extensionName, xd[i]) == 0) {
+        for (uint32_t j = 0; j < m_IEP.n; j++) {
+            if (strcmp(m_IEP[j].extensionName, xd[i]) == 0) {
                 *(flagsSurfaceExtsPtr + i) = true;
-                tmp_surface_ep[i] = IEP[j];      //IEP[j] == xd[i]
+                tmp_surface_ep[i] = m_IEP[j];      //m_IEP[j] == xd[i]
             }
         }
     }
@@ -248,7 +240,7 @@ bool amVK_CX::filter_SurfaceExts(void) {
         ╺╋╸   ┗━┓ ┃ ┃ ┃┣╸ ┣╸ ┗━┓   that you need to care about
         ╹ ╹   ┗━┛ ╹ ┗━┛╹  ╹  ┗━┛
     */
-    _req_surface_ep.data = new VkExtensionProperties[2];   //For now we know this will be 2
+    m_req_surface_ep.data = new VkExtensionProperties[2];   //For now we know this will be 2
 
     //-------- Filter out the needed 2 Surface Extensions --------
 #if defined(amVK_BUILD_WIN32)
@@ -257,8 +249,8 @@ bool amVK_CX::filter_SurfaceExts(void) {
         return false;
     }
     else {
-        _req_surface_ep[0] = tmp_surface_ep[0];
-        _req_surface_ep[1] = tmp_surface_ep[1];
+        m_req_surface_ep[0] = tmp_surface_ep[0];
+        m_req_surface_ep[1] = tmp_surface_ep[1];
     }
 #elif defined(amVK_BUILD_X11)
     if (!flagsSurfaceExts.KHR_surface || !flagsSurfaceExts.KHR_xlib_surface) {
@@ -266,12 +258,12 @@ bool amVK_CX::filter_SurfaceExts(void) {
         return false;
     }
     else if (flagsSurfaceExts.KHR_xcd_surface) {
-        _req_surface_ep[0] = tmp_surface_ep[0];
-        _req_surface_ep[1] = tmp_surface_ep[1];
+        m_req_surface_ep[0] = tmp_surface_ep[0];
+        m_req_surface_ep[1] = tmp_surface_ep[1];
     }
     else {
-        _req_surface_ep[0] = tmp_surface_ep[0];
-        _req_surface_ep[1] = tmp_surface_ep[2];
+        m_req_surface_ep[0] = tmp_surface_ep[0];
+        m_req_surface_ep[1] = tmp_surface_ep[2];
     }
 #elif defined(amVK_BUILD_WAYLAND)
     if (!flagsSurfaceExts.KHR_surface || !flagsSurfaceExts.KHR_wayland_surfacee) {
@@ -279,8 +271,8 @@ bool amVK_CX::filter_SurfaceExts(void) {
         return false;
     }
     else {
-        _req_surface_ep[0] = tmp_surface_ep[0];
-        _req_surface_ep[1] = tmp_surface_ep[1];
+        m_req_surface_ep[0] = tmp_surface_ep[0];
+        m_req_surface_ep[1] = tmp_surface_ep[1];
     }
 #elif defined(amVK_BUILD_COCOA)
     if (!flagsSurfaceExts.KHR_surface || !flagsSurfaceExts.MVK_macos_surface) {
@@ -288,23 +280,23 @@ bool amVK_CX::filter_SurfaceExts(void) {
         return false;
     }
     else if (flagsSurfaceExts.EXT_metal_surface) {
-        _req_surface_ep[0] = tmp_surface_ep[0];
-        _req_surface_ep[1] = tmp_surface_ep[1];
+        m_req_surface_ep[0] = tmp_surface_ep[0];
+        m_req_surface_ep[1] = tmp_surface_ep[1];
     }
     else {
-        _req_surface_ep[0] = tmp_surface_ep[0];
-        _req_surface_ep[1] = tmp_surface_ep[2];
+        m_req_surface_ep[0] = tmp_surface_ep[0];
+        m_req_surface_ep[1] = tmp_surface_ep[2];
     }
 #endif
 
-    LOG_LOOP_MK1("SurfaceExts:- ", i, 2, _req_surface_ep[i].extensionName);
+    LOG_LOOP_MK1("SurfaceExts:- ", i, 2, m_req_surface_ep[i].extensionName);
     return true;
 }
 
 bool amVK_CX::add_InstanceExt(char *extName) {
     amFUNC_HISTORY();
 
-    if (IEP.data == nullptr) {
+    if (m_IEP.data == nullptr) {
         enum_InstanceExts();
     }
 
@@ -314,14 +306,14 @@ bool amVK_CX::add_InstanceExt(char *extName) {
         return false;
     }
 
-    else if (_isEnabled_iExt[index])  {
-        LOG(extName << " is already added to \u0027enabled_iExts\u0027 list. Before RELEASE, make sure you see the default \u0027enabled_iExts\u0027  that amVK adds & also don't try to add something twice");
+    else if (m_isEnabled_iExt[index])  {
+        LOG(extName << " is already added to \u0027m_enabled_iExts\u0027 list. Before RELEASE, make sure you see the default \u0027m_enabled_iExts\u0027  that amVK adds & also don't try to add something twice");
         return true; //cz already added before and reported LOG
     } 
 
     else {
-        enabled_iExts.push_back(IEP[index].extensionName);    //don't wanna depend on extName, that might be on stack
-        _isEnabled_iExt[index] = true;
+        m_enabled_iExts.push_back(m_IEP[index].extensionName);    //don't wanna depend on extName, that might be on stack
+        m_isEnabled_iExt[index] = true;
         return true;
     }
 }
@@ -335,17 +327,49 @@ bool amVK_CX::add_ValLayer(char *vLayerName) {
         return false;
     }
 
-    else if (_isEnabled_vLayer[index])  {
-        LOG(vLayerName << " is already added to \u0027enabled_vLayers\u0027 list. Before RELEASE, make sure you see the default \u0027_vLayers\0027 that amVK adds & also don't try to add something twice");
+    else if (m_isEnabled_vLayer[index])  {
+        LOG(vLayerName << " is already added to \u0027m_enabled_vLayers\u0027 list. Before RELEASE, make sure you see the default \u0027_vLayers\0027 that amVK adds & also don't try to add something twice");
         return true; //cz already added before and reported LOG
     } 
 
     else {
-        enabled_vLayers.push_back(vLayerP[index].layerName);    //don't wanna depend on extName, that might be on stack
-        _isEnabled_vLayer[index] = true;
+        m_enabled_vLayers.push_back(m_vLayerP[index].layerName);    //don't wanna depend on extName, that might be on stack
+        m_isEnabled_vLayer[index] = true;
         return true;
     }
 }
+
+uint32_t amVK_CX::iExtName_to_index(char *iExtName) {
+    for (uint32_t i = 0; i < m_IEP.n; i++) {
+      if (strcmp(iExtName, m_IEP[i].extensionName) == 0) {
+        return i;
+      }
+    }
+    return 0xFFFFFFFF;
+  }
+uint32_t amVK_CX::vLayerName_to_index(char *vLayerName) {
+for (uint32_t i = 0; i < m_vLayerP.n; i++) {
+    if (strcmp(vLayerName, m_vLayerP[i].layerName) == 0) {
+    return i;
+    }
+}
+return 0xFFFFFFFF;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -363,10 +387,16 @@ bool amVK_CX::add_ValLayer(char *vLayerName) {
 
 
 /**
-  * |-----------------------------------------|
-  *     - FORBIDDEN STUFFS [CreateDevice] -
-  * |-----------------------------------------|
-*/
+ *               ██████╗ ██╗  ██╗██╗   ██╗███████╗██╗ ██████╗ █████╗ ██╗         ██████╗ ███████╗██╗   ██╗██╗ ██████╗███████╗
+ *     ▄ ██╗▄    ██╔══██╗██║  ██║╚██╗ ██╔╝██╔════╝██║██╔════╝██╔══██╗██║         ██╔══██╗██╔════╝██║   ██║██║██╔════╝██╔════╝
+ *      ████╗    ██████╔╝███████║ ╚████╔╝ ███████╗██║██║     ███████║██║         ██║  ██║█████╗  ██║   ██║██║██║     █████╗  
+ *     ▀╚██╔▀    ██╔═══╝ ██╔══██║  ╚██╔╝  ╚════██║██║██║     ██╔══██║██║         ██║  ██║██╔══╝  ╚██╗ ██╔╝██║██║     ██╔══╝  
+ *       ╚═╝     ██║     ██║  ██║   ██║   ███████║██║╚██████╗██║  ██║███████╗    ██████╔╝███████╗ ╚████╔╝ ██║╚██████╗███████╗
+ *               ╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚══════╝╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝    ╚═════╝ ╚══════╝  ╚═══╝  ╚═╝ ╚═════╝╚══════╝
+ * ══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+ *                                    - VkPhysicalDevice [Enum, Get, Info, Queue Families, Queues] -
+ * ═════════════════════════════════════════════════════════ HIGH LIGHTS ═════════════════════════════════════════════════════════
+ */
 bool amVK_CX::load_PD_info(bool force_load, bool auto_choose) {
     amFUNC_HISTORY_INTERNAL();
 

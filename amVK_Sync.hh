@@ -15,26 +15,22 @@
  */
 class amVK_Semaphore {
   public:
-    amVK_DeviceMK2 *_amVK_D;
-    VkSemaphore _SEMA;
+    amVK_DeviceMK2 *amVK_D;
+    VkSemaphore SEMA;
+    static inline VkSemaphoreCreateInfo s_CI = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
 
     /** \todo add pNext & flags support  */
-    amVK_Semaphore(amVK_DeviceMK2 *D = nullptr) : _amVK_D(D) {
-        if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
-        else {amVK_CHECK_DEVICE(D, _amVK_D);}
+    amVK_Semaphore(amVK_DeviceMK2 *D = nullptr) : amVK_D(D) {
+        if (D == nullptr) {amVK_SET_activeD(amVK_D);}
+        else {amVK_CHECK_DEVICE(D, amVK_D);}
 
-        VkSemaphoreCreateInfo CI = {};
-            CI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-            CI.pNext = nullptr;
-            CI.flags = 0;
-
-        VkResult res = vkCreateSemaphore(_amVK_D->_D, &CI, nullptr, &_SEMA);
+        VkResult res = vkCreateSemaphore(amVK_D->D, &s_CI, nullptr, &SEMA);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
     }
     ~amVK_Semaphore() {}
 
     bool destroy(void) {
-        vkDestroySemaphore(_amVK_D->_D, _SEMA, nullptr);
+        vkDestroySemaphore(amVK_D->D, SEMA, nullptr);
         return true;
     }
 };
@@ -46,34 +42,32 @@ class amVK_Semaphore {
  */
 class amVK_Fence {
   public:
-    amVK_DeviceMK2 *_amVK_D;
-    VkFence _FENCE;
+    amVK_DeviceMK2 *amVK_D;
+    VkFence FENCE;
+    static inline VkFenceCreateInfo s_CI = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
 
     /**
      * \param flags: VK_FENCE_CREATE_SIGNALED_BIT - means you wait & reset on it for the first time after creation)
      * \todo add pNext & flags support  
      */
-    amVK_Fence(VkFenceCreateFlags flags, amVK_DeviceMK2 *D = nullptr) : _amVK_D(D) {
-        if (D == nullptr) {amVK_SET_activeD(_amVK_D);}
-        else {amVK_CHECK_DEVICE(D, _amVK_D);}
+    amVK_Fence(VkFenceCreateFlags flags, amVK_DeviceMK2 *D = nullptr) : amVK_D(D) {
+        if (D == nullptr) {amVK_SET_activeD(amVK_D);}
+        else {amVK_CHECK_DEVICE(D, amVK_D);}
 
-        VkFenceCreateInfo CI = {};
-            CI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-            CI.pNext = nullptr;
-            CI.flags = flags;
+        s_CI.flags = flags;
 
-        VkResult res = vkCreateFence(_amVK_D->_D, &CI, nullptr, &_FENCE);
+        VkResult res = vkCreateFence(amVK_D->D, &s_CI, nullptr, &FENCE);
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
     }
     ~amVK_Fence() {}
 
     bool destroy(void) {
-        vkDestroyFence(_amVK_D->_D, _FENCE, nullptr);
+        vkDestroyFence(amVK_D->D, FENCE, nullptr);
         return true;
     }
 
     bool wait(uint64_t nanosecs = 1000000000) {
-        VkResult res = vkWaitForFences(_amVK_D->_D, 1, &_FENCE, true, nanosecs);
+        VkResult res = vkWaitForFences(amVK_D->D, 1, &FENCE, true, nanosecs);
         if (res != VK_SUCCESS) {
             LOG_EX(amVK_Utils::vulkan_result_msg(res));
             
@@ -88,7 +82,7 @@ class amVK_Fence {
     }
 
     bool reset(void) {
-        VkResult res = vkResetFences(_amVK_D->_D, 1, &_FENCE);
+        VkResult res = vkResetFences(amVK_D->D, 1, &FENCE);
         if (res != VK_SUCCESS) { LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false; }
         return true;
     }
