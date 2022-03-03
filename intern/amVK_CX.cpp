@@ -1,4 +1,4 @@
-#define amVK_CX_CPP
+#define amVK_LOGGER_IMPLIMENTATION  // amASSERT() impl.
 #include "amVK_CX.hh"
 #include <cstring>          // strcmp()    [iExtName_to_index]
 #include <cstdlib>          // calloc() & malloc()  [Needed in .cpp only]
@@ -32,7 +32,7 @@ VkInstance amVK_CX::create_Instance(void) {
     the_info.pApplicationInfo = &(amVK_CX::vk_appInfo);
     //the_info.pNext = nullptr;  the_info.flags [KHR Says 'reserved for future'] [No need to care about these 2 for now]
     the_info.enabledExtensionCount = static_cast<uint32_t>(m_enabled_iExts.size());
-    the_info.ppEnabledExtensionNames = m_enabled_iExts.data();
+    the_info.ppEnabledExtensionNames = m_enabled_iExts.data;
 
 
     // ----------- ValidationLayers for vkCreateInstance ------------
@@ -40,7 +40,7 @@ VkInstance amVK_CX::create_Instance(void) {
         amVK_CX::enum_ValLayers();
         add_ValLayer("VK_LAYER_KHRONOS_validation");
         the_info.enabledLayerCount = static_cast<uint32_t>(m_enabled_vLayers.size());
-        the_info.ppEnabledLayerNames = m_enabled_vLayers.data();
+        the_info.ppEnabledLayerNames = m_enabled_vLayers.data;
         LOG_LOOP_MK1("Enabled Validation Layers:- ", i, m_enabled_vLayers.size(), m_enabled_vLayers[i]);
     }
 
@@ -312,7 +312,8 @@ bool amVK_CX::add_InstanceExt(char *extName) {
     } 
 
     else {
-        m_enabled_iExts.push_back(m_IEP[index].extensionName);    //don't wanna depend on extName, that might be on stack
+        if (m_enabled_iExts.should_resize()) {m_enabled_iExts.resize(2);}
+        amVK_ArrayDYN_PUSH_BACK(m_enabled_iExts) = m_IEP[index].extensionName;    //don't wanna depend on extName, that might be on stack
         m_isEnabled_iExt[index] = true;
         return true;
     }
@@ -333,7 +334,8 @@ bool amVK_CX::add_ValLayer(char *vLayerName) {
     } 
 
     else {
-        m_enabled_vLayers.push_back(m_vLayerP[index].layerName);    //don't wanna depend on extName, that might be on stack
+        if (m_enabled_vLayers.should_resize()) {m_enabled_vLayers.resize(2);}
+        amVK_ArrayDYN_PUSH_BACK(m_enabled_vLayers) = m_vLayerP[index].layerName;    //don't wanna depend on extName, that might be on stack
         m_isEnabled_vLayer[index] = true;
         return true;
     }
@@ -554,7 +556,7 @@ void amVK_CX::benchMark_PD(void) {
         PD.benchMarks[i] = mk;
     }
 
-    // ----------- SORTING ------------ [TODO: Test mergeSort, Impl memcpy, don't include <string> in amVK_utils]
+    /** ----------- SORTING ------------ [TODO: Test mergeSort, Impl memcpy, don't include <string> in amVK_utils] */
     for (uint32_t i = 0; i < PD.n; i++) {PD.index_sortedByMark[i] = i;}
     bool sort_success = amVK_Utils::mergeSort<uint32_t> (0, PD.n-1, PD.benchMarks, PD.index_sortedByMark);
 }

@@ -1,3 +1,7 @@
+#pragma once
+
+/** a Prototype Renderer... */
+
 #include "amVK_CMD.hh"
 #include "amVK_Sync.hh"
 #include "amVK_WI.hh"
@@ -37,7 +41,7 @@ class amVK_RD {
     amVK_RD(amVK_DeviceMK2 *amVK_D) : 
         m_qFam( amVK_D->get_graphics_qFamily() ),
         m_cmdPool( amVK_CommandPool(m_qFam, amVK_D) ),
-        m_cmdBuf(  amVK_CommandBuf (*(m_cmdPool.AllocBufs(1)))),
+        m_cmdBuf(  amVK_CommandBuf (*(m_cmdPool.alloc_Bufs(1)))),
 
         m_queueFence(VK_FENCE_CREATE_SIGNALED_BIT, amVK_D),
         m_presentSemaphore(amVK_D),
@@ -71,14 +75,14 @@ class amVK_RD {
         m_queueFence.reset();
         WI->AcquireNextImage(m_presentSemaphore.SEMA, 1000000000);
 
-        m_cmdBuf.Reset(0);
-        m_cmdBuf.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        m_cmdBuf.reset(0);
+        m_cmdBuf.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
         WI->Begin_RenderPass(m_cmdBuf.BUF, VK_SUBPASS_CONTENTS_INLINE);  // AcquireNextImage() before it.... Framebuffer selected here
     }
     void EndRecord_N_Submit(void) {
         vkCmdEndRenderPass(m_cmdBuf.BUF);
-        m_cmdBuf.End();
+        m_cmdBuf.end();
 
         VkResult res = vkQueueSubmit(m_Q, 1, &m_whatever, m_queueFence.FENCE);  /** fenceOne blocks till vkCmd*s finishes [Will get RESET on its own ig] */
         if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return;}

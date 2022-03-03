@@ -1,5 +1,5 @@
+#define amVK_UTILS_CPP
 #include "amVK_Utils.hh"
-
 
 #include <bitset>
 void amVK_Utils::memview2b(void *ptr, uint32_t how_far) {

@@ -1,7 +1,4 @@
-#ifndef amVK_WI_H
-#define amVK_WI_H
-
-#include "vulkan/vulkan.h"
+#pragma once
 
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
@@ -79,6 +76,12 @@ struct amVK_SurfaceMK2 {
    * \return 'presenting supportive' qFamily index [of _PD] 
    */
   uint32_t present_qFam(void);
+
+
+  /**
+   * \return this->PD    [nullptr, if couldn't be found]
+   */
+  VkPhysicalDevice select_DisplayDevice(void);
 
   /** 
    * \brief imageUsageFlags, maxImageArrayLayers [stereoscope3D Stuff], Transform & CompositeAlpha 
@@ -438,5 +441,3 @@ class amVK_WI_MK2 {
     alloc_called = true;
   }
 #endif
-
-#endif //amVK_WI_H

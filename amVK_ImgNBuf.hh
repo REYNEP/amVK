@@ -1,5 +1,4 @@
-#ifndef amVK_IMG_BUF_HH
-#define amVK_IMG_BUF_HH
+#pragma once
 
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
@@ -221,5 +220,3 @@ class BufferMK2 {
         vkFreeMemory(   s_amVK_D->D, MEMORY, nullptr);
     }
 };
-
-#endif //amVK_IMG_BUF_HH

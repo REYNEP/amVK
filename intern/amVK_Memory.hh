@@ -1,5 +1,4 @@
-#ifndef amVK_MEMORY_HH
-#define amVK_MEMORY_HH
+#pragma once
 #include "amVK_IN.hh"
 
 /**
@@ -76,5 +75,3 @@ if you fetched them in some custom way e.g. using some loader like Volk.
 
  * [FROM https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/quick_start.html]
  */
-
-#endif  //amVK_MEMORY_HH

@@ -43,6 +43,26 @@ uint32_t amVK_SurfaceMK2::present_qFam(void) {
     return present_qFamily;
 }
 
+
+VkPhysicalDevice amVK_SurfaceMK2::select_DisplayDevice(void) {
+    if (!HEART->PD.list) {HEART->load_PD_info(false, true);}
+
+    /** By default we are gonna choose a GPU that supports presenting to the surface.... */
+    VkPhysicalDevice *PD_list = HEART->PD.list;
+    uint32_t PD_n = HEART->PD.n;
+
+    for (int i = 0; i < PD_n; i++) {
+        PD = PD_list[i];
+        if (is_presenting_sup()) return PD;
+    }
+
+    LOG_EX("Couldn't create DisplayDevice.... no VkPhysicalDevice seems to support presenting to required surface.... [return nullptr]");
+    return nullptr;
+}
+
+
+
+
 /** 
     \│/  ┌─┐┌─┐┌┬┐   ╔═╗┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐╔═╗┌─┐┬─┐┌┬┐┌─┐┌┬┐┌─┐  
     ─ ─  │ ┬├┤  │    ╚═╗│ │├┬┘├┤ ├─┤│  ├┤ ╠╣ │ │├┬┘│││├─┤ │ └─┐  

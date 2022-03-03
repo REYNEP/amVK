@@ -1,7 +1,4 @@
-#ifndef amVK_RENDERPASS_HH
-#define amVK_RENDERPASS_HH
-
-#include "vulkan/vulkan.h"
+#pragma once
 
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
@@ -197,5 +194,3 @@ VkImageAspectFlags image_layout_2_aspectMask(VkImageLayout finalLayout) {
   VkImageUsageFlags  image_layout_2_usageflags(VkImageLayout finalLayout);
   VkImageAspectFlags image_layout_2_aspectMask(VkImageLayout finalLayout);
 #endif // amVK_RENDERPASS_CPP
-
-#endif //amVK_RENDERPASS_HH

@@ -1,21 +1,14 @@
 #pragma once
-
-#ifndef amVK_CX_HH
-#define amVK_CX_HH
-
-#include <vector>
-
-#ifdef amVK_CX_CPP          // amVK_CX.cpp file
-  #define amVK_LOGGER_IMPLIMENTATION  // amASSERT() impl.
-#endif
 #include "amVK_IN.hh"       // amVK_IN, #define HEART, HEART_CX,   amVK_Logger.hh, amVK_Types.hh, amVK_Utils.hh
 
-
-/** also defined in amVK_IN */
-#ifndef HEART
-  #define HEART amVK_IN::heart
-#endif
-
+/**
+ * Any file that includes this, or amVK_IN, actually will become a ~80K long file (on MSVC windows)
+ *    of which (vulkan/vulkan.h) - ~20K
+ *        <iostream> or <string> - ~50K   [inside amVK_Logger.hh]
+ * 
+ * We can introduce a Function based amVK_LoggerOPT.hh, where we dont include anything from the STD Library
+ * We can divide up vulkan header into multiple smaller files....   [Better choice than loading up via DLL i think....]
+ */
 
 /** 
  *
@@ -29,9 +22,10 @@
  *                - amVK_CX [Initialization (amVK_Init)] -
  * ═══════════════════════════ HIGH LIGHTS ═════════════════════════════
  * \brief
- *   Funcs intended for usage by you are in amVK_IN.... [ but we do have that inside 'intern' folder 😅]
+ *   Only calling create_Instance() will work.... you can use other functions too, e.g. add_InstanceExt()
  *   CAUTION: More than 1 VkInstance is NEVER needed!
  * \see
+ *   List of InstanceExtensions: https://vulkan.gpuinfo.org/listinstanceextensions.php
  *   README.md :: ex1 block for initialization example
  *   ./.readme/amVK.md
  * \note
@@ -44,12 +38,12 @@ class amVK_CX : public amVK_IN {
     amVK_Array<VkExtensionProperties>             m_IEP{};   //'Instance Extension' Properties     [Available to this System]
     amVK_Array<bool>                   m_isEnabled_iExt{};
     amVK_Array<VkExtensionProperties>  m_req_surface_ep{};   // 'Surface Extension' Properties     [for now we know this will be 2; \see filter_SurfaceExts(), allocated there]
-    std::vector<char *>                 m_enabled_iExts{};   // USE add_ValLayer
+    amVK_ArrayDYN<char *>               m_enabled_iExts = amVK_ArrayDYN<char *>(16);   // USE add_ValLayer
 
   /** Vulkan Layers */
-    amVK_Array<VkLayerProperties>  m_vLayerP{};
-    amVK_Array<bool>      m_isEnabled_vLayer{};
-    std::vector<char *> m_enabled_vLayers = {};   //WELP, the default one.
+    amVK_Array<VkLayerProperties>             m_vLayerP{};
+    amVK_Array<bool>                 m_isEnabled_vLayer{};
+    amVK_ArrayDYN<char *>             m_enabled_vLayers = amVK_ArrayDYN<char *>(8);   // WELP, the default one.
     #ifdef amVK_RELEASE
       const bool m_enableDebugLayers_LunarG = false;
     #else
@@ -93,8 +87,8 @@ class amVK_CX : public amVK_IN {
   bool add_ValLayer(char *vLayerName);
   bool isEnabled_InstanceExt(char *extName) {return m_isEnabled_iExt[iExtName_to_index(extName)];}
   bool isEnabled_ValLayer(char *vLayerName) {return m_isEnabled_vLayer[vLayerName_to_index(vLayerName)];}
-  std::vector<char *> getEnabled_InstanceExts(void) {return m_enabled_iExts;}
-  std::vector<char *> getEnabled_ValLayers(void) {return m_enabled_vLayers;}
+  amVK_ArrayDYN<char *> getEnabled_InstanceExts(void) {return m_enabled_iExts;}
+  amVK_ArrayDYN<char *> getEnabled_ValLayers(void) {return m_enabled_vLayers;}
   /** currently uses BruteForce */
   uint32_t iExtName_to_index(char *iExtName);
   uint32_t vLayerName_to_index(char *vLayerName);
@@ -105,9 +99,11 @@ class amVK_CX : public amVK_IN {
    *   ─ ─  ║  ║╣ ╚╗╔╝║╣ ║    ┏━┛
    *   /│\  ╩═╝╚═╝ ╚╝ ╚═╝╩═╝  ┗━╸
    * 
-   * stuffs that I didn;t wanna expose
+   * stuffs that I didn't wanna expose
    * stuffs that U shouldn't be using.
    * stuffs that R called internally..
+   * stuffs that U don't have2 call...
+   * stuffs that R  in CONSTRUCTOR....stea
    */
   /**
    * \see IEP
@@ -191,5 +187,3 @@ class amVK_CX : public amVK_IN {
   /** \return false: if all gpu isUsed,  (PD_chozen is set to most powerfull/Strongest one.... in that case) */
   bool auto_choosePD(void);
 };
-
-#endif //#ifndef amVK_CX_HH

@@ -1,8 +1,9 @@
-#ifndef amVK_UTILS_HH
-#define amVK_UTILS_HH
+#pragma once
 
-//You should instead #include "amVK_IN.hh" rather than including amVK_Utils.hh directly....
-//also amVK_Logger is included there before utils....
+/** 
+ * You should instead #include "amVK_IN.hh" rather than including amVK_Utils.hh directly....
+ * also amVK_Logger is included there before utils....
+ */
 #ifndef amVK_LOGGER_HH
   #include "amVK_Logger.hh"
 #endif
@@ -15,7 +16,7 @@
  * 
  * \note if you use PUSH_BACK macro.... remember to set .data & .n first
  */
-#include <cstring>
+#include <cstring>    // memcpy
 #include <initializer_list>
 /** [amVK_types.hh] */
 template<typename T> 
@@ -42,7 +43,7 @@ struct amVK_Array {
     }
 
     /** [MemCpy based] Allows amVK_Array<T> smth = {1, 2, 3, ...};     and    amVK_Array<T> smth{1, 2, 3 };      why this [and not operator=] https://stackoverflow.com/q/16935295 */
-    amVK_Array(std::initializer_list<T> ilist) {  
+    amVK_Array(std::initializer_list<T> ilist) {
       n = ilist.size();
       /** if (n > 0) {  Not really needed: [https://stackoverflow.com/q/1087042], tho we must delete... */
         data = new T[n];                            //do remember to delete[] yourself
@@ -84,7 +85,7 @@ struct amVK_Array {
     inline size_t size_alloced(void) {return static_cast<size_t>(n);}
 };
 #ifndef amVK_RELEASE
-  #ifdef amVK_CX_CPP
+  #ifdef amVK_UTILS_CPP
     void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name, char *type_id_name) { 
       if (n == 0) { LOG_EX("amVK_Array<> " << var_name << ".n = 0;" << "Did you malloc? amASSERT here" << std::endl << "typeid(" << var_name << ").name() :- " << type_id_name);
                     amASSERT(true); }
@@ -266,5 +267,3 @@ bool mergeSort(uint32_t first_index, uint32_t last_index, T *unsorted, uint32_t 
 
 
 } //namespace amVK_Utils
-
-#endif //#ifndef amVK_UTILS_HH

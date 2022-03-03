@@ -1,15 +1,12 @@
-#ifndef amVK_LIB
-#define amVK_LIB
+#pragma once
 
-#include "amVK_Defines.hh"
+#include "amVK_Defines.hh"  // You should check this file individually 😉
 #include "vulkan/vulkan.h"  // Vulkan Includes "windows.h" on WIN  cz amVK_Defines.hh defines VK_USE_PLATFORM_WIN32_KHR on WIN
 
 #include <cstdint>
 #include <cstddef>
 
-
-//Common Stuffs
-#define amVK_LOGGER_BLI_ASSERT  /** \todo there are other modules inside amVK_Logger.hh.... */
+// Common Stuffs
 #include "amVK_Logger.hh"
 #include "amVK_Utils.hh"
 #include "amVK_Types.hh"
@@ -80,5 +77,3 @@ class amVK_IN {
   if           (!HEART->activeD){ LOG_EX("Either pass a valid amVK_DeviceMK2 as param" << \
                                          "\n  ...or see amVK_CX::activeD & amVK_CX::activate_device()  "); } \
   else { VAR_D = HEART->activeD; }
-
-#endif //amVK_LIB

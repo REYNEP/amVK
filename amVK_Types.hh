@@ -1,5 +1,8 @@
+#pragma once
 #ifndef amVK_TYPES_H
 #define amVK_TYPES_H
+
+/** This file should be C-Compatible.... IG 🙄 */
 
 #include "vulkan/vulkan.h"
 

@@ -2,10 +2,14 @@
  * This file should be fully independant of any amVK Headers
  * Preprocessor RESC-1: https://sourceforge.net/p/predef/wiki/OperatingSystems/ 
  * MSVC Has Got a Huge amount of Predefined Macros:- https://docs.microsoft.com/en-us/cpp/preprocessor/predefined-macros
+ * 
+ * This file has 'amVK_LOGGER_IMPLIMENTATION' macro for 'BLI_ASSERT' part.... which is defined only in amVK_CX.cpp
  */
+#pragma once
 #ifndef amVK_LOGGER_HH  // Include Guard for Entire File
-#define amVK_LOGGER_HH
+#define amVK_LOGGER_HH  // pragma + include guard, cz amVK_LOGGER is pub. as separate gist too 😁
 
+/** std libraries like iostream or string actually is like 50K lines long */
 #include <iostream>
 //{0.10, 0.64, 0.64, 1.0}, /* SOCK_GEOMETRY */
 
@@ -219,6 +223,7 @@
 #endif
 
 
+/** impl in amVK_CX.cpp */
 #ifdef amVK_LOGGER_IMPLIMENTATION
   #ifdef _WIN32
     #include <windows.h>

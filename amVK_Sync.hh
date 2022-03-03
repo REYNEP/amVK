@@ -1,5 +1,4 @@
-#ifndef amVK_SYNC_HH
-#define amVK_SYNC_HH
+#pragma once
 /** 
  * Well, the Semaphores, Fences & other synchronization stuffs just got its helping functions.... 
  * I dont think this part of amVK is something that you should keep using in a Big project.... its just here to serve as a Booster & template....
@@ -44,7 +43,7 @@ class amVK_Fence {
   public:
     amVK_DeviceMK2 *amVK_D;
     VkFence FENCE;
-    static inline VkFenceCreateInfo s_CI = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
+    static inline VkFenceCreateInfo s_CI = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
 
     /**
      * \param flags: VK_FENCE_CREATE_SIGNALED_BIT - means you wait & reset on it for the first time after creation)
@@ -87,5 +86,3 @@ class amVK_Fence {
         return true;
     }
 };
-
-#endif //amVK_SYNC_HH

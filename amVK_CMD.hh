@@ -1,5 +1,4 @@
-#ifndef amVK_CMD_HH
-#define amVK_CMD_HH
+#pragma once
 
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
@@ -132,5 +131,3 @@ class amVK_CommandPool {
         vkDestroyCommandPool(amVK_D->D, POOL, nullptr);
     }
 };
-
-#endif //amVK_CMD_HH

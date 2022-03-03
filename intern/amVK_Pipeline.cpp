@@ -319,100 +319,134 @@ VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
 }
  
 void amVK_GraphicsPipes::konfigurieren(void) {
-    /**  \│/  ╦  ╦┌─┐┬─┐┌┬┐┌─┐─┐ ┬╦┌┐┌┌─┐┬ ┬┌┬┐╔═╗┌┬┐┌─┐┌┬┐┌─┐
+    /**  
+     *   \│/  ╦  ╦┌─┐┬─┐┌┬┐┌─┐─┐ ┬╦┌┐┌┌─┐┬ ┬┌┬┐╔═╗┌┬┐┌─┐┌┬┐┌─┐
      *   ─ ─  ╚╗╔╝├┤ ├┬┘ │ ├┤ ┌┴┬┘║│││├─┘│ │ │ ╚═╗ │ ├─┤ │ ├┤ 
      *   /│\   ╚╝ └─┘┴└─ ┴ └─┘┴ └─╩┘└┘┴  └─┘ ┴ ╚═╝ ┴ ┴ ┴ ┴ └─┘
      *      ---------------------------------------------------
-     */ 
-    OG.VAO = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, nullptr, 0,
-        VIBindings.n, VIBindings.data,
-        VIAttributes.n, VIAttributes.data
+     */
+    VAO: {
+        OG.VAO = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, nullptr, 0,
+            VIBindings.n, VIBindings.data,
+            VIAttributes.n, VIAttributes.data
+        };
     };
+    
  
-    /**  \│/  ╦  ╦┌─┐┬─┐┌┬┐┌─┐─┐ ┬╦┌┐┌┌─┐┬ ┬┌┬┐╔═╗┌─┐┌─┐┌─┐┌┬┐┌┐ ┬ ┬ ┬
+    /** 
+     *   \│/  ╦  ╦┌─┐┬─┐┌┬┐┌─┐─┐ ┬╦┌┐┌┌─┐┬ ┬┌┬┐╔═╗┌─┐┌─┐┌─┐┌┬┐┌┐ ┬ ┬ ┬
      *   ─ ─  ╚╗╔╝├┤ ├┬┘ │ ├┤ ┌┴┬┘║│││├─┘│ │ │ ╠═╣└─┐└─┐├┤ │││├┴┐│ └┬┘
      *   /│\   ╚╝ └─┘┴└─ ┴ └─┘┴ └─╩┘└┘┴  └─┘ ┴ ╩ ╩└─┘└─┘└─┘┴ ┴└─┘┴─┘┴ 
      *      ------------------------------------------------------------
-     * Triangle/Line/Point/Patch_List/Strip/Fan     [e.g. TRIANGLE_LIST, LINE_STRIP]
      */
-    OG.VertexInputAssembly = {VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, nullptr, 0,
-        vertTopo, /** primitiveRestartEnable = */ VK_FALSE
+    VertexInputAssembly: {
+        OG.VertexInputAssembly = {VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, nullptr, 0,
+            vertTopo, /** primitiveRestartEnable = */ VK_FALSE
+        };
     };
+    
 
 
 
 
 
-    /**  \│/  ╔╦╗┬ ┬┌┐┌┌─┐┌┬┐┬┌─┐╦  ╦┬┌─┐┬ ┬┌─┐┌─┐┬─┐┌┬┐    ┬    ╔═╗┌─┐┬┌─┐┌─┐┌─┐┬─┐
+    /**  
+     *   \│/  ╔╦╗┬ ┬┌┐┌┌─┐┌┬┐┬┌─┐╦  ╦┬┌─┐┬ ┬┌─┐┌─┐┬─┐┌┬┐    ┬    ╔═╗┌─┐┬┌─┐┌─┐┌─┐┬─┐
      *   ─ ─   ║║└┬┘│││├─┤│││││  ╚╗╔╝│├┤ │││├─┘│ │├┬┘ │    ┌┼─   ╚═╗│  │└─┐└─┐│ │├┬┘
      *   /│\  ═╩╝ ┴ ┘└┘┴ ┴┴ ┴┴└─┘ ╚╝ ┴└─┘└┴┘┴  └─┘┴└─ ┴ ───└┘─── ╚═╝└─┘┴└─┘└─┘└─┘┴└─
      *      --------------------------------------------------------------------------
      */
-    OG.DynamicViewportNScissor = {VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, nullptr, 0,
-        viewportCount, nullptr, scissorCount, nullptr   /** viewportCount [def: 1], pViewports, scissorCount [def: 0], pScissors */
-    };
+    DynamicViewportNScissor: {
+        OG.DynamicViewportNScissor = {VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, nullptr, 0,
+            viewportCount, nullptr, scissorCount, nullptr   /** viewportCount [def: 1], pViewports, scissorCount [def: 0], pScissors */
+        };
+    }
+    
 
-    /**  \│/  ╔╦╗┬ ┬┬ ┌┬┐┬╔═╗┌─┐┌┬┐┌─┐┬  ┬┌┐┌┌─┐  ┌─╔╦╗╔═╗╔═╗╔═╗─┐
+    /**  
+     *   \│/  ╔╦╗┬ ┬┬ ┌┬┐┬╔═╗┌─┐┌┬┐┌─┐┬  ┬┌┐┌┌─┐  ┌─╔╦╗╔═╗╔═╗╔═╗─┐
      *   ─ ─  ║║║│ ││  │ │╚═╗├─┤│││├─┘│  │││││ ┬  │ ║║║╚═╗╠═╣╠═╣ │
      *   /│\  ╩ ╩└─┘┴─┘┴ ┴╚═╝┴ ┴┴ ┴┴  ┴─┘┴┘└┘└─┘  └─╩ ╩╚═╝╩ ╩╩ ╩─┘
      *      -------------------------------------------------------
      */
-    bool sampleShadingEnabled = false; if (samples > 1) {sampleShadingEnabled = true;}
-    OG.MSAA = {VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, nullptr, 0,
-        (VkSampleCountFlagBits)samples, sampleShadingEnabled, minSampleShading, nullptr, VK_FALSE, VK_FALSE
-    };
+    MSAA: {
+        bool sampleShadingEnabled = false; if (MSAAsamples > 1) {sampleShadingEnabled = true;}
+        OG.MSAA = {VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, nullptr, 0,
+            (VkSampleCountFlagBits)MSAAsamples, sampleShadingEnabled, minSampleShading, nullptr, VK_FALSE, VK_FALSE
+        };
+    }
+    
 
 
 
-    /**  \│/  ╦═╗┌─┐┌─┐┌┬┐┌─┐┬─┐┬┌─┐┌─┐┌┬┐┬┌─┐┌┐┌
+    /**  
+     *   \│/  ╦═╗┌─┐┌─┐┌┬┐┌─┐┬─┐┬┌─┐┌─┐┌┬┐┬┌─┐┌┐┌
      *   ─ ─  ╠╦╝├─┤└─┐ │ ├┤ ├┬┘│┌─┘├─┤ │ ││ ││││
      *   /│\  ╩╚═┴ ┴└─┘ ┴ └─┘┴└─┴└─┘┴ ┴ ┴ ┴└─┘┘└┘
      *      --------------------------------------
      */
-    OG.Raster = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, nullptr, 0,
-        /** depthClampEnable */ VK_FALSE, rasterizerDiscardEnable,
-        VK_POLYGON_MODE_FILL, 
-        VK_CULL_MODE_NONE, VK_FRONT_FACE_CLOCKWISE,  /** no backface cull */
-        VK_FALSE, 0.0f, 0.0f, 0.0f,     /** depthBiasEnable, ConstantFactor, depthBiasClamp, SlopeFactor */
-        1.0f,     /** lineWidth: connected with POLYGON_MODE */
-    };
+    Raster: {
+        OG.Raster = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, nullptr, 0,
+            /** depthClampEnable */ VK_FALSE, rasterizerDiscardEnable,
+            polygonMode, 
+            (uint32_t)faceCulling, frontFace,   /** no backface cull */
+            VK_FALSE, 0.0f, 0.0f, 0.0f,         /** depthBiasEnable, ConstantFactor, depthBiasClamp, SlopeFactor */
+            1.0f,     /** lineWidth: connected with POLYGON_MODE */
+        };
+    }
+    
 
-    /**  \│/  ╔╦╗┌─┐┌─┐┌┬┐┬ ┬ ╔═╗┌┬┐┌─┐┌┐┌┌─┐┬┬  
+    /**  
+     *   \│/  ╔╦╗┌─┐┌─┐┌┬┐┬ ┬ ╔═╗┌┬┐┌─┐┌┐┌┌─┐┬┬  
      *   ─ ─   ║║├┤ ├─┘ │ ├─┤ ╚═╗ │ ├┤ ││││  ││  
      *   /│\  ═╩╝└─┘┴   ┴ ┴ ┴ ╚═╝ ┴ └─┘┘└┘└─┘┴┴─┘
+     *      --------------------------------------
      */
-    OG.DepthStencil = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, nullptr, 0,
-        depth, depth, /** depthTestEnable, depthWriteEnable */
-        VK_COMPARE_OP_LESS_OR_EQUAL,
-        VK_FALSE,           /** depthBoundsTestEnable */
-        VK_FALSE, {}, {},   /** STENCIL \todo WIP */
-        0.0f, 0.0f    /** minDepthBounds, maxDepthBounds: connected with 2 lines before */
-    };
+    DepthStencil: {
+        OG.DepthStencil = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, nullptr, 0,
+            depth, depth, /** depthTestEnable, depthWriteEnable */
+            VK_COMPARE_OP_LESS_OR_EQUAL,
+            VK_FALSE,           /** depthBoundsTestEnable */
+            VK_FALSE, {}, {},   /** STENCIL \todo WIP */
+            0.0f, 0.0f          /** minDepthBounds, maxDepthBounds: connected with 2 lines before */
+        };
+    }
+    
 
-    /**  \│/  ╔═╗┌─┐┬  ┌─┐┬─┐╔╗ ┬  ┌─┐┌┐┌┌┬┐
+    /**  
+     *   \│/  ╔═╗┌─┐┬  ┌─┐┬─┐╔╗ ┬  ┌─┐┌┐┌┌┬┐
      *   ─ ─  ║  │ ││  │ │├┬┘╠╩╗│  ├┤ │││ ││
      *   /│\  ╚═╝└─┘┴─┘└─┘┴└─╚═╝┴─┘└─┘┘└┘─┴┘
+     *      ---------------------------------
      */
-    VkPipelineColorBlendAttachmentState NoBlendAttach = {};
-        NoBlendAttach.colorWriteMask = colorWriteMask;
-        NoBlendAttach.blendEnable = blendEnable;
- 
-    OG.ColorBlendStates = {NoBlendAttach};
-    OG.ColorBlend = {VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, nullptr, 0,
-        VK_FALSE, VK_LOGIC_OP_COPY,
-        OG.ColorBlendStates.n, OG.ColorBlendStates.data,
-        {0.0f, 0.0f, 0.0f, 0.0f}    /** .blendConstants */
-    };
+    ColorBlend: {
+        VkPipelineColorBlendAttachmentState NoBlendAttach = {};
+            NoBlendAttach.colorWriteMask = colorWriteMask;
+            NoBlendAttach.blendEnable = blendEnable;
+    
+        OG.ColorBlendStates = {NoBlendAttach};
+        OG.ColorBlend = {VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, nullptr, 0,
+            VK_FALSE, VK_LOGIC_OP_COPY,
+            OG.ColorBlendStates.n, OG.ColorBlendStates.data,
+            {0.0f, 0.0f, 0.0f, 0.0f}    /** .blendConstants */
+        };
+    }
+    
 
 
-    /**  \│/  ╔╦╗┬ ┬┌┐┌┌─┐┌┬┐┬┌─┐╔═╗┌┬┐┌─┐┌┬┐┌─┐
+    /**  
+     *   \│/  ╔╦╗┬ ┬┌┐┌┌─┐┌┬┐┬┌─┐╔═╗┌┬┐┌─┐┌┬┐┌─┐
      *   ─ ─   ║║└┬┘│││├─┤│││││  ╚═╗ │ ├─┤ │ ├┤ 
      *   /│\  ═╩╝ ┴ ┘└┘┴ ┴┴ ┴┴└─┘╚═╝ ┴ ┴ ┴ ┴ └─┘
+     *      -------------------------------------
      */
-    OG.DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-    OG.DynamicWhat = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, nullptr, 0,
-        OG.DynamicStates.n, OG.DynamicStates.data
-    };
+    DynamicWhat: {
+        OG.DynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        OG.DynamicWhat = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, nullptr, 0,
+            OG.DynamicStates.n, OG.DynamicStates.data
+        };
+    }
+    
 
 
 

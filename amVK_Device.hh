@@ -1,13 +1,15 @@
+#pragma once
 #ifndef amVK_DEVICE_HH
 #define amVK_DEVICE_HH
+/** As of 2022, MAR 3, amVK moved to using pragma, however amVK_IN.hh checks if amVK_DEVICE_HH is defined or not. so we just kept the Include Guards */
 
 #ifdef amVK_DEVICE_CPP
-  #define IMPL_VEC_amVK_DEVICE  /** \see  vec_amVK Device  at eof */
+  #define IMPL_VEC_amVK_DEVICE    /** \see  vec_amVK Device  at eof */
 #endif
-#include "vulkan/vulkan.h"
-class amVK_DeviceMK2; //This is a Forward Declaration. Now amVK_IN.hh checks if amVK_DEVICE_HH is defined....
+
+class amVK_DeviceMK2;             /** This is a Forward Declaration. Now amVK_IN.hh checks if amVK_DEVICE_HH is defined.... */
 #include "amVK_IN.hh"
-#include "intern/amVK_Memory.hh"
+#include "intern/amVK_Memory.hh"  /** amVK_Memory is in WIP stage.... \todo it shouldn't be here */
 
 
 /**

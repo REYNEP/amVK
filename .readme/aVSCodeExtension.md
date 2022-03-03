@@ -74,25 +74,25 @@ For now, I found a WorkAround if anyone is Interested,     USING TextMate-Gramme
 
 
 
-
-
-A REGEX Example: https://github.com/microsoft/vscode-textmate/blob/main/test-cases/first-mate/fixtures/javascript-regex.json
+## NOTES
+- A REGEX Example: https://github.com/microsoft/vscode-textmate/blob/main/test-cases/first-mate/fixtures/javascript-regex.json
 [This is where I Got a LIVESAVING Sudden thought]
 EXPLANATION:
     - I was using like    "\p{^ASCII}"     cz apple's textmate documentation only wanted that
     - But json actually is different,      json needs DOUBLE BACKSLASHES
     - SO LIFE-SAVING!!!!! (like TIME-TRAVEL!!!!)
+</br>
 
-
-HOW DO YOU DOU     !this-logic      (Negative/Reverse/Not)?
+- HOW DO YOU DOU     !this-logic      (Negative/Reverse/Not)?
     - https://superuser.com/questions/477463/is-it-possible-to-use-not-in-a-regular-expression-in-textmate
 
     - Or just mainly use    ^    (yes this Character)    whenever you can    [In most places you can & Should]
+</br>
 
-These are the TEXTMATE Grammatical Options: https://macromates.com/manual/en/language_grammars
+- These are the TEXTMATE Grammatical Options: https://macromates.com/manual/en/language_grammars
 
-**Then for any theme that makes COMMENTS Italic     you can use the scope that you just created, in my case that would be**  `comment.non-ascii.cpp`
+- **Then for any theme that makes COMMENTS Italic     you can use the scope that you just created, in my case that would be**  `comment.non-ascii.cpp`
 
-Well, you can choose any of the 'Character Property [3.]'    from     [TextMate Expressions](https://macromates.com/manual/en/regular_expressions)
+- Well, you can choose any of the 'Character Property [3.]'    from     [TextMate Expressions](https://macromates.com/manual/en/regular_expressions)
 
-Here is the Semantic Guide part where you should start: https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide#injection-grammars
+- Here is the Semantic Guide part where you should start: https://code.visualstudio.com/api/language-extensions/syntax-highlight-guide#injection-grammars

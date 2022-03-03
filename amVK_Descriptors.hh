@@ -1,4 +1,6 @@
+#pragma once
 #include "amVK_IN.hh"
+#include "amVK_Device.hh"
 
 /**
    ╻ ╻   ┏━┓┏┓ ┏━┓╻ ╻╺┳╸   ╺┳┓┏━╸┏━┓┏━╸┏━┓╻┏━┓╺┳╸┏━┓┏━┓┏━┓
@@ -61,7 +63,7 @@ class amVK_DSetLayout {
     /**
      * \param amVK_D: has to match with the RTC_DeadPool one, when you gonna create RTC_DSET
      */
-    bool create(amVK_DeviceMK2 *amVK_D, uint32_t n, VkDescriptorSetLayoutBinding *pBindings) {
+    bool create(amVK_DeviceMK2 *amVK_D, uint32_t n, const VkDescriptorSetLayoutBinding *pBindings) {
         setInfo.bindingCount = n;
         setInfo.pBindings = pBindings;
         VkResult res = vkCreateDescriptorSetLayout(amVK_D->D, &setInfo, nullptr, &_SetLayout);

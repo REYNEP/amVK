@@ -1,9 +1,19 @@
-#ifndef amVK_PIPELINE_HH
-#define amVK_PIPELINE_HH
+#pragma once
 
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
 #include "amVK_RenderPass.hh"
+
+/**
+ * \page
+ * ShaderInputsMK2 [a.k.a PIPELINE LAYOUT]
+ * amVK_PipeStoreMk2
+ *  amVK_GraphicsPipes
+ *  amVK_ComputePires [W.I.P]
+ * 
+ * some SPOTIFY links....
+ * amVK_Pipeline ['Basically this is why, we came all this way....']
+ */
 
 
 /** 
@@ -25,7 +35,7 @@ class ShaderInputsMK2 {
   ShaderInputsMK2(void) {}
   ~ShaderInputsMK2(void) {}
 
-  static inline void set_Info(uint32_t pushCount, VkPushConstantRange *pPushConstantRanges, uint32_t setLayoutCount, VkDescriptorSetLayout *pSetLayouts) {
+  static inline void set_Info(uint32_t pushCount, const VkPushConstantRange *pPushConstantRanges, uint32_t setLayoutCount, const VkDescriptorSetLayout *pSetLayouts) {
     s_CI.pushConstantRangeCount = pushCount;
     s_CI.pPushConstantRanges = pPushConstantRanges;
     s_CI.setLayoutCount = setLayoutCount;
@@ -140,42 +150,58 @@ class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
  public:
   amVK_RenderPassMK2 *amVK_RP;       /** [IN, MUST] */
   amVK_GraphicsPipes(amVK_RenderPassMK2 *amVK_RP, amVK_DeviceMK2 *D) : amVK_RP(amVK_RP), amVK_PipeStoreMK2(D) {if (amVK_RP == nullptr) {LOG_EX("Param 'RP': nullptr ....  build_pipeline() will fail ");}}
+  /** 
+   * variables below should be set before calling this function. 
+   * Only 'vert', 'frag' is exception, those are set to the_info in build_Pipeline 
+   * if you wish to change A SINGLE or VERY FEW settings, manipulate OG.xxx explicitly
+   */
+  void konfigurieren(void);
+  VkPipeline build_Pipeline(void);
+
 
   /** \todo Add support for Tesselation & Geometry which can be optional */
   VkShaderModule vert = nullptr;     /** [IN, MUST] */
   VkShaderModule frag = nullptr;     /** [IN, MUST] */
 
-  /** VAO in OpenGL,  [alias-names: VertexInputBuffer, vertex buffers, VertexBuffer, vertex formats, VERTEX INPUT LAYOUT, VertexInputLayout, VertexInputState] */
+
   amVK_Array<VkVertexInputBindingDescription>     VIBindings{};  /** VertexInput   'Binding' */
   amVK_Array<VkVertexInputAttributeDescription> VIAttributes{};  /** VertexInput 'Attribute'  */
 
-  /** VertexInputAssembly */
+  /** [OG.VertexInputAssembly] */
   VkPrimitiveTopology vertTopo = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-  /** Dynamic Viewport & Scissors.... you can't change it,  trust a random guy on the internet: [https://www.reddit.com/r/vulkan/comments/g6c4iz/comment/foshogz] 
-   * so, whats different?   viewportCount = 1, pViewports = nullptr  [same for scissors]      - linked with the_info.pViewportState
-   *  later in CommandBuffer you need to call vkCmdSetViewport/Scissor(); */
-  uint8_t viewportCount = 1;  // also ScissorCount      [increase for multiViewport]
-  uint8_t scissorCount = 0;
+  /** [OG.Raster] */
+  VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL;         /** should be changed for rendering LINE or POINT */
+  float lineWidth = 1.0f;                                   /** theres a .wideLines PhysicalDeviceFeature [https://stackoverflow.com/a/44575227] */
 
-  /** [MSAA], \note renderpass also has to support it */
-  uint8_t samples = 1;  float minSampleShading = 1.0f; /** SampleRateShading: https://docs.gl/gl4/glMinSampleShading  [got this website form TheCherno] */
+  bool rasterizerDiscardEnable = false;                     /** rasterizationStage ON/OFF */
+  VkFrontFace frontFace = VK_FRONT_FACE_CLOCKWISE;          /** [or] COUNTER_CLOCKWISE */
+  VkCullModeFlagBits faceCulling = VK_CULL_MODE_NONE;       /** Disabled by default */
+  /** \todo do smth about the DepthBias Options */
 
-  /** [Rasterization] : In here is where we do backface culling, set line width [a.k.a wireframe drawing], or DepthBias   \see amVK.md for now \todo DOCS */ 
-  bool rasterizerDiscardEnable = false;   // [Interesting feature 🤔  \see other options details in amVK.md now ]
-
-  /** [DepthStencil] :  VK_COMPARE_OP_LESS_OR_EQUAL used  [yes, seems that, its in REVERSE, DRAW if z-index is less] 0.0f is on top, 1.0f is at bottom */
-  bool depth = true;  //by default do Depth Test   \also \see Viewport.maxDepth & minDepth   + \see DepthStencil.depthBias
-  bool stencil = false; //WIP \todo SOON
+  /** [OG.DepthStencil] */
+  bool depth = true;                                        /** \see Viewport.maxDepth & minDepth */
+  VkCompareOp depthOp = VK_COMPARE_OP_LESS_OR_EQUAL;        /**  [yes, seems that, its in REVERSE, DRAW if z-index is less] 0.0f is on top, 1.0f is at bottom */
+  bool stencil = false;                                     /** WIP \todo SOON */
   
-  /** [ColorBlend] : You can like make Transparent Stuffs here  [like a GlassWindow. Like the Vibrancy extension for  VSCODE 😉] */
+  /** [OG.ColorBlend] + OG.ColorBlendStates */
+  bool transparencyEnable = false;                          /** WIP \todo soon */
+  bool blendEnable = false;                                 /** WIP \todo soon */
   VkColorComponentFlags    colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                             VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-  bool blendEnable = false; //WIP \todo SOON
-  // OG.ColorBlendStates
 
-  /** [Dynamic] :  VK_DYNAMIC_STATE_VIEWPORT , VK_DYNAMIC_STATE_SCISSOR is default */
-  // OG.DynamicStates
+
+
+  /** [OG.DynamicViewportNScissor] use vkCmdSetViewport / Scissor later */
+  /** [OG.DynamicStates] : VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR is default */
+  uint8_t viewportCount = 1;
+  uint8_t scissorCount = 0;
+
+  /** [OG.MSAA] MultiSampling, \note renderpass also has to support it */
+  uint8_t MSAAsamples = 1;  float minSampleShading = 1.0f;  
+  /** \todo add .pSamleMask & .alphaToCoverageEnable support */
+
+
 
 
   /** 
@@ -207,17 +233,6 @@ class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
     amVK_Array<VkPipelineColorBlendAttachmentState> ColorBlendStates; // 'new' alloc
   } OG;
   VkGraphicsPipelineCreateInfo the_info;
-
-  typedef void (*konfigurieren_callback)(the_info_finals *);
-
-  /**
-   *   \│/  ╔╗ ┬ ┬┬┬  ┌┬┐    ╔═╗┬┌─┐┌─┐┬  ┬┌┐┌┌─┐  
-   *   ─ ─  ╠╩╗│ │││   ││    ╠═╝│├─┘├┤ │  ││││├┤   
-   *   /│\  ╚═╝└─┘┴┴─┘─┴┘─── ╩  ┴┴  └─┘┴─┘┴┘└┘└─┘  
-   */
-  /** set Mod vars before this. only vert & frag is set in build_pipeline */
-  void konfigurieren(void);
-  VkPipeline build_Pipeline(void);
 };
 
 class amVK_ComputePipes : public amVK_PipeStoreMK2 {
@@ -261,72 +276,70 @@ class amVK_ComputePipes : public amVK_PipeStoreMK2 {
  * But pipelines vary by devices.... \see RTC Quad2D.hh and other files for solution for this
  */
 class amVK_Pipeline {
-  public:
-    /** \fn Destroy() makes is nullptr */
-    VkPipeline             P = nullptr;
-    VkPipelineLayout  layout = nullptr;
-    VkShaderModule vert = nullptr;
-    VkShaderModule frag = nullptr;
+ public:
+  /** \fn Destroy() makes is nullptr */
+  VkPipeline             P = nullptr;
+  VkPipelineLayout  layout = nullptr;
+  VkShaderModule      vert = nullptr;
+  VkShaderModule      frag = nullptr;
 
-    /**
-     * PURE VIRTUAL FUNCTION
-     * has to call \fn ShaderInputsMK2::set_Info()  \see 2D/Quad2D.hh
-     *   called in \fn   amVK_Pipeline::Build()
-     * [Every Pipeline needs Inputs.... this function sets Inputs info so the VkPipelineLayout can be created]
-     */
-    virtual inline void set_ShaderInputs(void) = 0;
+  /**
+   * PURE VIRTUAL FUNCTION
+   * has to call \fn ShaderInputsMK2::set_Info()  \see 2D/Quad2D.hh
+   *   called in \fn   amVK_Pipeline::Build()
+   * [Every Pipeline needs Inputs.... this function sets Inputs info so the VkPipelineLayout can be created]
+   */
+  virtual inline void set_ShaderInputs(void) = 0;
 
-    amVK_Pipeline() {}
-    ~amVK_Pipeline() {}
+  amVK_Pipeline() {}
+  ~amVK_Pipeline() {}
 
-    /** Destroyed ShaderModule & Pipeline.... [Remember to separately Destroy ShaderInputs a.k.a PipelineLayouts]*/
-    bool destroy(VkDevice D) {
-        // _PS->destroy_ShaderModule(vert);
-        // _PS->destroy_ShaderModule(frag);
-        vkDestroyShaderModule(D, vert, nullptr);
-        vkDestroyShaderModule(D, frag, nullptr);
-        
-        //seems this below implicitly destroyes ShaderModules
-        if      (this->P) {vkDestroyPipeline(D, this->P, nullptr);}
-        else {LOG_EX("Seems the pipeline [amVK_Pipeline::_P] is already destroyed");}
+  /** Destroyed ShaderModule & Pipeline.... [Remember to separately Destroy ShaderInputs a.k.a PipelineLayouts]*/
+  bool destroy(VkDevice D) {
+    // _PS->destroy_ShaderModule(vert);
+    // _PS->destroy_ShaderModule(frag);
+    vkDestroyShaderModule(D, vert, nullptr);
+    vkDestroyShaderModule(D, frag, nullptr);
+    
+    //seems this below implicitly destroyes ShaderModules
+    if      (this->P) {vkDestroyPipeline(D, this->P, nullptr);}
+    else {LOG_EX("Seems the pipeline [amVK_Pipeline::_P] is already destroyed");}
 
-        if (layout) {vkDestroyPipelineLayout(D, layout, nullptr);}
-        else {LOG_EX("Seems the pipelien layout [layout]   is already destroyed");}
+    if (layout) {vkDestroyPipelineLayout(D, layout, nullptr);}
+    else {LOG_EX("Seems the pipelien layout [layout]   is already destroyed");}
 
-        this->P = nullptr;
-        return true;
-    }
-    inline bool destroy(amVK_DeviceMK2 *amVK_D) {return destroy(amVK_D->D);}
+    this->P = nullptr;
+    return true;
+  }
+  inline bool destroy(amVK_DeviceMK2 *amVK_D) {return destroy(amVK_D->D);}
 
-    /** 
-     * \todo update to support any kinda pipestore like compute, currently param PS is amVK_GraphicsPipes
-     * 
-     * \param spvFileName_Common: without the '.vert'/'.frag'  e.g. 'shaders/2D_Quad'
-     * \param inputs: ShaderInputsMK2_Solo/ShaderInputsMK2_NotSolo
-     * \param C_PipelineLayout: true default, calles inputs->create_PipelineLayout(PS->_amVK_D) if true
-     * 
-     * \param PS: PS is the Pipestore, where we create Pipelines from.... cz so many stuffs are repetitive in different pipelines, so we made a store
-     *            \see amVK_PipeStoreMK2
-     */
-    void Build(std::string spvFileName_Common, amVK_GraphicsPipes *PS) {
-        //vert = _PS->load_ShaderModule(spvFileName_Common + ".vert.spv");
-        //frag = _PS->load_ShaderModule(spvFileName_Common + ".frag.spv");
-        vert = PS->glslc_Shader(spvFileName_Common + ".vert", Shader_Vertex);
-        frag = PS->glslc_Shader(spvFileName_Common + ".frag", Shader_Fragment);
-        
-        set_ShaderInputs();
-        layout = ShaderInputsMK2::create_PipelineLayout(PS->amVK_D);
+  /** 
+   * \todo update to support any kinda pipestore like compute, currently param PS is amVK_GraphicsPipes
+   * 
+   * \param spvFileName_Common: without the '.vert'/'.frag'  e.g. 'shaders/2D_Quad'
+   * \param inputs: ShaderInputsMK2_Solo/ShaderInputsMK2_NotSolo
+   * \param C_PipelineLayout: true default, calles inputs->create_PipelineLayout(PS->_amVK_D) if true
+   * 
+   * \param PS: PS is the Pipestore, where we create Pipelines from.... cz so many stuffs are repetitive in different pipelines, so we made a store
+   *            \see amVK_PipeStoreMK2
+   */
+  void Build(std::string spvFileName_Common, amVK_GraphicsPipes *PS) {
+    //vert = _PS->load_ShaderModule(spvFileName_Common + ".vert.spv");
+    //frag = _PS->load_ShaderModule(spvFileName_Common + ".frag.spv");
+    vert = PS->glslc_Shader(spvFileName_Common + ".vert", Shader_Vertex);
+    frag = PS->glslc_Shader(spvFileName_Common + ".frag", Shader_Fragment);
+    
+    set_ShaderInputs();
+    layout = ShaderInputsMK2::create_PipelineLayout(PS->amVK_D);
 
-        PS->vert = vert;
-        PS->frag = frag;
-        PS->shaderInputsLayout = layout;
+    PS->vert = vert;
+    PS->frag = frag;
+    PS->shaderInputsLayout = layout;
 
-        this->P = PS->build_Pipeline();
-    }
+    this->P = PS->build_Pipeline();
+  }
 
-  protected:
-    amVK_Pipeline(const amVK_Pipeline&) = delete;             //Brendan's Solution
-    amVK_Pipeline& operator=(const amVK_Pipeline&) = delete;  //Brendan's Solution
+ protected:
+  amVK_Pipeline(const amVK_Pipeline&) = delete;             //Brendan's Solution
+  amVK_Pipeline& operator=(const amVK_Pipeline&) = delete;  //Brendan's Solution
 };
-
-#endif  //amVK_PIPELINE_HH
