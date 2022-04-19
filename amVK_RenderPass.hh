@@ -116,7 +116,7 @@ class amVK_RenderPassMK2 {
         the_info.pSubpasses = subpasses.data;
 
       VkResult res = vkCreateRenderPass(amVK_D->D, &the_info, nullptr, &RP);
-      LOG("RenderPass created! Yes, Time TRAVEL!!!!");
+      _LOG0("RenderPass created! Yes, Time TRAVEL!!!!");
       amASSERT(res != VK_SUCCESS);
       return RP;
     }

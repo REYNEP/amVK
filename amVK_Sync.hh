@@ -24,7 +24,7 @@ class amVK_Semaphore {
         else {amVK_CHECK_DEVICE(D, amVK_D);}
 
         VkResult res = vkCreateSemaphore(amVK_D->D, &s_CI, nullptr, &SEMA);
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res));}
     }
     ~amVK_Semaphore() {}
 
@@ -56,7 +56,7 @@ class amVK_Fence {
         s_CI.flags = flags;
 
         VkResult res = vkCreateFence(amVK_D->D, &s_CI, nullptr, &FENCE);
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res));}
     }
     ~amVK_Fence() {}
 
@@ -68,10 +68,10 @@ class amVK_Fence {
     bool wait(uint64_t nanosecs = 1000000000) {
         VkResult res = vkWaitForFences(amVK_D->D, 1, &FENCE, true, nanosecs);
         if (res != VK_SUCCESS) {
-            LOG_EX(amVK_Utils::vulkan_result_msg(res));
+            amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res));
             
             if (res == VK_TIMEOUT) {
-                LOG_DBG("vkWaitForFences(), TimeOut... see stackTrace above    return false;");
+                amVK_LOG_EX("vkWaitForFences(), TimeOut... see stackTrace above    return false;");
             }
             return false;
         }
@@ -82,7 +82,7 @@ class amVK_Fence {
 
     bool reset(void) {
         VkResult res = vkResetFences(amVK_D->D, 1, &FENCE);
-        if (res != VK_SUCCESS) { LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false; }
+        if (res != VK_SUCCESS) { amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false; }
         return true;
     }
 };

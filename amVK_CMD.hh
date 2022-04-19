@@ -29,7 +29,7 @@ class amVK_CommandBuf {
 
         VkResult res = vkBeginCommandBuffer(BUF, &info);
         if (res != VK_SUCCESS) {
-            LOG_EX(amVK_Utils::vulkan_result_msg(res)); 
+            amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); 
             return false;
         }
         return true;
@@ -92,7 +92,7 @@ class amVK_CommandPool {
             CI.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
         VkResult res = vkCreateCommandPool(amVK_D->D, &CI, nullptr, &POOL);
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res));}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res));}
     }
     ~amVK_CommandPool() {}
 
@@ -102,7 +102,7 @@ class amVK_CommandPool {
      * \see VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT] */
     VkCommandBuffer *alloc_Bufs(uint8_t n) {
         if (n == 0) {
-            LOG_EX("param uint8_t n == 0, Defauly choosing 1");
+            amVK_LOG_EX("param uint8_t n == 0, Defauly choosing 1");
             n = 1;
         } else {
             //LOG("alloc_Bufs:- " << static_cast<uint32_t>(n));
@@ -117,7 +117,7 @@ class amVK_CommandPool {
         VkResult res = vkAllocateCommandBuffers(amVK_D->D, &I, &BUFs.data[new_ones]);
         BUFs.neXt += n;
 
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
         return &BUFs.data[new_ones];
     }
 

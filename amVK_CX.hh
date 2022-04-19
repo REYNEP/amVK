@@ -1,15 +1,6 @@
 #pragma once
 #include "amVK_IN.hh"       // amVK_IN, #define HEART, HEART_CX,   amVK_Logger.hh, amVK_Types.hh, amVK_Utils.hh
 
-/**
- * Any file that includes this, or amVK_IN, actually will become a ~80K long file (on MSVC windows)
- *    of which (vulkan/vulkan.h) - ~20K
- *        <iostream> or <string> - ~50K   [inside amVK_Logger.hh]
- * 
- * We can introduce a Function based amVK_LoggerOPT.hh, where we dont include anything from the STD Library
- * We can divide up vulkan header into multiple smaller files....   [Better choice than loading up via DLL i think....]
- */
-
 /** 
  *
  *       █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗         ██████╗██╗  ██╗
@@ -19,7 +10,7 @@
  *      ██║  ██║██║ ╚═╝ ██║ ╚████╔╝ ██║  ██╗███████╗╚██████╗██╔╝ ██╗
  *      ╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝  ╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝  ╚═╝
  * ═════════════════════════════════════════════════════════════════════
- *                - amVK_CX [Initialization (amVK_Init)] -
+ *                     - amVK_CX [Initialization] -
  * ═══════════════════════════ HIGH LIGHTS ═════════════════════════════
  * \brief
  *   Only calling create_Instance() will work.... you can use other functions too, e.g. add_InstanceExt()
@@ -30,27 +21,44 @@
  *   ./.readme/amVK.md
  * \note
  *   I came across a Cool theme for vscode: EvaTheme
- *   also ANSI Decorative Fonts: [i am pretty sure the NAME is misused]   \see ASCIIDecorator by helixquar and 'Convert To ASCII Art' by BitBelt... I also se my CUSTOM ONE ;) 
+ *   also ANSI Decorative Fonts: [i am pretty sure the NAME is misused]   \see ASCIIDecorator by helixquar and 'Convert To ASCII Art' by BitBelt... I also se my CUSTOM ONE ;)
+ *    + ':emojisense:' by Matt Bierner
  */
 class amVK_CX : public amVK_IN {
  private:
   /** instance Extension */
-    amVK_Array<VkExtensionProperties>             m_IEP{};   //'Instance Extension' Properties     [Available to this System]
-    amVK_Array<bool>                   m_isEnabled_iExt{};
-    amVK_Array<VkExtensionProperties>  m_req_surface_ep{};   // 'Surface Extension' Properties     [for now we know this will be 2; \see filter_SurfaceExts(), allocated there]
+    amVK_Array<VkExtensionProperties>             m_IEP = {nullptr, 0};   //'Instance Extension' Properties     [Available to this System]
+    amVK_Array<bool>                   m_isEnabled_iExt = {nullptr, 0};
+    VkExtensionProperties             _m_req_surface_ep[2];
+    amVK_Array<VkExtensionProperties>  m_req_surface_ep = {_m_req_surface_ep, 2, 2};   // 'Surface Extension' Properties     [for now we know this will be 2; \see filter_SurfaceExts(), allocated there]
     amVK_ArrayDYN<char *>               m_enabled_iExts = amVK_ArrayDYN<char *>(16);   // USE add_ValLayer
 
   /** Vulkan Layers */
-    amVK_Array<VkLayerProperties>             m_vLayerP{};
-    amVK_Array<bool>                 m_isEnabled_vLayer{};
+    amVK_Array<VkLayerProperties>             m_vLayerP = {nullptr, 0};
+    amVK_Array<bool>                 m_isEnabled_vLayer = {nullptr, 0};
     amVK_ArrayDYN<char *>             m_enabled_vLayers = amVK_ArrayDYN<char *>(8);   // WELP, the default one.
     #ifdef amVK_RELEASE
       const bool m_enableDebugLayers_LunarG = false;
     #else
-      const bool m_enableDebugLayers_LunarG = true;
+      const bool m_enableDebugLayers_LunarG = true;   /** by default adds VK_LAYER_KHRONOS_validation*/
     #endif
 
  public:
+  /**
+   *             ┬  ┬┬┌─╔═╗┬─┐┌─┐┌─┐┌┬┐┌─┐╦┌┐┌┌─┐┌┬┐┌─┐┌┐┌┌─┐┌─┐
+   *        ───  └┐┌┘├┴┐║  ├┬┘├┤ ├─┤ │ ├┤ ║│││└─┐ │ ├─┤││││  ├┤   ───
+   *              └┘ ┴ ┴╚═╝┴└─└─┘┴ ┴ ┴ └─┘╩┘└┘└─┘ ┴ ┴ ┴┘└┘└─┘└─┘   vkCreateInstance
+   * |-------------------------------------------------------------------|
+   * call \fn add_InstanceExt() before this
+   */
+  VkInstance create_Instance(void);
+       bool destroy_Instance(void);
+
+
+  bool check_VkSupport(void) { return true; }; /** \todo */
+  void set_VkApplicationInfo(VkApplicationInfo *appInfo = nullptr);
+
+
   amVK_CX(bool debug_EXTs = true) : amVK_IN() {
     enum_InstanceExts();           // Loads into m_IEP [Force_Load]
     filter_SurfaceExts();          // m_req_surface_ep
@@ -62,19 +70,7 @@ class amVK_CX : public amVK_IN {
     }
   }
   ~amVK_CX() {}
-
-  bool check_VkSupport(void) { return true; }; /** \todo */
-  void set_VkApplicationInfo(VkApplicationInfo *appInfo = nullptr);
-
-  /**
-   *             ┬  ┬┬┌─╔═╗┬─┐┌─┐┌─┐┌┬┐┌─┐╦┌┐┌┌─┐┌┬┐┌─┐┌┐┌┌─┐┌─┐
-   *        ───  └┐┌┘├┴┐║  ├┬┘├┤ ├─┤ │ ├┤ ║│││└─┐ │ ├─┤││││  ├┤   ───
-   *              └┘ ┴ ┴╚═╝┴└─└─┘┴ ┴ ┴ └─┘╩┘└┘└─┘ ┴ ┴ ┴┘└┘└─┘└─┘   vkCreateInstance
-   * |-------------------------------------------------------------------|
-   * call \fn add_InstanceExt() before this
-   */
-  VkInstance create_Instance(void);
-       bool destroy_Instance(void);
+  
        
   /**
    * NOTE: impl. is BruteForce   based on   iExtName_to_index()

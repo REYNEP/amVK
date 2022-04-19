@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include "amVK_IN.hh"
 #include "amVK_Device.hh"
 #include "amVK_RenderPass.hh"
@@ -48,7 +49,7 @@ class ShaderInputsMK2 {
   static inline VkPipelineLayout create_PipelineLayout(VkDevice D) {
     VkResult res = vkCreatePipelineLayout(D, &s_CI, nullptr, &S_layout);
     if (res != VK_SUCCESS) { 
-      LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG_EX("vkCreatePipelineLayout() failed"); 
+      amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); amVK_LOG_EX("vkCreatePipelineLayout() failed"); 
     }
     return S_layout;
   }
@@ -92,7 +93,7 @@ class amVK_PipeStoreMK2 {
 
   amVK_PipeStoreMK2(amVK_DeviceMK2 *D = nullptr);
   ~amVK_PipeStoreMK2() {}
-  inline void destroy() {amFUNC_HISTORY();}
+  inline void destroy() {}
 
   /** 
    *   █▀ █░█ ▄▀█ █▀▄ █▀▀ █▀█  █▀▄▀█ █▀█ █▀▄ █░█ █░░ █▀▀ 
@@ -149,7 +150,7 @@ class amVK_PipeStoreMK2 {
 class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
  public:
   amVK_RenderPassMK2 *amVK_RP;       /** [IN, MUST] */
-  amVK_GraphicsPipes(amVK_RenderPassMK2 *amVK_RP, amVK_DeviceMK2 *D) : amVK_RP(amVK_RP), amVK_PipeStoreMK2(D) {if (amVK_RP == nullptr) {LOG_EX("Param 'RP': nullptr ....  build_pipeline() will fail ");}}
+  amVK_GraphicsPipes(amVK_RenderPassMK2 *amVK_RP, amVK_DeviceMK2 *D) : amVK_RP(amVK_RP), amVK_PipeStoreMK2(D) {if (amVK_RP == nullptr) {amVK_LOG_EX("Param 'RP': nullptr ....  build_pipeline() will fail ");}}
   /** 
    * variables below should be set before calling this function. 
    * Only 'vert', 'frag' is exception, those are set to the_info in build_Pipeline 
@@ -303,10 +304,10 @@ class amVK_Pipeline {
     
     //seems this below implicitly destroyes ShaderModules
     if      (this->P) {vkDestroyPipeline(D, this->P, nullptr);}
-    else {LOG_EX("Seems the pipeline [amVK_Pipeline::_P] is already destroyed");}
+    else {amVK_LOG_EX("Seems the pipeline [amVK_Pipeline::_P] is already destroyed");}
 
     if (layout) {vkDestroyPipelineLayout(D, layout, nullptr);}
-    else {LOG_EX("Seems the pipelien layout [layout]   is already destroyed");}
+    else {amVK_LOG_EX("Seems the pipelien layout [layout]   is already destroyed");}
 
     this->P = nullptr;
     return true;

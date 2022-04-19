@@ -50,7 +50,7 @@ struct amVK_SurfaceMK2 {
   amVK_SurfaceMK2(VkSurfaceKHR S, amVK_DeviceMK2 *D, bool uKnowWhatURDoing = false) : S(S) {
     if (D == nullptr) {
       if (!uKnowWhatURDoing) {
-        LOG_EX("you passed in a amVK_DeviceMK2 variable which is nullptr.... [ _PD = nullptr ] has been set")
+        amVK_LOG_EX("you passed in a amVK_DeviceMK2 variable which is nullptr.... [ _PD = nullptr ] has been set");
       }
       PD = nullptr;
     }
@@ -123,8 +123,8 @@ typedef struct SwapchainData_GEN4 {
 
   inline bool check_index(        uint8_t framebuf_i, uint8_t attach_i) {
     bool ok = true;
-    if (framebuf_i > framebuf_n) {LOG_EX("Requested: " << framebuf_i << "th framebuffer from " << this->framebuf_n                       << " [return nullptr]"); ok = false;}
-    if (  attach_i > attach_n)   {LOG_EX("Requested: " << attach_i   << "th   atachment from " << this->attach_n << " per framebuffer. " << " [return nullptr]"); ok = false;}
+    if (framebuf_i > framebuf_n) {amVK_LOG_EX("Requested: " << framebuf_i << "th framebuffer from " << this->framebuf_n                       << " [return nullptr]"); ok = false;}
+    if (  attach_i > attach_n)   {amVK_LOG_EX("Requested: " << attach_i   << "th   atachment from " << this->attach_n << " per framebuffer. " << " [return nullptr]"); ok = false;}
     return ok;
   }
 
@@ -141,16 +141,16 @@ typedef struct SwapchainData_GEN4 {
   bool i_alloc(void);
   bool i_free(void) {
     if (alloc_called) {free(attachments); alloc_called = false; return true;} 
-    else {LOG_EX("alloc_called == false"); return false;}
+    else {amVK_LOG_EX("alloc_called == false"); return false;}
   }
 } IMG_DATA_MK2;
 
 /** USE: VkImageView *framebuffer_attachments = PTR_ATTACH(2, 0); */
 #define PTR_FRAMEBUF_ATTACHMENTS(PTR_WI, framebuf_i)                  PTR_WI->_ptr_attach(framebuf_i, 0); \
-    if (!PTR_WI->IMGs.       check_index(framebuf_i, 0))           { LOG_EX("PTR_FRAMEBUF_ATTACHMENTS called with out of bounds values, there will be vulkan errors"); }
+    if (!PTR_WI->IMGs.       check_index(framebuf_i, 0))           { amVK_LOG_EX("PTR_FRAMEBUF_ATTACHMENTS called with out of bounds values, there will be vulkan errors"); }
 
 #define PTR_IMG(PTR_WI,                  framebuf_i, attach_i)        PTR_WI->_ptr_img(   framebuf_i, attach_i); \
-    if (!PTR_WI->IMGs.       check_index(framebuf_i, attach_i))    { LOG_EX("PTR_FRAMEBUF_ATTACHMENTS called with out of bounds values, there will be vulkan errors"); }
+    if (!PTR_WI->IMGs.       check_index(framebuf_i, attach_i))    { amVK_LOG_EX("PTR_FRAMEBUF_ATTACHMENTS called with out of bounds values, there will be vulkan errors"); }
 
 #define PTR_ATTACH(PTR_WI,               framebuf_i, attach_i)        PTR_WI->_ptr_attach(framebuf_i, attach_i); \
     if (!PTR_WI->IMGs.       check_index(framebuf_i, attach_i))    { LOG_EX("PTR_FRAMEBUF_ATTACHMENTS called with out of bounds values, there will be vulkan errors"); }
@@ -336,8 +336,8 @@ class amVK_WI_MK2 {
   uint32_t AcquireNextImage(VkSemaphore to_signal, uint64_t timeout = 1000000000) {
     VkResult res = vkAcquireNextImageKHR(amVK_D->D, swapchain, timeout, to_signal, nullptr, &nExt_img);
     if (res != VK_SUCCESS) {
-      LOG_DBG("Couldn't AcquireNextImageKHR....");
-      LOG_EX("")
+      amVK_LOG_EX("Couldn't AcquireNextImageKHR....");
+      amVK_LOG_EX("");
       return UINT32_T_NULL;
     }
     return nExt_img;
@@ -358,8 +358,8 @@ class amVK_WI_MK2 {
     vkQueuePresentKHR(amVK_D->get_graphics_queue(), &presentInfo);
 
     if (res != VK_SUCCESS) {
-      LOG_DBG("vkQueuePresentKHR() failed.... Serious bug....");
-      LOG_EX("");
+      amVK_LOG_EX("vkQueuePresentKHR() failed.... Serious bug....");
+      amVK_LOG_EX("");
       return false;
     }
     return true;
@@ -422,11 +422,11 @@ class amVK_WI_MK2 {
 #ifdef amVK_WI_CPP
   bool IMG_DATA_MK2::i_alloc(void) {  //malloc
     if (alloc_called) {
-      LOG("amVK_WI.IMGs.alloc_called == true;  seems like its already ALLOCATED!!!!       [we not allocating] ");
+      amVK_LOG_EX("amVK_WI.IMGs.alloc_called == true;  seems like its already ALLOCATED!!!!       [we not allocating] ");
       return false;
     } 
     if (!framebuf_n || !attach_n) {
-      LOG("IMGs.attach_i == 0   or   IMGs.attach_n == 0      [Nothing to malloc for, set those two (& possibly other values too)]");
+      amVK_LOG_EX("IMGs.attach_i == 0   or   IMGs.attach_n == 0      [Nothing to malloc for, set those two (& possibly other values too)]");
       return false;
     }
 

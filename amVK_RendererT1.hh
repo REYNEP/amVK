@@ -85,7 +85,7 @@ class amVK_RD {
         m_cmdBuf.end();
 
         VkResult res = vkQueueSubmit(m_Q, 1, &m_whatever, m_queueFence.FENCE);  /** fenceOne blocks till vkCmd*s finishes [Will get RESET on its own ig] */
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return;}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return;}
 
         s_last_WI->Present(m_renderSemaphore.SEMA);   // Finally Present to the Window, a.k.a SwapBuffers or Refresh Screen
     }

@@ -20,10 +20,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 #-----------------------------------------------------------------------------
 # Options
-option(amVK_MK1_NOOB_LOG "kinda DUMPS stuffs like 'available Vulkan exts/devices/stuffs' in the terminal like an NOOB API" OFF)
-option(amVK_MK2_NOOB_LOG "MK1_NOOB_LOG enables LOG_MK1.... which is used in stuffs made during MK1... amVK_CX... but this MK2 one is used for mostly everything" OFF)
-option(amVK_HISTORY "Log every function, its kinda like a live stack_tarce" OFF)
-option(amVK_HISTORY_INTERNAL  "Also the internal functions that are called" OFF)
+option(amVK_DEBUG_LOG "IDK, What I am doing...." OFF)
+option(amVK_DO_LOG "Turn on GENERAL Logging... e.g. vkCreateInsntace, vkCreateDevice etc...." ON)
 
 
 set(INC
@@ -48,20 +46,17 @@ if(WIN32)
   set(PLATFORM_LINKLIBS dbghelp shlwapi kernel32 Version) #BLI_ASSERT in amVK_Logger.hh
 endif()
 
+if (amVK_DEBUG_LOG)
+  list(APPEND   DEF   amVK_DEBUG_LOG)
 
-if(amVK_MK1_NOOB_LOG)
-  list(APPEND   DEF   amVK_LOG_MK1)
-endif()
-if(amVK_MK2_NOOB_LOG)
-  list(APPEND   DEF   amVK_LOG_MK2)
-endif()
-if(amVK_HISTORY)
-  list(APPEND   DEF   amVK_HISTORY)
-endif()
-if(amVK_HISTORY_INTERNAL)
-  list(APPEND   DEF   amVK_HISTORY_INTERNAL)
+  if (NOT amVK_DO_LOG)
+    list(APPEND DEF   amVK_DO_LOG)
+  endif()
 endif()
 
+if (amVK_DO_LOG)
+  list(APPEND   DEF   amVK_DO_LOG)
+endif()
 
 
 
@@ -75,13 +70,12 @@ add_subdirectory(extern)
 # The Final Target
 add_library(lib-amVK 
   intern/amVK_CX.cpp
-  intern/amVK_Types.cpp
   intern/amVK_Device.cpp
   intern/amVK_WI.cpp 
   intern/amVK_RenderPass.cpp 
   intern/amVK_Pipeline.cpp
 
-  intern/amVK_Utils.cpp
+  intern/amVK_IMPLs.cpp
 
   #so that Intellisense Works.... + Compilation boost-up
   amVK_CX.hh
@@ -103,10 +97,10 @@ endif()
 install(TARGETS lib-amVK 
         DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})
 
+#target_compile_options(lib-amVK PUBLIC "/P")
+
 
 #-----------------------------------------------------------------------------
 # UnSet Options:
-unset(amVK_MK1_NOOB_LOG CACHE)
-unset(amVK_MK2_NOOB_LOG CACHE)
-unset(amVK_HISTORY CACHE)
-unset(amVK_HISTORY_INTERNAL CACHE)
+unset(amVK_DEBUG_LOG CACHE)
+unset(amVK_DO_LOG CACHE)

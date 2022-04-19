@@ -28,11 +28,11 @@
  */
 class MemoryMK2 {
   public:
-    VkPhysicalDevice _PD = nullptr;
+    VkPhysicalDevice PD = nullptr;
     VkPhysicalDeviceMemoryProperties *mem_props = nullptr;
 
-    MemoryMK2(VkPhysicalDevice PD) : _PD(PD) {  //Internally used, so no error checking, also assuming that, no Double MemoryMK2 is created on same PhysicalDevoce
-        uint32_t PD_index = HEART->PD.index(_PD);
+    MemoryMK2(VkPhysicalDevice PD) : PD(PD) {  //Internally used, so no error checking, also assuming that, no Double MemoryMK2 is created on same PhysicalDevoce
+        uint32_t PD_index = HEART->PD.index(PD);
         mem_props = &( HEART->PD.mem_props[PD_index] );
     }
     ~MemoryMK2() {}

@@ -4,6 +4,39 @@
 #include "amVK_Device.hh"
 
 
+class MemoryMK1 {
+    public:
+    amVK_DeviceMK2 *amVK_D = nullptr;  /** has PhysicalDevice [PD] */
+    VkDeviceMemory M = nullptr;
+
+    MemoryMK1(amVK_DeviceMK2 *amVK_D) : amVK_D(amVK_D) {}
+    bool choose_memory_heap(bool DeviceLocal, bool BiggestOne, bool HostVisible) {
+
+    }
+    ~MemoryMK1() {}
+};
+
+
+/** 
+ *   Wanted BufferMK2 & ImageMK2 to be really fast.... 
+ * & Having a amVK_Device as member or parameter felt like waste of CPU time & Memory
+ * 
+ * \todo gotta change how activate_device acts.... an universal way would be better
+ */
+class amVK_ImgNBuf_Kernal {
+  public:
+    static inline amVK_DeviceMK2 *s_amVK_D = nullptr;
+    static void set_device(amVK_DeviceMK2 *D) {
+        if (D == nullptr) {amVK_SET_activeD(s_amVK_D);}
+        else {amVK_CHECK_DEVICE(D, s_amVK_D);}
+    }
+};
+
+#define S_amVK_DEVICE amVK_ImgNBuf_Kernal::s_amVK_D
+
+
+
+
 /** 
  * for now the Template below... [static vars] represent a 1 time image that could be used as an ShaderInput, you will need to change it for other kinds of usage 
  * 
@@ -17,14 +50,7 @@ class ImageMK2 {
     ImageMK2() {}
     ~ImageMK2() {}
 
-    static inline amVK_DeviceMK2 *s_amVK_D = nullptr;
-    static void set_device(amVK_DeviceMK2 *D) {
-        if (D == nullptr) {amVK_SET_activeD(s_amVK_D);}
-        else {amVK_CHECK_DEVICE(D, s_amVK_D);}
-    }
-
-
-    static inline VkImageCreateInfo s_CI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, nullptr, 0,   /** Feel free to change any of these.... before you call create() */
+    static inline VkImageCreateInfo s_CI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, nullptr, 0,   /** Feel free to change any of these.... before you call amvkCreateImage() */
             VK_IMAGE_TYPE_2D, 
             VK_FORMAT_UNDEFINED, {},    /** [.extent] */
 
@@ -51,37 +77,32 @@ class ImageMK2 {
 
     
 
-    inline void create(VkFormat IMG_Format, uint32_t width, uint32_t height) {
+    inline void amvkCreateImage(VkFormat IMG_Format, uint32_t width, uint32_t height) {
         s_CI.format = IMG_Format;
         s_view_CI.format = IMG_Format;
         s_CI.extent = {width, height, 1};
-        this->_create(false);
+        this->_amvkCreateImage(false);
     }
     /**
      * you might not want to modify this static CI.... in that case we have this option 
      * use this if you want faster perf.... say like when you wanna create same type of image thousands of times.... cz this function doesn't modify Format & extent everytime 
      * 
      * USES: \fn s_amVK_D->BindImageMemoryOpt(),   but BindImageMemory() has to be called befre the 'opt' once.
-     *          so call \fn create() once before.
+     *          so call \fn amvkDestroyImage() once before.
      * 
      * \param last_format_n_extent_n_other_stuffs: VkDeviceMemory size is assumed to be same inside \fn BindImageMemoryOpt
      */
-    void _create(bool last_format_n_extent_n_other_stuffs = false) {
-        #ifndef amVK_RELEASE
-            error_validation:
-            {
-                if (s_amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before this.... ");}
-            }
-        #endif
+    void _amvkCreateImage(bool last_format_n_extent_n_other_stuffs = false) {
+        if (S_amVK_DEVICE == nullptr) {amVK_LOG_EX("call BufferMK2::set_device(); before this.... ");}
 
-        VkResult res = vkCreateImage(s_amVK_D->D, &s_CI, nullptr, &this->IMG);
+        VkResult res = vkCreateImage(S_amVK_DEVICE->D, &s_CI, nullptr, &this->IMG);
         if (last_format_n_extent_n_other_stuffs)
-            MEMORY = s_amVK_D->BindImageMemoryOpt(this->IMG);   //allocate & bind new memory for image.
+            MEMORY = S_amVK_DEVICE->BindImageMemoryOpt(this->IMG);   //allocate & bind new memory for image.
         else 
-            MEMORY = s_amVK_D->BindImageMemory(this->IMG);
+            MEMORY = S_amVK_DEVICE->BindImageMemory(this->IMG);
 
         s_view_CI.image = this->IMG;
-        vkCreateImageView(s_amVK_D->D, &this->s_view_CI, nullptr, &this->VIEW);
+        vkCreateImageView(S_amVK_DEVICE->D, &this->s_view_CI, nullptr, &this->VIEW);
     }
 
     /** 
@@ -89,13 +110,8 @@ class ImageMK2 {
      * \param view_CreateInfo: VkImageViewCreateInfo*
      * \param amVK_D: def-value ImageMK2::s_amVK_D   [use set_device(); or s_amVK_D is nullptr]
     */
-    void create(VkImageCreateInfo *CreateInfo, VkImageViewCreateInfo *view_CreateInfo, amVK_DeviceMK2 *amVK_D = ImageMK2::s_amVK_D) {
-        #ifndef amVK_RELEASE
-            error_validation:
-            {
-                if (amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before.... this   or pass amVK_DeviceMK2 as param");}
-            }
-        #endif
+    void amvkCreateImage(VkImageCreateInfo *CreateInfo, VkImageViewCreateInfo *view_CreateInfo, amVK_DeviceMK2 *amVK_D = S_amVK_DEVICE) {
+        if (amVK_D == nullptr) {amVK_LOG_EX("call BufferMK2::set_device(); before.... this   or pass amVK_DeviceMK2 as param");}
 
         VkResult res = vkCreateImage(amVK_D->D, CreateInfo, nullptr, &this->IMG);
         MEMORY = amVK_D->BindImageMemory(this->IMG);     //allocate & bind new memory for image.
@@ -104,13 +120,13 @@ class ImageMK2 {
         vkCreateImageView(amVK_D->D, view_CreateInfo, nullptr, &this->VIEW);
     }
 
-    inline void destroy(amVK_DeviceMK2 *amVK_D = ImageMK2::s_amVK_D) {
+    inline void amvkDestroyImage(amVK_DeviceMK2 *amVK_D = S_amVK_DEVICE) {
         vkDestroyImageView(amVK_D->D, this->VIEW,   nullptr);
         vkDestroyImage(    amVK_D->D, this->IMG,    nullptr);
         vkFreeMemory(      amVK_D->D, this->MEMORY, nullptr);
     }
 
-    static inline bool destroy(VkImage img, VkImageView view, VkDeviceMemory memory, amVK_DeviceMK2 *amVK_D = ImageMK2::s_amVK_D) {
+    static inline bool amvkDestroyImage(VkImage img, VkImageView view, VkDeviceMemory memory, amVK_DeviceMK2 *amVK_D = S_amVK_DEVICE) {
         vkDestroyImageView(amVK_D->D, view,   nullptr);
         vkDestroyImage(    amVK_D->D, img,    nullptr);
         vkFreeMemory(      amVK_D->D, memory, nullptr);
@@ -148,8 +164,6 @@ class ImageMK2 {
 
 
 
-
-
 /** 
  * \todo add support for Big Chunk GPU Allocation but small chunk usage.... & Copy
  * 
@@ -157,25 +171,16 @@ class ImageMK2 {
  *          like there could be so many alike format Images.... and we would simply maybe need to just change width & height mostly.... nothing else.... so a universal static one is better
 */
 class BufferMK2 {
+  private:
+    MemoryMK1 MEMORY     = nullptr;
+    uint64_t m_sizeByte  = 0;
+    uint64_t m_memOffset = 0;
   public:
-    /** CreateInfo */
-    static inline VkBufferCreateInfo CI = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, nullptr, 0,
+    VkBuffer BUFFER    = nullptr;
+
+    static inline VkBufferCreateInfo s_CI = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, nullptr, 0,
         /* [.size] */0, /* [.usage] */0, /* [.sharingMode]: EXCLUSIVE */{}, 0, nullptr
     };
-
-    /** 
-     * Wanted BufferMK2 & ImageMK2 to be really fast.... & Having a amVK_Device as member or parameter felt like waste of CPU time & Memory 
-     * \todo consider having a UNIVERSAL one for stuffs in this file...
-     */
-    static inline amVK_DeviceMK2 *s_amVK_D = nullptr;
-    static void set_device(amVK_DeviceMK2 *D) {
-        if (D == nullptr) {amVK_SET_activeD(s_amVK_D);}
-        else {amVK_CHECK_DEVICE(D, s_amVK_D);}
-    }
-
-    VkBuffer BUFFER       = nullptr;
-    VkDeviceMemory MEMORY = nullptr;
-    uint64_t _sizeByte; //maybe deprecate this.... cz the resources e.g. img, or anything really.... will prolly have their own classes. and that will/should have specific sizes. like images have width and height
 
     BufferMK2(void) {}
     ~BufferMK2(void) {}
@@ -185,14 +190,12 @@ class BufferMK2 {
      * 
      * TODO: INVESTIGATE: What did AMD show us as 256MB here? https://www.youtube.com/watch?v=zSG6dPq57P8&t=308s
      */
-    void create(uint64_t sizeByte, VkBufferUsageFlags usage)
+    void amvkCreateBuffer(uint64_t sizeByte, VkBufferUsageFlags usage)
     {
-        #ifndef amVK_RELEASE
-            if (s_amVK_D == nullptr) {LOG_EX("call BufferMK2::set_device(); before....");}
-        #endif
-        _sizeByte = sizeByte;
-        CI.size = sizeByte;
-        CI.usage = usage;
+        if (S_amVK_DEVICE == nullptr) {amVK_LOG_EX("call amVK_ImgNBuf_Kernal::set_device();");}
+        m_sizeByte = sizeByte;
+        s_CI.size = sizeByte;
+        s_CI.usage = usage;
 
         VkMemoryPropertyFlags flags = 0;
         switch (usage)
@@ -203,20 +206,22 @@ class BufferMK2 {
                 flags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         }
 
-        vkCreateBuffer(s_amVK_D->D, &CI, nullptr, &BUFFER);
-        MEMORY = s_amVK_D->BindBufferMemory(BUFFER, flags);
+        vkCreateBuffer(S_amVK_DEVICE->D, &s_CI, nullptr, &BUFFER);
+        MEMORY.M = S_amVK_DEVICE->BindBufferMemory(BUFFER, flags);
     }
 
     /** \todo VkMemoryMapFlags */
-    void copy(const void *from) {
+    void amvkCopyBuffer(const void *from) {
         void* data;
-        vkMapMemory(s_amVK_D->D, MEMORY, 0, _sizeByte, 0, &data);
-        memcpy(data, from, _sizeByte);
-        vkUnmapMemory(s_amVK_D->D, MEMORY);
+        vkMapMemory(  S_amVK_DEVICE->D, MEMORY.M, 0, m_sizeByte, 0, &data);
+        memcpy(data, from, m_sizeByte);
+        vkUnmapMemory(S_amVK_DEVICE->D, MEMORY.M);
     }
 
-    void destroy(void) {
-        vkDestroyBuffer(s_amVK_D->D, BUFFER, nullptr);
-        vkFreeMemory(   s_amVK_D->D, MEMORY, nullptr);
+    void amvkDestroyBuffer(void) {
+        vkDestroyBuffer(S_amVK_DEVICE->D, BUFFER, nullptr);
+        vkFreeMemory(   S_amVK_DEVICE->D, MEMORY.M, nullptr);
     }
 };
+
+#undef S_amVK_DEVICE

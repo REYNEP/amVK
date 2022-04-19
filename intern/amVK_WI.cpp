@@ -8,23 +8,22 @@
    ╹ ╹   ┗━╸┗━┛╹ ╹┗━┛ ╹ ╹┗╸┗━┛┗━╸ ╹ ┗━┛╹┗╸
  */
 amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D) : m_windowName(window), amVK_D(D), amVK_S(S), surface(S->S), amVK_RP(RP) {
-         if (window == nullptr) { LOG_EX("Please dont pass nullptr, ERROR/WARNING Logs will look messy, this is used to let you know which window ");
+         if (window == nullptr) { amVK_LOG_EX("Please dont pass nullptr, ERROR/WARNING Logs will look messy, this is used to let you know which window ");
                                   window = "nullptr";}
-    if           (D == nullptr) { LOG_EX("[param]        amVK_DeviceMK2 *D      is nullptr.... name: " << window); }
-    else if (D->PD == nullptr) { LOG_EX("[param]        amVK_DeviceMK2 *D->_PD is nullptr.... name: " << window); }
-         if (     S == nullptr) { LOG_EX("[param]       amVK_SurfaceMK2 *S      is nullptr.... name: " << window); }
-         if (    RP == nullptr) { LOG_EX("[param]    amVK_RenderPassMK2 *RP     is nullptr.... name: " << window); }
+    if           (D == nullptr) { amVK_LOG_EX("[param]        amVK_DeviceMK2 *D      is nullptr.... name: " << window); }
+    else if (D->PD == nullptr) {  amVK_LOG_EX("[param]        amVK_DeviceMK2 *D->_PD is nullptr.... name: " << window); }
+         if (     S == nullptr) { amVK_LOG_EX("[param]       amVK_SurfaceMK2 *S      is nullptr.... name: " << window); }
+         if (    RP == nullptr) { amVK_LOG_EX("[param]    amVK_RenderPassMK2 *RP     is nullptr.... name: " << window); }
 
 
     if (amVK_S->PD != amVK_D->PD) {
-        LOG_DBG("[param]       \u0027amVK_SurfaceMK2 *S->VkSurface _S\u0027, wasn't created on the same PhysicalDevice as _amVK_Device->_PD....  This will probably fail....");
-        LOG_EX("");
+        amVK_LOG_EX("[param]       \u0027amVK_SurfaceMK2 *S->VkSurface _S\u0027, wasn't created on the same PhysicalDevice as _amVK_Device->_PD....  This will probably fail....");
     }
     amASSERT(!amVK_S->is_presenting_sup());
 
     Default_the_info();
     fallback_the_info();
-    LOG("amVK_WI_MK2 Constructed   &   Default_the_info() called...");
+    _LOG0("amVK_WI_MK2 Constructed   &   Default_the_info() called...");
 }
 
 
@@ -39,7 +38,7 @@ uint32_t amVK_SurfaceMK2::present_qFam(void) {
         if (sup == true) { present_qFamily = i;  found_present_qFamily = true; }
     }
 
-    if (present_qFamily == 0xFFFFFFFF) {LOG_EX("Couldn't Find any qFamily on PhysicalDevice that supports Presentation to given surface....");}
+    if (present_qFamily == 0xFFFFFFFF) {amVK_LOG_EX("Couldn't Find any qFamily on PhysicalDevice that supports Presentation to given surface....");}
     return present_qFamily;
 }
 
@@ -47,16 +46,17 @@ uint32_t amVK_SurfaceMK2::present_qFam(void) {
 VkPhysicalDevice amVK_SurfaceMK2::select_DisplayDevice(void) {
     if (!HEART->PD.list) {HEART->load_PD_info(false, true);}
 
-    /** By default we are gonna choose a GPU that supports presenting to the surface.... */
+    /** we are gonna choose a GPU that supports presenting to the surface.... */
     VkPhysicalDevice *PD_list = HEART->PD.list;
     uint32_t PD_n = HEART->PD.n;
 
+    /** The list is already sorted.... */
     for (int i = 0; i < PD_n; i++) {
         PD = PD_list[i];
-        if (is_presenting_sup()) return PD;
+        if (is_presenting_sup()) return PD;     /** calls \fn above, present_qFam() */
     }
 
-    LOG_EX("Couldn't create DisplayDevice.... no VkPhysicalDevice seems to support presenting to required surface.... [return nullptr]");
+    amVK_LOG_EX("Couldn't create DisplayDevice.... no VkPhysicalDevice seems to support presenting to required surface.... [return nullptr]");
     return nullptr;
 }
 
@@ -86,7 +86,8 @@ void amVK_SurfaceMK2::get_SurfaceFormats(bool print) {
      * 
      *  These 2 Below are reported by hardware [DRIVER].... Are More like what your DISPLAY and DRIVER combination Supports 
      *  U won't need to take care these Formats EXPLICITLY: .... U just need to use SAME format to CREATE RenderPass ColorAttachment & FrameBuffer ImageView 
-     *  The DRIVER Handles these IMPLICITLY:, you just need to let the DRIVER know what you are chosing now later on */
+     *  The DRIVER Handles these IMPLICITLY:, you just need to let the DRIVER know what you are chosing now later on 
+     */
 
     amVK_Array<VkSurfaceFormatKHR> tmp_surface_formats = {};
     vkGetPhysicalDeviceSurfaceFormatsKHR(PD, S, &tmp_surface_formats.n, nullptr);              tmp_surface_formats.data = new VkSurfaceFormatKHR[tmp_surface_formats.n];
@@ -97,7 +98,7 @@ void amVK_SurfaceMK2::get_SurfaceFormats(bool print) {
         surface_formats = tmp_surface_formats;
 
         if (print) {
-            LOG_LOOP_MK1("------ LIST OF SUPPORTED PRESENTATION-IMAGE FORMATS ------", i, surface_formats.n, 
+            _LOG_LOOP("------ LIST OF SUPPORTED PRESENTATION-IMAGE FORMATS ------", i, surface_formats.n, 
                 "format: " << (uint32_t)surface_formats.data[i].format << ", colorSpace: " << (uint32_t)surface_formats.data[i].colorSpace);
         }
     }
@@ -150,7 +151,7 @@ VkSurfaceFormatKHR amVK_SurfaceMK2::filter_SurfaceFormat(VkSurfaceFormatKHR what
 
     this->get_SurfaceFormats();
     
-    LOG_MK2("  [searching...] imageFormat: " << what_to_filter.format << ", imageColorSpace: " << what_to_filter.colorSpace);
+    _LOG("  [searching...] imageFormat: " << what_to_filter.format << ", imageColorSpace: " << what_to_filter.colorSpace);
 
     for (int i = 0; i < surface_formats.n; i++) {
         if ((surface_formats.data[i].format     == what_to_filter.format) &&
@@ -166,16 +167,16 @@ VkSurfaceFormatKHR amVK_SurfaceMK2::filter_SurfaceFormat(VkSurfaceFormatKHR what
         }
     }
     if (!found_it) {
-        LOG_EX("SurfaceFormat {" << VkFormat_2_String(what_to_filter.format) << ", " << VkColorSpace_2_String(what_to_filter.colorSpace) << "}.... " << "not supported." << std::endl
+        amVK_LOG_EX("SurfaceFormat {" << VkFormat_2_String(what_to_filter.format) << ", " << VkColorSpace_2_String(what_to_filter.colorSpace) << "}.... " << "not supported." << amVK::endl
             << "[Note that these 2 should also match with RenderPass's ImageFormat/ColorSpace....  so you need to configure using amVK_RenderPassMK2 stuffs]");
 
              if (found_r8g8b8a8) {                what_to_filter.format = VK_FORMAT_R8G8B8A8_SRGB; 
-                LOG("Returning \u2022" <<               VkFormat_2_String(VK_FORMAT_R8G8B8A8_SRGB)           << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");}
+                amVK_LOG("Returning \u2022" <<               VkFormat_2_String(VK_FORMAT_R8G8B8A8_SRGB)           << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");}
         else if (found_b8g8r8a8) {                what_to_filter.format = VK_FORMAT_B8G8R8A8_SRGB; 
-                LOG("Returning \u2022" <<               VkFormat_2_String(VK_FORMAT_B8G8R8A8_SRGB)           << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");}
+                amVK_LOG("Returning \u2022" <<               VkFormat_2_String(VK_FORMAT_B8G8R8A8_SRGB)           << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");}
 
         what_to_filter.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; 
-                LOG("Returning \u2022" <<      VkColorSpace_2_String(VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)      << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");
+                amVK_LOG("Returning \u2022" <<      VkColorSpace_2_String(VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)      << "\u2022 [ from amVK_SurfaceMK2::filter_SurfaceFormat() ]");
     }
 
     return what_to_filter;  /** it has been filtered & modified */
@@ -201,7 +202,7 @@ void amVK_WI_MK2::fallback_the_info(void) {
         amVK_ARRAY_IS_ELEMENT(present_modes, found_immediate, the_info.presentMode);
         if (!found_immediate) {
             this->the_info.presentMode = VK_PRESENT_MODE_FIFO_KHR; 
-            LOG("swapchain presentMode " << the_info.presentMode << " not available, using FIFO");
+            amVK_LOG("swapchain presentMode " << the_info.presentMode << " not available, using FIFO");
         }
 
     // ----------- IMAGE COUNT SUPPORTED ------------
@@ -211,20 +212,20 @@ void amVK_WI_MK2::fallback_the_info(void) {
         uint32_t target_img_cnt = the_info.minImageCount + surfaceCaps.minImageCount;
         if (target_img_cnt > surfaceCaps.maxImageCount) {
             if (the_info.minImageCount == surfaceCaps.maxImageCount) {  //This will be true only if the above if true
-                LOG("You have requested " << the_info.minImageCount << " Images. Thats the max amount this surface's capability is.");
+                amVK_LOG("You have requested " << the_info.minImageCount << " Images. Thats the max amount this surface's capability is.");
             }
             else if (the_info.minImageCount > surfaceCaps.maxImageCount) {
-                LOG("You have requested " << the_info.minImageCount << " Images. surfaceCaps.maxImageCount = " << surfaceCaps.maxImageCount);
-                LOG("We are capping it, to surfaceCaps.maxImageCount");
+                amVK_LOG("You have requested " << the_info.minImageCount << " Images. surfaceCaps.maxImageCount = " << surfaceCaps.maxImageCount);
+                amVK_LOG("We are capping it, to surfaceCaps.maxImageCount");
             }
             else if (the_info.minImageCount < surfaceCaps.maxImageCount) {
-                LOG("You have requested " << the_info.minImageCount << " Images. surfaceCaps.maxImageCount = " << surfaceCaps.maxImageCount);
-                LOG("you are safe!");
+                amVK_LOG("You have requested " << the_info.minImageCount << " Images. surfaceCaps.maxImageCount = " << surfaceCaps.maxImageCount);
+                amVK_LOG("you are safe!");
             }
 
             /** Finally set the_info.minImageCount.... \note \see Default_the_info */
-            LOG("in create_Swapchain we do,    the_info.minImageCount += surfaceCaps.minImageCount;     [\see create_Swapchain]");
-            LOG("So we are setting here        the_info.minImageCount  = surfaceCaps.maxImageCount - surfaceCaps.minImageCount");
+            amVK_LOG("in create_Swapchain we do,    the_info.minImageCount += surfaceCaps.minImageCount;     [\see create_Swapchain]");
+            amVK_LOG("So we are setting here        the_info.minImageCount  = surfaceCaps.maxImageCount - surfaceCaps.minImageCount");
             the_info.minImageCount = surfaceCaps.maxImageCount - surfaceCaps.minImageCount;
         }
 
@@ -236,10 +237,10 @@ void amVK_WI_MK2::fallback_the_info(void) {
 
         /** RenderPass filters too.... but why not make it future proof double check.... cz i dont feel like coming here and changing stuffs inside this function. */
         if (the_info.imageFormat != amVK_RP->final_imageFormat) {
-            LOG("amVK_WI_MK2.the_info.imageFormat != _amVK_RP->final_imageFormat" << std::endl << "will result in wrong colors" << "Window: " << m_windowName);
+            amVK_LOG("amVK_WI_MK2.the_info.imageFormat != _amVK_RP->final_imageFormat" << amVK::endl << "will result in wrong colors" << "Window: " << m_windowName);
         }
         if (the_info.imageColorSpace != amVK_RP->final_imageColorSpace) {
-            LOG("amVK_WI_MK2.the_info.imageColorSpace != _amVK_RP->final_imageColorSpace" << std::endl << "will result in wrong colors" << "Window: " << m_windowName);
+            amVK_LOG("amVK_WI_MK2.the_info.imageColorSpace != _amVK_RP->final_imageColorSpace" << amVK::endl << "will result in wrong colors" << "Window: " << m_windowName);
         }
 }
 
@@ -260,8 +261,8 @@ VkSwapchainKHR amVK_WI_MK2::create_Swapchain(bool check_the_info) {
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(amVK_D->PD, surface, &surfaceCaps);
         /** maxImageExtent is not How much GPU can support, its more like HOW MUCH the SURFACE actually Needs  [even tho it says CAPABILITIES] */
         extent = surfaceCaps.minImageExtent;
-        LOG("");
-        LOG("Swapchain Extent: (" << extent.width << ", " << extent.height << ")");
+        amVK_LOG("");
+        amVK_LOG("Swapchain Extent: (" << extent.width << ", " << extent.height << ")");
     }
 
     uint8_t imageCount_fix = surfaceCaps.minImageCount; /** be safe & sound */
@@ -273,10 +274,10 @@ VkSwapchainKHR amVK_WI_MK2::create_Swapchain(bool check_the_info) {
     finally: {
         vkDeviceWaitIdle(amVK_D->D);          /** a lot of people says its better to just wait for the device to be idle, but why */
         VkResult res = vkCreateSwapchainKHR(amVK_D->D, &the_info, nullptr, &swapchain);
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); LOG("vkCreateSwapchainKHR() failed"); amASSERT(true); return nullptr;}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); amVK_LOG("vkCreateSwapchainKHR() failed"); amASSERT(true); return nullptr;}
         
-        if (the_info.oldSwapchain) {LOG("Swapchain ReCreated.");}
-        else {LOG("Swapchain Created! Time TraveL....");}
+        if (the_info.oldSwapchain) {amVK_LOG("Swapchain ReCreated.");}
+        else {amVK_LOG("Swapchain Created! Time TraveL....");}
 
         /** \todo what if someone suddenly turns off imageless_framebuffer or increases the_info.minImageCount */
         post_create_swapchain();
@@ -328,7 +329,7 @@ void amVK_WI_MK2::post_create_swapchain(void) {
     if (!IMGs.alloc_called) {
         uint32_t swap_imgs_n = 0;
         vkGetSwapchainImagesKHR(amVK_D->D, swapchain, &swap_imgs_n, nullptr);
-        LOG("Swapchain Images N: " << swap_imgs_n);
+        amVK_LOG("Swapchain Images N: " << swap_imgs_n);
         
         IMGs.framebuf_n = (uint8_t) swap_imgs_n;
         IMGs.attach_n = amVK_RP->attachment_descs.n;
@@ -376,9 +377,9 @@ void amVK_WI_MK2::post_create_swapchain(void) {
 
         VkResult res = vkCreateImageView(amVK_D->D, &CI, nullptr, IMGs.i_ptr_attach(i, IMGs.swap_attach_index));
         if (res != VK_SUCCESS) {amVK_Utils::vulkan_result_msg(res);}
-        LOG_MK2("[Swapchain]_ IMGs.attachments[" << (((uint64_t)IMGs.i_ptr_attach(i, IMGs.swap_attach_index) - (uint64_t)IMGs.i_ptr_attach(0, IMGs.swap_attach_index)) / (uint64_t)8) << "]");
+        _LOG("[Swapchain]_ IMGs.attachments[" << (((uint64_t)IMGs.i_ptr_attach(i, IMGs.swap_attach_index) - (uint64_t)IMGs.i_ptr_attach(0, IMGs.swap_attach_index)) / (uint64_t)8) << "]");
     }
-    LOG_MK2("");
+    _LOG("");
 }
 
 
@@ -428,14 +429,14 @@ void amVK_WI_MK2::create_Attachments(void) {
                 viewCI.subresourceRange.aspectMask = image_layout_2_aspectMask(amVK_RP->attachment_descs[i].finalLayout);
 
                 ImageMK2 xd;
-                xd.create(&imgCI, &viewCI, amVK_D);   //Creates Image + View
+                xd.amvkCreateImage(&imgCI, &viewCI, amVK_D);   //Creates Image + View
 
                 *(IMGs.i_ptr_attach(fi, i)) = xd.VIEW;
                 *(IMGs.i_ptr_img   (fi, i)) = xd.IMG;
                 *(IMGs.i_ptr_mem   (fi, i)) = xd.MEMORY;
-                LOG_MK2("Created attachment: IMGs.attachments[" << ((fi * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + fi) << "]");
+                _LOG("Created attachment: IMGs.attachments[" << ((fi * IMGs.attach_n) + i) << "],  IMGs.images[" << ((i * IMGs.framebuf_n) + fi) << "]");
             }
-            LOG_MK2("");
+            _LOG("");
 
             ClearValues: {
                 set_RenderPassClearVals();
@@ -473,7 +474,7 @@ bool amVK_WI_MK2::destroy(bool only_cleanup_for_reCreate) {
             continue;   //Gotta skip Swapchain Images ones....
         }
         for (int fi = 0; fi < IMGs.framebuf_n; fi++) {
-          ImageMK2::destroy(
+          ImageMK2::amvkDestroyImage(
               *( IMGs.i_ptr_img   (fi, i) ),
               *( IMGs.i_ptr_attach(fi, i) ),
               *( IMGs.i_ptr_mem   (fi, i) ),
@@ -488,11 +489,11 @@ bool amVK_WI_MK2::destroy(bool only_cleanup_for_reCreate) {
       // ----------- Finally Destroy Swapchain & Free -----------
       if (!only_cleanup_for_reCreate) {
         vkDestroySwapchainKHR(amVK_D->D, swapchain, nullptr);
-        LOG("Swapchain has been Destroyed! BYE BYE!");
+        _LOG0("Swapchain has been Destroyed! BYE BYE!");
       }
       IMGs.i_free();
 
-      LOG("Framebuffers, Attachments, Images, SwapchainImages has been Destroyed!");
+      _LOG0("Framebuffers, Attachments, Images, SwapchainImages has been Destroyed!");
       return true;
     }
     else {return false;}

@@ -84,3 +84,9 @@ LEVEL-II [INTERMEDIATE]:
 > OR, if you want Cool Contrasty themes, ask [vrecusko](https://github.com/vrecusko) 😉
 
 - If you are searching on GITHUB, it Has a problem, Sometimes it won't show stuffs from BIG files when you search like vkCreateInstnace in trampoline.c
+
+- ```"files.exclude": {
+        "**/build": true
+    },
+    ```
+    this disabled 'find Definition to search for stuffs in specific folders.... **/ means workspacefolder i guess'

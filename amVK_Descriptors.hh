@@ -68,7 +68,7 @@ class amVK_DSetLayout {
         setInfo.pBindings = pBindings;
         VkResult res = vkCreateDescriptorSetLayout(amVK_D->D, &setInfo, nullptr, &_SetLayout);
 
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false;}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false;}
         else {return true;}
     }
 
@@ -125,10 +125,10 @@ class amVK_DeadPool {
 
 
     inline bool create(void) {
-        if (DPool != nullptr) { LOG_EX("Descriptor Pool [_DPool] has already been created"); return false;}
+        if (DPool != nullptr) { amVK_LOG_EX("Descriptor Pool [_DPool] has already been created"); return false;}
         
         VkResult res = vkCreateDescriptorPool(amVK_D->D, &s_CI, nullptr, &DPool);
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false;}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false;}
         else {return true;}
     }
 
@@ -171,7 +171,7 @@ class amVK_DeadPool {
 
         VkDescriptorSet Set = nullptr;
         VkResult res = vkAllocateDescriptorSets(this->amVK_D->D, &allocInfo, &Set);
-        if (res != VK_SUCCESS) {LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
         
         return Set;
     }

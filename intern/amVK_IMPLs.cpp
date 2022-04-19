@@ -1,6 +1,9 @@
+#define amVK_LOGGER_IMPLIMENTATION
+#define amVK_UTILS_IMPLIMENTATION
+#include "amVK_Logger.hh"
+#include "amVK_Utils.hh"
+
 #include "amVK_Types.hh"
-
-
 const char *flag_2_strName(amVK_DevicePreset_Flags flag) {
     switch (flag)
     {
