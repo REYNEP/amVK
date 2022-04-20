@@ -3,7 +3,7 @@ amVK is not a Renderer.... make your own using amVK, thats the Idea. amVK is jus
 </h3>
 <p align=center>MULTI-DEVICE (VkDevice) isn't supported officially, But you can work your way around....</p>
 
-## [v0.0.4a] well, it builds & works... so yay! Time Travel! 
+## [v0.0.5a] well, it builds & works... so yay! Time Travel! 
 use `python make.py`  ***or***
 ```sh
 git submodule init                 #After git clone
@@ -21,16 +21,14 @@ cmake --build ./build-x64/ --target install --config release
 
 ## ex1
 ```cpp
-#include "amVK_CX.hh"   //Doesn't Include other amVK Headers....
+#include "amVK_Instance.hh"   //Doesn't Include other amVK Headers....
 
 class RTC_amVK {
-    static inline amVK_CX amVK = amVK_CX();         /** C++17 */
-    static inline VkInstance instance = nullptr;    /** C++17 */
+    static inline amVK_Instance amVK = amVK_Instance();         /** C++17 */
     static inline VkDevice device = nullptr;        /** Single Device Support */
 
     RTC_amVK(void) {
         amVK.CreateInstance();
-        this->instance = amVK.instance;     /** amVK.CreateInstance function also returns it, tho */
 
         /** if you got Multi GPU system, check out amVK_SurfaceMK2::select_DisplayDevice() [amVK_WI.hh] */
         this->device    = new amVK_DeviceMK2(amVK_DP_GRAPHICS, NULL, 3, 0);
@@ -57,17 +55,3 @@ class RTC_amVK {
     return 0;
 };
 ```
-
-
-## Files [i dont like calling these *'modules'*]
-- `amVK_CX`: This is what you should include to ***Initialize*** amVK. *See* ***ex1*** block.
-    - Entirely dedicated to VkInstance only.... though its a ***child-class*** of amVK_IN
-    - includes `amVK_IN.hh` only
-
-- `amVK_IN`: Included in almost every amVK Files.... has some variables that stores core System info that are needed accross many amVK files, e.g. VkPhysicalDevice related info
-    - Includes: `amVK_Logger.hh`, `amVK_Utils.hh`, `amVK_Types.hh`, `amVK_Defines.hh` & `vulkan/vulkan.h`
-</br>
-
-- `amVK_Device`:
-    - Includes: `amVK_IN.hh` & `intern/amVK_Memory.hh` for now [cz MemoryMK2 is in W.I.P.]
-</br>

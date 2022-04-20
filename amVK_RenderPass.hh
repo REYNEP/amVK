@@ -1,6 +1,6 @@
 #pragma once
 
-#include "amVK_IN.hh"
+#include "amVK_INK.hh"
 #include "amVK_Device.hh"
 /** #include "amVK_WI.hh" in .cpp before \fn set_surfaceFormat */
 

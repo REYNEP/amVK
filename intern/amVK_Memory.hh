@@ -1,5 +1,5 @@
 #pragma once
-#include "amVK_IN.hh"
+#include "amVK_INK.hh"
 
 /**
  * \internal only used in \class amVK_DeviceMK2
@@ -32,8 +32,8 @@ class MemoryMK2 {
     VkPhysicalDeviceMemoryProperties *mem_props = nullptr;
 
     MemoryMK2(VkPhysicalDevice PD) : PD(PD) {  //Internally used, so no error checking, also assuming that, no Double MemoryMK2 is created on same PhysicalDevoce
-        uint32_t PD_index = HEART->PD.index(PD);
-        mem_props = &( HEART->PD.mem_props[PD_index] );
+        uint32_t PD_index = HEART->SPD.index(PD);
+        mem_props = &( HEART->SPD.mem_props[PD_index] );
     }
     ~MemoryMK2() {}
 

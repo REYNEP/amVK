@@ -6,7 +6,7 @@
  * 
  * \note For now theres no amVK_Sync.cpp everything is here....
  */
-#include "amVK_IN.hh"
+#include "amVK_INK.hh"
 #include "amVK_Device.hh"
 
 /** 

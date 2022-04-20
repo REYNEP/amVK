@@ -1,5 +1,5 @@
 #pragma once
-#include "amVK_IN.hh"
+#include "amVK_INK.hh"
 #include "amVK_Device.hh"
 
 /**

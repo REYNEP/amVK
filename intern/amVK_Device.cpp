@@ -14,7 +14,7 @@ amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur
         
         // see if user passed parameter is valid
         if (PD != nullptr) {
-            this->PD_index = HEART->PD.index(PD);
+            this->PD_index = HEART->SPD.index(PD);
             if (PD_index == UINT32_T_NULL) {
                 amVK_LOG_EX("You passed in a invalid VkPhysicalDevice pointer.... [trying to choose our own]");
             }
@@ -24,13 +24,13 @@ amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur
 
         // XD
         if (PD == nullptr) {
-            /** ---------- \requires amVK_CX::PD to have the data ---------- */
-            if (!HEART->PD.list) {HEART->load_PD_info(false, true);}
+            /** ---------- \requires amVK_Instance::PD to have the data ---------- */
+            if (!HEART->SPD.list) {HEART->load_PD_info(false, true);}
 
             /** PD.chozen gets autoChozen by 'load_PD_info' as the 2nd Param above was true */
-            PD = HEART->PD.chozen;
-            amVK_LOG("GPU SELECTED (Automatically):- "  << HEART->PD.props[HEART->PD.index(HEART->PD.chozen)].deviceName);
-            this->PD_index = HEART->PD.index(HEART->PD.chozen);
+            PD = HEART->SPD.chozen;
+            amVK_LOG("GPU SELECTED (Automatically):- "  << HEART->SPD.props[HEART->SPD.index(HEART->SPD.chozen)].deviceName);
+            this->PD_index = HEART->SPD.index(HEART->SPD.chozen);
         }
         
         // into Konfigurieren....
@@ -56,11 +56,11 @@ bool amVK_DeviceMK2::create(void) {
 
 
     amVK_LOG("VkDevice Created! Yessssss, Time Travel! \n");
-    amVK_ARRAY_PUSH_BACK(HEART->D_list) = this;
+    amVK_ARRAY_PUSH_BACK(HEART->s_DeviceList) = this;
 
 
-    if (!HEART->PD.isUsed[HEART->PD.chozen_index]) {
-         HEART->PD.isUsed[HEART->PD.chozen_index] = true;  /** \todo DOC This heavily.... after adding support for Multi Device */
+    if (!HEART->SPD.isUsed[HEART->SPD.chozen_index]) {
+         HEART->SPD.isUsed[HEART->SPD.chozen_index] = true;  /** \todo DOC This heavily.... after adding support for Multi Device */
 
          amVK_M = new MemoryMK2(this->PD);
     }
@@ -71,7 +71,7 @@ bool amVK_DeviceMK2::create(void) {
 bool amVK_DeviceMK2::destroy(void) {
     /** \todo BackUP_StackTrace.... to get written if program closes.... */
     vkDestroyDevice(this->D, nullptr);
-    HEART->D_list.erase(HEART->D_list.index(this));
+    HEART->s_DeviceList.erase(HEART->s_DeviceList.index(this));
     
     free(qCIs.data);  /** We only malloced once in calc_n_alloc() */
     return true;
@@ -97,7 +97,7 @@ VkDeviceMemory amVK_DeviceMK2::BindImageMemory(VkImage IMG, VkMemoryPropertyFlag
             img_alloc_info.memoryTypeIndex = img_mem_type;
         }
 
-        VkPhysicalDeviceMemoryProperties *mem_props =  &( HEART->PD.mem_props[ HEART->PD.index(PD)] );
+        VkPhysicalDeviceMemoryProperties *mem_props =  &( HEART->SPD.mem_props[ HEART->SPD.index(PD)] );
         int i = img_alloc_info.memoryTypeIndex;
         //amVK_LOG_EX("Memory Type[" << i << "]:- " << mem_props->memoryTypes[i].propertyFlags << "\n"
         //         << "       Heap[" << mem_props->memoryTypes[i].heapIndex << "]:- " << mem_props->memoryHeaps[mem_props->memoryTypes[i].heapIndex].flags << "      ["
@@ -207,8 +207,8 @@ void amVK_DeviceMK2::calc_n_alloc(void) {
 void amVK_DeviceMK2::set_qCIs(void) {
     _LOG("amVK_DeviceMK2::set_qCIs()");
 
-    uint32_t PD_index = HEART->PD.index(this->PD);
-    amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
+    uint32_t PD_index = HEART->SPD.index(this->PD);
+    amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->SPD.qFamily_lists[PD_index];
 
 
 
@@ -370,8 +370,8 @@ void amVK_DeviceMK2::set_exts(void) {
 void amVK_DeviceMK2::set_ftrs(void) {
     _LOG("amVK_DeviceMK2::set_ftrs");
 
-    uint32_t PD_index = HEART->PD.index(this->PD);
-    VkPhysicalDeviceFeatures sup_ftrs = HEART->PD.features[PD_index];
+    uint32_t PD_index = HEART->SPD.index(this->PD);
+    VkPhysicalDeviceFeatures sup_ftrs = HEART->SPD.features[PD_index];
 
     // ----------- Main MODs ------------
     modifications:

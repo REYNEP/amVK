@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "amVK_IN.hh"
+#include "amVK_INK.hh"
 #include "amVK_Device.hh"
 #include "amVK_RenderPass.hh"
 

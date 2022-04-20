@@ -2,12 +2,12 @@
 
 /** 
  * As of 2022, MAR 3, amVK moved to using pragma, 
- * however amVK_IN.hh checks if amVK_DEVICE_HH is defined or not. so we just kept the Include Guards 
+ * however amVK_Instance.hh checks if amVK_DEVICE_HH is defined or not. so we just kept the Include Guards 
  */
 #ifndef amVK_DEVICE_HH
 #define amVK_DEVICE_HH
 class amVK_DeviceMK2;
-#include "amVK_IN.hh"
+#include "amVK_Instance.hh"
 
 
 

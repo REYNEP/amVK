@@ -69,7 +69,7 @@ add_subdirectory(extern)
 #-----------------------------------------------------------------------------
 # The Final Target
 add_library(lib-amVK 
-  intern/amVK_CX.cpp
+  intern/amVK_Instance.cpp
   intern/amVK_Device.cpp
   intern/amVK_WI.cpp 
   intern/amVK_RenderPass.cpp 
@@ -78,7 +78,7 @@ add_library(lib-amVK
   intern/amVK_IMPLs.cpp
 
   #so that Intellisense Works.... + Compilation boost-up
-  amVK_CX.hh
+  amVK_Instance.hh
   amVK_Device.hh
   amVK_Types.hh
   amVK_WI.hh

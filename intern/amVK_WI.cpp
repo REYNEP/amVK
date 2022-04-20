@@ -29,8 +29,8 @@ amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPass
 
 /** \see \fn amVK_SurfaceMK2::is_presenting_sup() */
 uint32_t amVK_SurfaceMK2::present_qFam(void) {
-    uint32_t PD_index = HEART->PD.index(PD);
-    amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->PD.qFamily_lists[PD_index];
+    uint32_t PD_index = HEART->SPD.index(PD);
+    amVK_Array<VkQueueFamilyProperties> qFAM_list = HEART->SPD.qFamily_lists[PD_index];
 
     VkBool32 sup = false;
     for (int i = 0, lim = qFAM_list.n; i < lim; i++) {
@@ -44,11 +44,11 @@ uint32_t amVK_SurfaceMK2::present_qFam(void) {
 
 
 VkPhysicalDevice amVK_SurfaceMK2::select_DisplayDevice(void) {
-    if (!HEART->PD.list) {HEART->load_PD_info(false, true);}
+    if (!HEART->SPD.list) {HEART->load_PD_info(false, true);}
 
     /** we are gonna choose a GPU that supports presenting to the surface.... */
-    VkPhysicalDevice *PD_list = HEART->PD.list;
-    uint32_t PD_n = HEART->PD.n;
+    VkPhysicalDevice *PD_list = HEART->SPD.list;
+    uint32_t PD_n = HEART->SPD.n;
 
     /** The list is already sorted.... */
     for (int i = 0; i < PD_n; i++) {
