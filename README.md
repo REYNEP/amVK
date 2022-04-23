@@ -55,3 +55,5 @@ class RTC_amVK {
     return 0;
 };
 ```
+
+renderer example [amVK_RendererT1.hh](intern/amVK_RendererT1.hh)

@@ -26,6 +26,7 @@ option(amVK_DO_LOG "Turn on GENERAL Logging... e.g. vkCreateInsntace, vkCreateDe
 
 set(INC
   ${PROJECT_SOURCE_DIR}
+  ${PROJECT_SOURCE_DIR}/include
   ${PROJECT_SOURCE_DIR}/intern
   ${PROJECT_SOURCE_DIR}/extern
   ${PROJECT_SOURCE_DIR}/VK/include    #Safe, cz we switched to SubModule
@@ -76,17 +77,18 @@ add_library(lib-amVK
   intern/amVK_Pipeline.cpp
 
   intern/amVK_IMPLs.cpp
+  intern/amVK_RendererT1.hh
+
+  include/amVK_Types.hh
+  include/amVK_CMD.hh
+  include/amVK_Sync.hh
 
   #so that Intellisense Works.... + Compilation boost-up
   amVK_Instance.hh
   amVK_Device.hh
-  amVK_Types.hh
   amVK_WI.hh
   amVK_RenderPass.hh
   amVK_Pipeline.hh
-  amVK_CMD.hh
-  amVK_Sync.hh
-  amVK_RendererT1.hh
 )
 target_include_directories(lib-amVK PUBLIC ${INC})
 target_compile_definitions(lib-amVK PUBLIC ${DEF})
