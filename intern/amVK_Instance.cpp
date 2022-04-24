@@ -11,11 +11,11 @@
  * APRIL 21, 2022,    v0.0.5a (IDK, what I am doing anymore.... GSoC is gone for me....)
  */
 
-VkInstance amVK_Instance::create_Instance(void) {
-    _LOG("amVK_Instance::create_Instance");
+VkInstance amVK_Instance::Create_VkInstance(void) {
+    _LOG("amVK_Instance::Create_VkInstance");
 
     if (s_Instance != nullptr) { 
-        amVK_LOG_EX("amVK_IN::instance isn't nullptr....");
+        amVK_LOG_EX("amVK_IN::s_Instance isn't nullptr....");
         return nullptr;
     }
 
@@ -28,14 +28,13 @@ VkInstance amVK_Instance::create_Instance(void) {
     // Moved to CONSTRUCTOR....
     _LOG_LOOP("Enabled Instance Extensions:- ", i, ICS.enabled_iExts.size(), ICS.enabled_iExts[i]);
 
-
     // ----------- CreateInfo for vkCreateInstance ------------
-    VkInstanceCreateInfo the_info{};
-    the_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    the_info.pApplicationInfo = &(amVK_Instance::s_VkAppInfo);
+    VkInstanceCreateInfo the_info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0,
+        &(amVK_Instance::s_VkAppInfo),
+        0, nullptr,
+        static_cast<uint32_t>(ICS.enabled_iExts.size()), ICS.enabled_iExts.data
+    };
     //the_info.pNext = nullptr;  the_info.flags [KHR Says 'reserved for future'] [No need to care about these 2 for now]
-    the_info.enabledExtensionCount = static_cast<uint32_t>(ICS.enabled_iExts.size());
-    the_info.ppEnabledExtensionNames = ICS.enabled_iExts.data;
 
 
     // ----------- ValidationLayers for vkCreateInstance ------------
@@ -70,7 +69,7 @@ VkInstance amVK_Instance::create_Instance(void) {
 
 
 
-bool amVK_Instance::destroy_Instance(void) {
+bool amVK_Instance::Destroy_VkInstance(void) {
     if (s_Instance == nullptr) {
         return false;
     }

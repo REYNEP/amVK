@@ -1,3 +1,187 @@
+<h1 align=center> amVK_RenderPass </h1>
+
+---
+
+> <h3 align=center> "its more about the SubPasses and not about 'RenderPass' hype that you get from hearing the name" </h3>
+
+So, let's start with the story & the motivation to actually have something like `RenderPass`. unlike *PC GPUs,* mobile GPUs has the concept of tiled rendering.... so simply, its rendered 1 tile after 1 tile.
+
+📝Why? bcz, accessing memory on mobile devices can be constly... so we instead could work on smaller sized areas at once. [NOTE: many gpus also has a small amount of shading cores]
+
+
+So tiles... 🤔 how'd that affect the pipeline and shaders?
+
+> For every different kinda object, if we have different shareds, we'll have different pipelines. Every pipeline must have ***Vertex Shader & Fragment Shader....*** we know that, right? 
+
+SubPass isn't about ***Vertex Shader*** or ***Tessellation*** or ***Geometry Shaders.*** Its about ***Fragment Shader***  & ***Post/Pre Fragment Operation*** stuffs. How? its mainly about the Fragment Shader *(big)* inputs, such as images & other attachments, 
+
+Pipeline is created based on a RenderPass, & the FrameBuffer (from Swapchain) has to be created for that same RenderPass.
+
+- RenderPass is about Subpasses, e.g. A renderpass may have multiple subpasses
+- Subpass 
+
+
+
+
+
+
+
+
+
+https://www.youtube.com/watch?v=ch6161wvME8&t=920s
+
+ * WHY Ties to Pipeline: https://stackoverflow.com/a/55992644   \todo Go Furthur, Invertigator....
+ * Tiled-architecture GPUs need to "load" image\buffer from general-purpose RAM to "on-chip memory". When they are done they "store" their results back to RAM.
+
+
+
+\note Attachments are what Ties RENDERPASS & Framebuffers Together
+ * 
+ * attachment_refs are How subpass knows about the Attachments    & ties with the_info.pAttachments index
+* [vblanco20-1] [from: https://vkguide.dev/docs/chapter-1/vulkan_renderpass/]
+ *     In Vulkan, all of the rendering happens inside a VkRenderPass. 
+ *     It is not possible to do rendering commands outside of a renderpass, 
+ *     but it is possible to do   Compute commands without them.
+ * 
+ * MUST-READ: https://gpuopen.com/learn/vulkan-renderpasses/      [They explain whats actually goin on, Explains SubPasses]
+ * 
+ *     The renderpass is a concept that only exists in Vulkan. 
+ *     It’s there because it allows the driver to know more about the state of the images you render.  
+ *     [HOW? Bcz of SubPasses, (thats only if... you do use them)]
+ *        Now whaat can someone mean by 'state of the images'?   
+ *        well if you have ever deffered rendering.... or Multiple Passes in Blender.... like Mist, Diffuse, Specular, Volume
+ *        its like, in OpenGL People used to implement multiple FRAMEBUFFERS or IMAGEs for each of these Passes.... but this theory of PASSES is slightly by a bit different
+ *          cz this one usually has like DEPTH or STENCIL as the other Passes.... then only if the Game Engine author wants the other Passes like from blender to be like that....
+ *        
+ *        Now each of these passes can depend on each other.... so comes again the idea of States.... if a pass is Done or is in Rendering process.... thats it, yeah....
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+</br>
+
+
+
+
+
+
+
+
+
 Here we goooooo!!!!!
 The new idea of Vulkan.... which was originally introduced by Mobile [Tiled_GPU_Rendering] hardware ppl! But can also be used for MultiPass/Deferred-Rendering
 I'm gonna start at 'Why RenderPass is not a bad idea | Why OpenGL/DirectX way of things weren't solid/cool enough' first!

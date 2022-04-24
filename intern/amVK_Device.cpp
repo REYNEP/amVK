@@ -1,7 +1,11 @@
 #define amVK_DEVICE_CPP
 #include "amVK_Device.hh"
 
-
+/**
+  \│/  ┌─┐┌─┐┌┐┌┌─┐┌┬┐┬─┐┬ ┬┌─┐┌┬┐┌─┐┬─┐
+  ─ ─  │  │ ││││└─┐ │ ├┬┘│ ││   │ │ │├┬┘
+  /│\  └─┘└─┘┘└┘└─┘ ┴ ┴└─└─┘└─┘ ┴ └─┘┴└─
+ */
 amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur_exts_n, uint32_t ur_qCIs_n, VkPhysicalDevice PD) : flag(DevicePreset), PD(PD) {
     /** Pre-Cautions.... */
         // amVK Support for now
@@ -44,11 +48,16 @@ amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur
     this->konfigurieren();
 }
 
-bool amVK_DeviceMK2::create(void) {
+/**
+  \│/  ╦  ╦┬┌─╔╦╗┌─┐┬  ┬┬┌─┐┌─┐
+  ─ ─  ╚╗╔╝├┴┐ ║║├┤ └┐┌┘││  ├┤ 
+  /│\   ╚╝ ┴ ┴═╩╝└─┘ └┘ ┴└─┘└─┘
+ */
+bool amVK_DeviceMK2::Create_VkDevice(void) {
     VkDeviceCreateInfo the_info = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, nullptr, 0,
         qCIs.neXt, qCIs.data,          0, nullptr, /* [Deprecated] Layer */
         exts.neXt, exts.data,
-        &req_ftrs
+        &m_req_ftrs
     };
 
     VkResult res = vkCreateDevice(this->PD, &the_info, nullptr, &this->D );
@@ -68,7 +77,7 @@ bool amVK_DeviceMK2::create(void) {
     return true;
 }
 
-bool amVK_DeviceMK2::destroy(void) {
+bool amVK_DeviceMK2::Destroy_VkDevice(void) {
     /** \todo BackUP_StackTrace.... to get written if program closes.... */
     vkDestroyDevice(this->D, nullptr);
     HEART->s_DeviceList.erase(HEART->s_DeviceList.index(this));
@@ -161,7 +170,11 @@ VkDeviceMemory amVK_DeviceMK2::BindBufferMemory(VkBuffer BUF, VkMemoryPropertyFl
 
 
 
-
+/**
+  \│/  ┌┬┐┌─┐┬  ┬  ┌─┐┌─┐
+  ─ ─  │││├─┤│  │  │ ││  
+  /│\  ┴ ┴┴ ┴┴─┘┴─┘└─┘└─┘
+ */
 void amVK_DeviceMK2::calc_n_alloc(void) {
     _LOG("amVK_DeviceMK2::calc_n_alloc()");
 
@@ -169,14 +182,14 @@ void amVK_DeviceMK2::calc_n_alloc(void) {
     configure_preMod_settings_based_on_presets:
     {
         if (this->flag & amVK_DP_GRAPHICS) {
-            req_Queues += VK_QUEUE_GRAPHICS_BIT;
+            m_req_Queues += VK_QUEUE_GRAPHICS_BIT;
             qCIs.n++;
 
-            req_exts.VK_KHR_SWAPCHAIN = true;
+            m_req_exts.VK_KHR_SWAPCHAIN = true;
             exts.n++;
         }
         if (this->flag & amVK_DP_COMPUTE) {
-            req_Queues += VK_QUEUE_COMPUTE_BIT;
+            m_req_Queues += VK_QUEUE_COMPUTE_BIT;
             qCIs.n++;
         }
     }
@@ -186,8 +199,8 @@ void amVK_DeviceMK2::calc_n_alloc(void) {
     memory_allocation_malloc:
     {
         /* Mixed with Configuration above
-            if (req_Queues & VK_QUEUE_GRAPHICS_BIT) { qCIs.n++; }
-            if (req_Queues & VK_QUEUE_COMPUTE_BIT)  { qCIs.n++; } 
+            if (m_req_Queues & VK_QUEUE_GRAPHICS_BIT) { qCIs.n++; }
+            if (m_req_Queues & VK_QUEUE_COMPUTE_BIT)  { qCIs.n++; } 
         */
 
         void *test = malloc(qCIs.n * sizeof(VkDeviceQueueCreateInfo)
@@ -229,38 +242,38 @@ void amVK_DeviceMK2::set_qCIs(void) {
             if      (qFLAGS == VK_QUEUE_GRAPHICS_BIT) { dedicated_qFAM.graphics = i;} 
             else if (qFLAGS == VK_QUEUE_COMPUTE_BIT)  { dedicated_qFAM.compute  = i;}
 
-            if (_graphics_qFAM == 0xFFFFFFFF) {    if (qFLAGS & VK_QUEUE_GRAPHICS_BIT) {_graphics_qFAM = i;}   }
-            if (_compute_qFAM == 0xFFFFFFFF)  {    if (qFLAGS & VK_QUEUE_COMPUTE_BIT)  { _compute_qFAM = i;}   }
+            if (m_graphics_qFAM == 0xFFFFFFFF) {    if (qFLAGS & VK_QUEUE_GRAPHICS_BIT) {m_graphics_qFAM = i;}   }
+            if ( m_compute_qFAM == 0xFFFFFFFF) {    if (qFLAGS & VK_QUEUE_COMPUTE_BIT)  { m_compute_qFAM = i;}   }
         }
 
-        if (dedicated_qFAM.graphics != 0xFFFFFFFF) { _graphics_qFAM = dedicated_qFAM.graphics; }
-        if (dedicated_qFAM.compute != 0xFFFFFFFF)  {  _compute_qFAM = dedicated_qFAM.compute;  }
+        if (dedicated_qFAM.graphics != 0xFFFFFFFF) { m_graphics_qFAM = dedicated_qFAM.graphics; }
+        if (dedicated_qFAM.compute != 0xFFFFFFFF)  {  m_compute_qFAM = dedicated_qFAM.compute;  }
     }
 
 
     // ----------- Main MODs ------------
     modifications:
     {
-        if (req_Queues & VK_QUEUE_GRAPHICS_BIT) { //amVK_DevicePreset_Graphics
-            if (_graphics_qFAM == 0xFFFFFFFF) {amVK_LOG_EX("Couldn't Find any GRAPHICS qFamily"); konfigurieren_err = true;}
+        if (m_req_Queues & VK_QUEUE_GRAPHICS_BIT) { //amVK_DevicePreset_Graphics
+            if (m_graphics_qFAM == 0xFFFFFFFF) {amVK_LOG_EX("Couldn't Find any GRAPHICS qFamily"); konfigurieren_err = true;}
             amVK_ARRAY_PUSH_BACK(qCIs) = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
                 0,        /** flags */
-                _graphics_qFAM,
+                m_graphics_qFAM,
                 1,        /** queueCount */
-                &_qPRIORITIES
+                &m_qPRIORITIES
             };
         }
-        if (req_Queues & VK_QUEUE_COMPUTE_BIT) {  //amVK_DevicePreset_Compute
-            if (!_compute_qFAM == 0xFFFFFFFF) {amVK_LOG_EX("Couldn't Find any COMPUTE qFamily"); konfigurieren_err = true;}
+        if (m_req_Queues & VK_QUEUE_COMPUTE_BIT) {  //amVK_DevicePreset_Compute
+            if (!m_compute_qFAM == 0xFFFFFFFF) {amVK_LOG_EX("Couldn't Find any COMPUTE qFamily"); konfigurieren_err = true;}
             amVK_ARRAY_PUSH_BACK(qCIs) = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
                 0,        /** flags */
-                _compute_qFAM,
+                m_compute_qFAM,
                 1,        /** queueCount */
-                &_qPRIORITIES
+                &m_qPRIORITIES
             };
         }
     }
@@ -309,7 +322,7 @@ void amVK_DeviceMK2::set_exts(void) {
     find_xd: 
     {
         uint32_t last_found = 0;
-        bool *sup_exts_p = reinterpret_cast<bool *> (&sup_exts);
+        bool *sup_exts_p = reinterpret_cast<bool *> (&m_sup_exts);
 
         /** this is better than doing a HashMap, if xd.data is sorted.... */
 
@@ -339,11 +352,11 @@ void amVK_DeviceMK2::set_exts(void) {
 
     find_req_exts:
     {
-        const bool *req_exts_p = reinterpret_cast<bool *> (&req_exts);
-        const bool *sup_exts_p = reinterpret_cast<bool *> (&sup_exts);
+        const bool *req_exts_p = reinterpret_cast<bool *> (&m_req_exts);
+        const bool *sup_exts_p = reinterpret_cast<bool *> (&m_sup_exts);
         bool result_success = true;
 
-        for (int i = 0; i < sizeof(req_exts); i++) {
+        for (int i = 0; i < sizeof(m_req_exts); i++) {
             if (req_exts_p[i] && !sup_exts_p[i]) {
                 amVK_LOG_EX("Device EXT: \u0027" << _deviceExtensions_sorted[i] << "isn't supported.... but is needed by chozen amVK_DevicePresetFlags");
                 result_success = false;
@@ -355,7 +368,7 @@ void amVK_DeviceMK2::set_exts(void) {
     // ----------- Main MODs ------------
     modifications:
     {
-        if (req_exts.VK_KHR_SWAPCHAIN) {
+        if (m_req_exts.VK_KHR_SWAPCHAIN) {
             amVK_ARRAY_PUSH_BACK(exts) = "VK_KHR_swapchain";
         }
     }
@@ -371,14 +384,14 @@ void amVK_DeviceMK2::set_ftrs(void) {
     _LOG("amVK_DeviceMK2::set_ftrs");
 
     uint32_t PD_index = HEART->SPD.index(this->PD);
-    VkPhysicalDeviceFeatures sup_ftrs = HEART->SPD.features[PD_index];
+    VkPhysicalDeviceFeatures *sup_ftrs = &HEART->SPD.features[PD_index];
 
     // ----------- Main MODs ------------
     modifications:
     {
         if (this->flag & amVK_DP_3DEngine) {
-            if (sup_ftrs.geometryShader) req_ftrs.geometryShader = true;
-            if (sup_ftrs.tessellationShader) req_ftrs.tessellationShader = true;
+            if (sup_ftrs->geometryShader) m_req_ftrs.geometryShader = true;
+            if (sup_ftrs->tessellationShader) m_req_ftrs.tessellationShader = true;
         }
 
         /** Sparse \todo */

@@ -122,7 +122,7 @@ class amVK_Instance {
   static inline amVK_DeviceMK2               *s_ActiveD = nullptr;
   static inline VkInstance                   s_Instance = nullptr;
   static inline VkApplicationInfo           s_VkAppInfo = {};
-  vec_amVK_Device                          s_DeviceList = {};
+  vec_amVK_Device                          s_DeviceList = {};       /** not a static one :D */
   loaded_PD_info_internal                           SPD = {};       /** call \fn load_PD_info() before, always used as 'HEART->PD' */
   instance_creation_settings_internal               ICS = {};
 
@@ -131,8 +131,8 @@ class amVK_Instance {
    * vkCreateInstance
    * call \fn add_InstanceExt() before this
    */
-  VkInstance create_Instance(void);
-       bool destroy_Instance(void);
+  VkInstance Create_VkInstance(void);
+       bool Destroy_VkInstance(void);
 
   bool check_VkSupport(void) { return true; }; /** \todo */
   void set_VkApplicationInfo(VkApplicationInfo *appInfo = nullptr);

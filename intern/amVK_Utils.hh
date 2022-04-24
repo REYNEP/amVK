@@ -36,6 +36,7 @@ struct amVK_Array {
   //filled
   inline size_t size(void) {return static_cast<size_t>(neXt);}
   inline size_t size_filled(void) {return static_cast<size_t>(neXt);}
+  inline bool     is_filled(void) {return neXt >= n;}
 
   //size that can fit
   inline size_t size_alloced(void) {return static_cast<size_t>(n);}

@@ -90,7 +90,7 @@ typedef struct amVK_BExtensions__ {
   bool VK_KHR_VIDEO_QUEUE = false;
 
   bool VK_EXT_MEMORY_BUDGET = false;
-} amVK_DeviceExtensionsBools;
+} amVK_DeviceExtsBools;
 
 
 

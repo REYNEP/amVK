@@ -1,5 +1,61 @@
-#define amVK_RENDERPASS_CPP
+#include "amVK_WI.hh"
 #include "amVK_RenderPass.hh"
+
+/**
+  \│/  ┌─┐┬─┐┌─┐┌─┐┌┬┐┌─┐
+  ─ ─  │  ├┬┘├┤ ├─┤ │ ├┤ 
+  /│\  └─┘┴└─└─┘┴ ┴ ┴ └─┘
+ */
+amVK_RenderPassMK2::amVK_RenderPassMK2(amVK_SurfaceMK2 *S, amVK_DeviceMK2 *D, uint8_t attachments_n, uint8_t subpasses_n) {
+     m_attachment_descs.n = attachments_n;
+      m_attachment_refs.n = attachments_n;
+            m_subpasses.n = subpasses_n;
+            
+    if (D == nullptr) {amVK_SET_activeD(amVK_D);}
+    else {amVK_CHECK_DEVICE(D, amVK_D);}
+    amASSERT(!S);
+
+    demoSurfaceExt = S;
+    if (S->S == nullptr) {
+        amVK_LOG_EX("[param amVK_SurfaceMK2 S->S] is nullptr");
+        demoSurfaceExt = nullptr;
+    }
+    if (HEART->SPD.index(S->PD) == UINT32_T_NULL) {
+        amVK_LOG_EX("[param amVK_SurfaceMK2 S->PD] is nullptr");
+        demoSurfaceExt = nullptr;
+    }
+    if (S->PD != D->PD) {
+        amVK_LOG_EX("[param amVK_SurfaceMK2 S->PD != D->PD]");
+        demoSurfaceExt = nullptr;
+    }
+}
+
+/** called by \fn Create_RenderPass(), after \fn konfigurieren() */
+bool amVK_RenderPassMK2::_createRenderPass(void) {
+    VkRenderPassCreateInfo the_info = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, nullptr, 0,
+        m_attachment_descs.n, m_attachment_descs.data,
+               m_subpasses.n, m_subpasses.data,
+        0, nullptr      /** SubpassDependency */
+    };
+
+    VkResult res = vkCreateRenderPass(amVK_D->D, &the_info, nullptr, &RP);
+
+    if (res) { amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res) << "vkCreateRenderPass() failed!"); return false; }
+    _LOG0("RenderPass created! Yes, Time TRAVEL!!!!");
+    return true;
+}
+
+bool amVK_RenderPassMK2::Destroy_RenderPass(void) {
+    vkDestroyRenderPass(amVK_D->D, RP, nullptr);
+    if(is_malloced) {free(m_attachment_descs.data);}
+    return true;
+}
+
+
+
+
+
+
 
 /**
   \│/  ┌┬┐┌─┐┬  ┬  ┌─┐┌─┐
@@ -7,42 +63,24 @@
   /│\  ┴ ┴┴ ┴┴─┘┴─┘└─┘└─┘
  */
 void amVK_RenderPassMK2::calc_n_alloc(void) {
-    if (color_attachment) {attachment_descs.n++; attachment_refs.n++;}
-    if (depth_attachment) {attachment_descs.n++; attachment_refs.n++;}
-    if (single_subpass) {subpasses.n++;}
+    if (color_attachment) {m_attachment_descs.n++; m_attachment_refs.n++;}
+    if (depth_attachment) {m_attachment_descs.n++; m_attachment_refs.n++;}
+    if (single_subpass)          {m_subpasses.n++;}
 
     memory_allocation_malloc:
     {
-        if (attachment_descs.data != nullptr) {free(attachment_descs.data);}
+        if (m_attachment_descs.data != nullptr) {free(m_attachment_descs.data);}
 
-        void *test = malloc(attachment_descs.n * sizeof(VkAttachmentDescription)
-                           +attachment_refs.n * sizeof(VkAttachmentReference)
-                           +subpasses.n *sizeof(VkSubpassDescription));
+        void *test = malloc(m_attachment_descs.n * sizeof(VkAttachmentDescription)
+                           +m_attachment_refs.n * sizeof(VkAttachmentReference)
+                           +m_subpasses.n *sizeof(VkSubpassDescription));
 
-       attachment_descs.data = static_cast   <VkAttachmentDescription *> (test);
-        attachment_refs.data = reinterpret_cast<VkAttachmentReference *> (attachment_descs.data + attachment_descs.n);
-              subpasses.data = reinterpret_cast <VkSubpassDescription *> ( attachment_refs.data + attachment_refs.n);
+       m_attachment_descs.data = static_cast   <VkAttachmentDescription *> (test);
+        m_attachment_refs.data = reinterpret_cast<VkAttachmentReference *> (m_attachment_descs.data + m_attachment_descs.n);
+              m_subpasses.data = reinterpret_cast <VkSubpassDescription *> ( m_attachment_refs.data + m_attachment_refs.n);
 
         is_malloced = true;
     }
-}
-
-bool amVK_RenderPassMK2::clean_mods(void) {
-    if(is_malloced) {free(attachment_descs.data);}
-    return true;
-}
-
-/**
-  \│/  ┌─┐┬ ┬┬─┐┌─┐┌─┐┌─┐┌─┐╔═╗┌─┐┬─┐┌┬┐┌─┐┌┬┐
-  ─ ─  └─┐│ │├┬┘├┤ ├─┤│  ├┤ ╠╣ │ │├┬┘│││├─┤ │ 
-  /│\  └─┘└─┘┴└─└  ┴ ┴└─┘└─┘╚  └─┘┴└─┴ ┴┴ ┴ ┴ 
- */
-#include "amVK_WI.hh"
-void amVK_RenderPassMK2::set_surfaceFormat(void) {
-    VkSurfaceFormatKHR _final = demoSurfaceExt->filter_SurfaceFormat({final_imageFormat, final_imageColorSpace});
-
-    final_imageFormat = _final.format;
-    final_imageColorSpace = _final.colorSpace;
 }
 
 /**
@@ -55,9 +93,11 @@ void amVK_RenderPassMK2::set_attachments(void) {
    * █▀▀ █▀█ █░░ █▀█ █▀█  ▄▀█ ▀█▀ ▀█▀ ▄▀█ █▀▀ █░█ █▀▄▀█ █▀▀ █▄░█ ▀█▀ 
    * █▄▄ █▄█ █▄▄ █▄█ █▀▄  █▀█ ░█░ ░█░ █▀█ █▄▄ █▀█ █░▀░█ ██▄ █░▀█ ░█░ 
      */
-    amVK_ARRAY_PUSH_BACK(attachment_descs) = {0,   /** [.flags] - not needed for now */
+    demoSurfaceExt->filter_SurfaceFormat();
+    
+    amVK_ARRAY_PUSH_BACK(m_attachment_descs) = {0,   /** [.flags] - not needed for now */
         /** [.format]       - should be linked with/same as swapchainCI.imageFormat */
-        final_imageFormat,
+        demoSurfaceExt->final_imageFormat,
 
         /** [.samples]
          * OVERALL MultiSample Count... e.g. MSAA x8 MSAA x4    from your good ol' games 
@@ -90,7 +130,7 @@ void amVK_RenderPassMK2::set_attachments(void) {
    * █▀▄ █▀▀ █▀█ ▀█▀ █░█  ▄▀█ ▀█▀ ▀█▀ ▄▀█ █▀▀ █░█ █▀▄▀█ █▀▀ █▄░█ ▀█▀ 
    * █▄▀ ██▄ █▀▀ ░█░ █▀█  █▀█ ░█░ ░█░ █▀█ █▄▄ █▀█ █░▀░█ ██▄ █░▀█ ░█░ 
      */
-    if (depth_attachment) { amVK_ARRAY_PUSH_BACK(attachment_descs) = {0,
+    if (depth_attachment) { amVK_ARRAY_PUSH_BACK(m_attachment_descs) = {0,
         VK_FORMAT_D32_SFLOAT, samples,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,       /** FOR: depth */
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,   /** FOR: stencil */
@@ -123,7 +163,7 @@ void amVK_RenderPassMK2::set_attachment_refs(void) {
    * █▀▀ █▀█ █░░ █▀█ █▀█  ▄▀█ ▀█▀ ▀█▀ ▄▀█ █▀▀ █░█ █▀▄▀█ █▀▀ █▄░█ ▀█▀ 
    * █▄▄ █▄█ █▄▄ █▄█ █▀▄  █▀█ ░█░ ░█░ █▀█ █▄▄ █▀█ █░▀░█ ██▄ █░▀█ ░█░ 
      */
-    amVK_ARRAY_PUSH_BACK(attachment_refs) = { 
+    amVK_ARRAY_PUSH_BACK(m_attachment_refs) = { 
         color_index, /** [.attachment]    - index number of VkRenderPassCreateInfo.pAttachments that this References to */
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
         /** 
@@ -143,7 +183,7 @@ void amVK_RenderPassMK2::set_attachment_refs(void) {
      */
     if (depth_attachment) {
         depth_index = refs_done;
-        amVK_ARRAY_PUSH_BACK(attachment_refs) = {depth_index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+        amVK_ARRAY_PUSH_BACK(m_attachment_refs) = {depth_index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
     }
 }
 
@@ -156,14 +196,59 @@ void amVK_RenderPassMK2::set_subpasses(void) {
      * Now that our main image target is defined, we need to add a subpass that will render into it.
      * we are going to create 1 subpass, which is the minimum you can do
      */
-    VkSubpassDescription subpass = {};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &attachment_refs[color_index];
+    amVK_ARRAY_PUSH_BACK(m_subpasses) = {
+        0,                                      /** .flag */
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        0, nullptr,                             /** Input Attachments */
+        1, &m_attachment_refs[color_index],     /** Color Attachment  */
+        nullptr, nullptr,                       /** Depth & Resolve   */
+        0, nullptr                              /** Preserved Attach. */
+    };
 
+    VkSubpassDescription *xD = m_subpasses.data + m_subpasses.neXt - 1;
     if (depth_attachment) {
-        subpass.pDepthStencilAttachment = &attachment_refs[depth_index];
+        xD->pDepthStencilAttachment = &m_attachment_refs[depth_index];
     }
+}
 
-    amVK_ARRAY_PUSH_BACK(subpasses) = subpass;
+
+
+
+
+
+
+
+
+/** \todo FIX this.... i think only 1/2 flag will work in this way  used for amVK_WI_MK2::create_framebufs & create_attachment */
+VkImageUsageFlags image_layout_2_usageflags(VkImageLayout finalLayout) {
+    switch (finalLayout)
+    {
+        /** These might means smth else... that what I thought these means... */
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:    return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:    return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:                      return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:                       return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:              return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:               return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+        case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:                               return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
+}
+
+/** aspectMask is similar to the usageFlags from the image. It’s about what this image is used for. */
+VkImageAspectFlags image_layout_2_aspectMask(VkImageLayout finalLayout) {
+    switch (finalLayout)
+    {
+        /** These might means smth else... that what I thought these means... */
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL:    return VK_IMAGE_ASPECT_DEPTH_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL:    return VK_IMAGE_ASPECT_DEPTH_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:                      return VK_IMAGE_ASPECT_DEPTH_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:                       return VK_IMAGE_ASPECT_DEPTH_BIT;
+
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:              return VK_IMAGE_ASPECT_DEPTH_BIT;
+        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:               return VK_IMAGE_ASPECT_DEPTH_BIT;
+
+        case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:                               return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
 }
