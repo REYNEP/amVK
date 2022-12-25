@@ -36,6 +36,18 @@
  * If you found my Explanation COMPLEX:- then read this:- https://stackoverflow.com/a/51716660
  * 
  * an Descriptor Array Example:- http://kylehalladay.com/blog/tutorial/vulkan/2018/01/28/Textue-Arrays-Vulkan.html
+ * 
+ * 
+ * 
+ * 
+ * 1. Create DescriptorPool
+ * 2. Create DescriptorSetLayout
+ * 3. Allocate DescriptorSet
+ * 4. Update DescriptorSet/s  (Copy from another DescriptorSet / WriteNewOne)
+ * 5. vkCmdBindDescriptorSets  or create a VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT if you wanna Update same DSet later on..
+ * 
+ * For In-Depth: https://zhangdoa.com/posts/so-many-descriptors-in-vulkan
+ * This guy explains it really fucking cool
  */
 
 
@@ -49,33 +61,34 @@
  */
 class amVK_DSetLayout {
   public:
-    VkDescriptorSetLayout _SetLayout = nullptr;
-    inline VkDescriptorSetLayout& get(void) {return _SetLayout;}
+    VkDescriptorSetLayout L = nullptr;
 
-    static inline VkDescriptorSetLayoutCreateInfo setInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 0,
+    static inline VkDescriptorSetLayoutCreateInfo setInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, nullptr, 
+        0,          /** flags */
         0, nullptr  /** bindingCount, pBindings */
     };
 
-    amVK_DSetLayout(void) {}
-    amVK_DSetLayout(VkDescriptorSetLayout SetLayout) : _SetLayout(SetLayout) {}
+     amVK_DSetLayout(void) {}
+     amVK_DSetLayout(VkDescriptorSetLayout SL) : L(SL) {}
     ~amVK_DSetLayout(void) {}
 
     /**
      * \param amVK_D: has to match with the RTC_DeadPool one, when you gonna create RTC_DSET
      */
-    bool create(amVK_DeviceMK2 *amVK_D, uint32_t n, const VkDescriptorSetLayoutBinding *pBindings) {
+    bool Create(amVK_DeviceMK2 *amVK_D, uint32_t n, const VkDescriptorSetLayoutBinding *pBindings) {
         setInfo.bindingCount = n;
         setInfo.pBindings = pBindings;
-        VkResult res = vkCreateDescriptorSetLayout(amVK_D->D, &setInfo, nullptr, &_SetLayout);
+        VkResult res = vkCreateDescriptorSetLayout(amVK_D->D, &setInfo, nullptr, &L);
 
         if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return false;}
         else {return true;}
     }
 
-    /** \todo since this part requires DEVICE, move into RTC_DSET.... */
-    inline void destroy(amVK_DeviceMK2 *amVK_D) {
-        vkDestroyDescriptorSetLayout(amVK_D->D, _SetLayout, nullptr);
+    inline void Destroy(amVK_DeviceMK2 *amVK_D) {
+        vkDestroyDescriptorSetLayout(amVK_D->D, L, nullptr);
     }
+
+    /** vkUpdateDescriptorSets() */
 };
 
 
@@ -124,7 +137,7 @@ class amVK_DeadPool {
     };
 
 
-    inline bool create(void) {
+    inline bool Create(void) {
         if (DPool != nullptr) { amVK_LOG_EX("Descriptor Pool [_DPool] has already been created"); return false;}
         
         VkResult res = vkCreateDescriptorPool(amVK_D->D, &s_CI, nullptr, &DPool);
@@ -134,10 +147,10 @@ class amVK_DeadPool {
 
 
     /** Functions */
-    amVK_DeadPool(amVK_DeviceMK2 *amVK_D) : amVK_D(amVK_D) {}
+     amVK_DeadPool(amVK_DeviceMK2 *amVK_D) : amVK_D(amVK_D) {}
     ~amVK_DeadPool(void) {}
-    inline void destroy(void) {vkDestroyDescriptorPool(amVK_D->D, DPool, nullptr);}
-    inline void reset(VkDescriptorPoolResetFlags flags) {vkResetDescriptorPool(amVK_D->D, DPool, flags);}
+    inline void Destroy(void) {vkDestroyDescriptorPool(amVK_D->D, DPool, nullptr);}
+    inline void Reset(VkDescriptorPoolResetFlags flags) {vkResetDescriptorPool(amVK_D->D, DPool, flags);}
     /** \see free() in RTC_DSET */
 
 
@@ -151,12 +164,12 @@ class amVK_DeadPool {
      * This is Separate, cz you might wanna set once, and then keep allocating multiple times. 
      * + INLINE optimizes it a lot 
      */
-    inline bool settings(uint32_t nLayouts, VkDescriptorSetLayout *pLayouts) {
+    inline bool Settings(uint32_t nLayouts, VkDescriptorSetLayout *pLayouts) {
         allocInfo.descriptorPool = DPool;
         allocInfo.descriptorSetCount = nLayouts;
         allocInfo.pSetLayouts = pLayouts;
     }
-    inline amVK_DSetGroup allocate(void) {
+    inline amVK_DSetGroup Allocate(void) {
         VkDescriptorSet *Sets = new VkDescriptorSet[allocInfo.descriptorSetCount];
 
         vkAllocateDescriptorSets(this->amVK_D->D, &allocInfo, Sets);
@@ -164,7 +177,7 @@ class amVK_DeadPool {
     }
 
 
-    inline VkDescriptorSet allocate_Single(VkDescriptorSetLayout SetLayout) {
+    inline VkDescriptorSet Allocate_Single(VkDescriptorSetLayout SetLayout) {
         allocInfo.descriptorPool = DPool;
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &SetLayout;

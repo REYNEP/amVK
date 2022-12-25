@@ -3,7 +3,7 @@ import subprocess
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        raise Exception("USE: python preBuild_glslang.py ./")
+        raise Exception("USE: python preBuild_glslang.py ./path/to/glsl_source_dir")
 
     # Same as ${PROJECT_SOURCE_DIR} from glslang_CMakeLists.cmake
     project_source_dir = sys.argv[1]

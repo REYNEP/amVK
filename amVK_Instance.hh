@@ -32,7 +32,9 @@ class vec_amVK_Device : public amVK_ArrayDYN<amVK_DeviceMK2 *> {
 
 /** 
  * all PhysicalDevice Related information
- * LOAD: \see amVK_Instance::load_PD_info()
+ * LOAD: \see amVK_InstanceMK2::load_PD_info()
+ * 
+ * Per PhysicalDevice, its gonna be around ~1600Bytes
  */
 struct loaded_PD_info_internal {
   VkPhysicalDevice                 *list = nullptr;         //'Physical Devices List'
@@ -79,6 +81,12 @@ struct instance_creation_settings_internal {
   #else
     const bool enableDebugLayers_LunarG = true;   /** by default adds VK_LAYER_KHRONOS_validation*/
   #endif
+
+
+  /** lets you use 'debugPrintfEXT' function inside shaders.... check out: https://anki3d.org/debugprintf-vulkan/ */
+  /** NOTE: You'd also need to call \fn amVK_InstanceMK2::set_debug_printf_callback() *
+   *       & ENABLE VK_KHR_shader_non_semantic_info    [Device Extension] */
+  VkValidationFeatureEnableEXT GLSL_debug_printf_EXT = VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT;   /** TODO: Better way to enable...*/
 };
 
 
@@ -99,7 +107,7 @@ struct instance_creation_settings_internal {
 
 /**
  * ═════════════════════════════════════════════════════════════════════
- *                          - amVK_Instance -
+ *                         - amVK_InstanceMK2 -
  * ═══════════════════════════ HIGH LIGHTS ═════════════════════════════
  * 
  * - VkInstance Creation/Destruction and all Instance related stuffs
@@ -107,18 +115,18 @@ struct instance_creation_settings_internal {
  * - an App, one VkInstance
  * 
  * - FLOW:
- *    - amVK_Instance amVK_I = amVK_Instance();
+ *    - amVK_InstanceMK2 amVK_I = amVK_InstanceMK2();
  *    - amVK_I.add_InstanceExt();    // or stuffs like that
- *    - amVK_I.create_Instance();
+ *    - amVK_I.Create_VkInstance();
  *    - amVK_I.load_PD_info();       // you dont gotta care, called internally if you create `amVK_DeviceMK2`
  * 
  *  List of InstanceExtensions: https://vulkan.gpuinfo.org/listinstanceextensions.php
  * 
  *   TODO: Add support for UI kinda choosing/showing
  */
-class amVK_Instance {
+class amVK_InstanceMK2 {
  public:
-  static inline                    amVK_Instance *heart = nullptr;  /** C++17 - static inline */
+  static inline                 amVK_InstanceMK2 *heart = nullptr;  /** C++17 - static inline */
   static inline amVK_DeviceMK2               *s_ActiveD = nullptr;
   static inline VkInstance                   s_Instance = nullptr;
   static inline VkApplicationInfo           s_VkAppInfo = {};
@@ -135,14 +143,16 @@ class amVK_Instance {
        bool Destroy_VkInstance(void);
 
   bool check_VkSupport(void) { return true; }; /** \todo */
-  void set_VkApplicationInfo(VkApplicationInfo *appInfo = nullptr);
+  void set_VkApplicationInfo(VkApplicationInfo *appInfo);
+  
+  VkDebugReportCallbackEXT set_debug_printf_callback(void);
 
-  amVK_Instance(bool debug_EXTs = true) {heart = this; constructor_default_settings(debug_EXTs);}
-  ~amVK_Instance() {}
+  amVK_InstanceMK2(bool debug_EXTs = true) {heart = this; constructor_default_settings(debug_EXTs);}
+  ~amVK_InstanceMK2() {}
 
  protected:
-  amVK_Instance(const amVK_Instance&) = delete;             // Brendan's Solution
-  amVK_Instance& operator=(const amVK_Instance&) = delete;  // Brendan's Solution
+  amVK_InstanceMK2(const amVK_InstanceMK2&) = delete;             // Brendan's Solution
+  amVK_InstanceMK2& operator=(const amVK_InstanceMK2&) = delete;  // Brendan's Solution
 
  public:
   /**
@@ -152,18 +162,18 @@ class amVK_Instance {
    * 
    * \note calls: \fn enum_InstanceExts() if IEP.data == nullptr;
    */
-  bool       add_InstanceExt(char *extName);
-  bool isEnabled_InstanceExt(char *extName) {return ICS.isEnabled_iExt[iExtName_to_index(extName)];}
+  bool       add_InstanceExt(const char *extName);
+  bool isEnabled_InstanceExt(const char *extName) {return ICS.isEnabled_iExt[iExtName_to_index(extName)];}
 
-  bool       add_ValLayer(char *vLayerName);
-  bool isEnabled_ValLayer(char *vLayerName) {return ICS.isEnabled_vLayer[vLayerName_to_index(vLayerName)];}
+  bool       add_ValLayer(const char *vLayerName);
+  bool isEnabled_ValLayer(const char *vLayerName) {return ICS.isEnabled_vLayer[vLayerName_to_index(vLayerName)];}
 
   amVK_ArrayDYN<char *> getEnabled_InstanceExts(void) {return ICS.enabled_iExts;}
   amVK_ArrayDYN<char *> getEnabled_ValLayers(void) {return ICS.enabled_vLayers;}
 
   /** currently uses BruteForce */
-  uint32_t iExtName_to_index(char *iExtName);
-  uint32_t vLayerName_to_index(char *vLayerName);
+  uint32_t iExtName_to_index(const char *iExtName);
+  uint32_t vLayerName_to_index(const char *vLayerName);
 
 
 
@@ -245,8 +255,11 @@ class amVK_Instance {
     }
     return amVK_Array<VkPhysicalDevice>(SPD.list, SPD.n, SPD.n);
   }
-  void activate_device(amVK_DeviceMK2 *D) {
-    if (s_DeviceList.doesExist(D)) s_ActiveD = D;
+
+  /** rather use the amVK_DeviceMK2::actiavet_device */
+  void Activate_Device(amVK_DeviceMK2 *D) {
+    if (s_DeviceList.doesExist(D)) 
+      s_ActiveD = D;
   }
 
 
@@ -290,15 +303,15 @@ class amVK_Instance {
 
 
 
-#define HEART amVK_Instance::heart
+#define HEART amVK_InstanceMK2::heart
 
 /** these doesn't need amVK_Device.hh to be included */
 #define amVK_CHECK_DEVICE(PARAM_D, VAR_D) \
   if (PARAM_D && !HEART->s_DeviceList.doesExist(PARAM_D)) { \
-    amVK_LOG_EX("\u0027param amVK_DeviceMK2 *" << #PARAM_D << "\u0027 doesn't exist in 'amVK_Instance::heart->D_list'"); \
+    amVK_LOG_EX("\u0027param amVK_DeviceMK2 *" << #PARAM_D << "\u0027 doesn't exist in 'amVK_InstanceMK2::heart->D_list'"); \
   } else { VAR_D = PARAM_D; }
 
 #define amVK_SET_activeD(VAR_D) \
   if           (!HEART->s_ActiveD){ amVK_LOG_EX("Either pass a valid amVK_DeviceMK2 as param" << \
-                                         "\n  ...or see amVK_Instance::s_ActiveD & amVK_Instance::activate_device()  "); } \
+                                         "\n  ...or see amVK_InstanceMK2::s_ActiveD & amVK_InstanceMK2::activate_device()  "); } \
   else { VAR_D = HEART->s_ActiveD; }

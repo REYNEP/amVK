@@ -67,7 +67,7 @@ struct amVK_Array {
     return malloc(size);
   }
 
-  void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name) { 
+  void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, const char *var_name) { 
     if (n == 0) { 
       amVK_LOG_EX("amVK_Array<> " << var_name << ".n = 0;" << "Did you malloc? amASSERT here" << amVK::endl); 
     }
@@ -78,7 +78,7 @@ struct amVK_Array {
 #else
   void *amVK_malloc(size_t size);
   void *amVK_memcpy(void *to, void *from, size_t size);
-  void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, char *var_name);
+  void amVK_ARRAY_PUSH_BACK_FILLED_LOG(uint32_t n, const char *var_name);
 #endif
 
 /** reUse, cz we dont want it to Crash... and if doesn't have much effect */
@@ -93,6 +93,7 @@ struct amVK_Array {
 
 #define amVK_ArrayDYN_PUSH_BACK(var)      amVK_ARRAY_PUSH_BACK(var)
 #define amVK_ArrayDYN_PUSH_BACK_SAFE(var) amVK_ARRAY_PUSH_BACK_SAFE(var)
+// Its like you are flagging it 'SAFE'
 
 #define amVK_ARRAY_IS_ELEMENT(array, bool_var, match_what) \
       for (uint32_t i = 0; i < array.n; i++) { \
@@ -112,13 +113,13 @@ struct amVK_Array {
 template<typename T> 
 struct amVK_ArrayDYN : public amVK_Array<T> {
   amVK_ArrayDYN(uint32_t n) : amVK_Array<T>() {
-    data = new T[n];
+    this->data = new T[n];
     this->n = n;
   }
   ~amVK_ArrayDYN() {}
 
   /** you can Delete this object instance after calling this function */
-  inline void _delete(void) { delete[] data; }
+  inline void _delete(void) { delete[] this->data; }
 
   /** Makes it 2X sized by default */
   void resize(double size_mul = 2);
@@ -127,7 +128,10 @@ struct amVK_ArrayDYN : public amVK_Array<T> {
    * neXt >= n
    * masterly advisory. unsteady content
    */
-  inline bool should_resize(void) { return (bool)(neXt >= n); }
+  inline bool should_resize(void) { return (bool)(this->neXt >= this->n); }
+
+  using amVK_Array<T>::neXt;
+  using amVK_Array<T>::data;
 
   /**
    * data[n] = data[neXt-1]
@@ -150,14 +154,14 @@ struct amVK_ArrayDYN : public amVK_Array<T> {
 
 template<typename T>
 void amVK_ArrayDYN<T>::resize(double size_mul) {
-  amVK_LOG_EX("Resizing array :( " << n);
+  amVK_LOG_EX("Resizing array :( " << this->n);
   
-  amVK_ArrayDYN<T> _NEW(n*size_mul);
-  amVK_memcpy(_NEW.data, this->data, n * sizeof(T));
+  amVK_ArrayDYN<T> _NewArray(this->n*size_mul);
+  amVK_memcpy(_NewArray.data, this->data, this->n * sizeof(T));
   delete[] this->data;
 
-  data = _NEW.data;
-  n = _NEW.n;
+  this->data = _NewArray.data;
+  this->n = _NewArray.n;
 }
 
 
@@ -201,8 +205,8 @@ void amVK_ArrayDYN<T>::resize(double size_mul) {
 
 
 
-
-#define amVK_RESULT uint32_t
+// VK_RESULT is int
+#define amVK_RESULT int32_t
 
 /** 
  *              █████╗ ███╗   ███╗██╗   ██╗██╗  ██╗        ██╗   ██╗████████╗██╗██╗     ███████╗
@@ -327,8 +331,11 @@ bool mergeSort(uint32_t first_index, uint32_t last_index, T *unsorted, uint32_t 
 #include <vulkan/vulkan.h>
 #include <iostream>
 #include <bitset>
+#include <cmath>
 
-
+/**
+ * Based on GLFW's function https://github.com/glfw/glfw/blob/master/src/vulkan.c#L164
+ */
 const char *amVK_Utils::vulkan_result_msg(amVK_RESULT param_result) {
   switch (param_result)
   {

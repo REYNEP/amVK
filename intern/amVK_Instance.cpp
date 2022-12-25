@@ -11,16 +11,16 @@
  * APRIL 21, 2022,    v0.0.5a (IDK, what I am doing anymore.... GSoC is gone for me....)
  */
 
-VkInstance amVK_Instance::Create_VkInstance(void) {
-    _LOG("amVK_Instance::Create_VkInstance");
+VkInstance amVK_InstanceMK2::Create_VkInstance(void) {
+    _LOG("amVK_InstanceMK2::Create_VkInstance");
 
     if (s_Instance != nullptr) { 
         amVK_LOG_EX("amVK_IN::s_Instance isn't nullptr....");
         return nullptr;
     }
 
-    if (amVK_Instance::s_VkAppInfo.engineVersion == NULL) {
-        amVK_Instance::set_VkApplicationInfo(nullptr);
+    if (amVK_InstanceMK2::s_VkAppInfo.engineVersion == (uint32_t)NULL) {
+        amVK_InstanceMK2::set_VkApplicationInfo(nullptr);
     }
 
 
@@ -29,8 +29,8 @@ VkInstance amVK_Instance::Create_VkInstance(void) {
     _LOG_LOOP("Enabled Instance Extensions:- ", i, ICS.enabled_iExts.size(), ICS.enabled_iExts[i]);
 
     // ----------- CreateInfo for vkCreateInstance ------------
-    VkInstanceCreateInfo the_info{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0,
-        &(amVK_Instance::s_VkAppInfo),
+    VkInstanceCreateInfo the_info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0,
+        &(amVK_InstanceMK2::s_VkAppInfo),
         0, nullptr,
         static_cast<uint32_t>(ICS.enabled_iExts.size()), ICS.enabled_iExts.data
     };
@@ -38,12 +38,16 @@ VkInstance amVK_Instance::Create_VkInstance(void) {
 
 
     // ----------- ValidationLayers for vkCreateInstance ------------
+    VkValidationFeaturesEXT validationFeatures = {VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT, the_info.pNext, 1, &ICS.GLSL_debug_printf_EXT};
     if (ICS.enableDebugLayers_LunarG) {
-        amVK_Instance::enum_ValLayers();
+        amVK_InstanceMK2::enum_ValLayers();
         add_ValLayer("VK_LAYER_KHRONOS_validation");
         the_info.enabledLayerCount = static_cast<uint32_t>(ICS.enabled_vLayers.size());
         the_info.ppEnabledLayerNames = ICS.enabled_vLayers.data;
         _LOG_LOOP("Enabled Validation Layers:- ", i, ICS.enabled_vLayers.size(), ICS.enabled_vLayers[i]);
+
+        /** \see ICS.GLSL_debug_printf_EXT */
+        the_info.pNext = &validationFeatures;
     }
 
 
@@ -69,7 +73,7 @@ VkInstance amVK_Instance::Create_VkInstance(void) {
 
 
 
-bool amVK_Instance::Destroy_VkInstance(void) {
+bool amVK_InstanceMK2::Destroy_VkInstance(void) {
     if (s_Instance == nullptr) {
         return false;
     }
@@ -82,9 +86,8 @@ bool amVK_Instance::Destroy_VkInstance(void) {
 
 
 
-/** \param appInfo: default value is nullptr. */
-void amVK_Instance::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
-    _LOG("amVK_Instance::set_VkApplication");
+void amVK_InstanceMK2::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
+    _LOG("amVK_InstanceMK2::set_VkApplication");
 
     // ----------- Muhaha, we use OUR Own stuffs.... if nullptr ------------
     if (appInfo == nullptr) {
@@ -92,7 +95,7 @@ void amVK_Instance::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
 
         VkApplicationInfo newAppInfo{};
         newAppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        newAppInfo.pApplicationName = "RealTimeRendering";
+        newAppInfo.pApplicationName = "xD_MadeWith_amVK";
         newAppInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
         newAppInfo.apiVersion =  VK_MAKE_VERSION(1, 2, 0);  //VK_API_VERSION_1_x [x is minor], [patch] is ignored... 
         /** 
@@ -107,7 +110,7 @@ void amVK_Instance::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
     appInfo->engineVersion = VK_MAKE_VERSION(0, 0, 4);
     _LOG0("amVK Engine Version 0.0.4");
     
-    amVK_Instance::s_VkAppInfo = *(appInfo);
+    amVK_InstanceMK2::s_VkAppInfo = *(appInfo);
 }
 
 
@@ -133,7 +136,7 @@ void amVK_Instance::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
 */
 
 // This is here cz, this one is the simplest form of   enum_InstanceExts
-void amVK_Instance::enum_ValLayers(void) {
+void amVK_InstanceMK2::enum_ValLayers(void) {
     _LOG("amVK_CX::enum_ValLayers");
 
     if (ICS.vLayerP.n == 0) {
@@ -152,8 +155,8 @@ void amVK_Instance::enum_ValLayers(void) {
     //Also see validationLayers_LunarG in FORBIDEN VARIABLES Section
 }
 
-bool amVK_Instance::enum_InstanceExts(bool do_log, VkExtensionProperties **pointer_iep, int *pointer_iec) {
-    _LOG("amVK_Instance::enum_InstanceExts");
+bool amVK_InstanceMK2::enum_InstanceExts(bool do_log, VkExtensionProperties **pointer_iep, int *pointer_iec) {
+    _LOG("amVK_InstanceMK2::enum_InstanceExts");
 
     // ----------- Get Instance Extensions anyway ------------
     uint32_t n;
@@ -180,8 +183,8 @@ bool amVK_Instance::enum_InstanceExts(bool do_log, VkExtensionProperties **point
     return true;
 }
 
-bool amVK_Instance::filter_SurfaceExts(void) {
-    _LOG("amVK_Instance::filter_SurfaceExts");
+bool amVK_InstanceMK2::filter_SurfaceExts(void) {
+    _LOG("amVK_InstanceMK2::filter_SurfaceExts");
 
     if (ICS.IEP.n == 0) {
         amVK_LOG_EX("Call enum_InstanceExts() before calling this, and make sure that function worked OK....");
@@ -206,7 +209,7 @@ bool amVK_Instance::filter_SurfaceExts(void) {
 
     static T_flagsSurfaceExts flagsSurfaceExts;
 
-    static char *xd[] = {   //Should be Aligned with as T_surfaceExts are
+    static const char *xd[] = {   //Should be Aligned with as T_surfaceExts are
         "VK_KHR_surface",
     #if defined(amVK_BUILD_WIN32)
         "VK_KHR_win32_surface"
@@ -259,11 +262,11 @@ bool amVK_Instance::filter_SurfaceExts(void) {
         ICS._req_surface_ep[1] = tmp_surface_ep[1];
     }
 #elif defined(amVK_BUILD_X11)
-    if (!flagsSurfaceExts.KHR_surface || !flagsSurfaceExts.KHR_xlib_surface) {
+    if (!flagsSurfaceExts.KHR_surface || !flagsSurfaceExts.KHR_xlib_surface || !flagsSurfaceExts.KHR_xcb_surface) {
         amVK_LOG_EX("vkEnumerateInstanceExtensionProperties didn't report [VK_KHR_surface] or [VK_KHR_xlib_surface] as available");
         return false;
     }
-    else if (flagsSurfaceExts.KHR_xcd_surface) {
+    else if (flagsSurfaceExts.KHR_xcb_surface) {
         ICS._req_surface_ep[0] = tmp_surface_ep[0];
         ICS._req_surface_ep[1] = tmp_surface_ep[1];
     }
@@ -281,7 +284,7 @@ bool amVK_Instance::filter_SurfaceExts(void) {
         ICS._req_surface_ep[1] = tmp_surface_ep[1];
     }
 #elif defined(amVK_BUILD_COCOA)
-    if (!flagsSurfaceExts.KHR_surface || !flagsSurfaceExts.MVK_macos_surface) {
+    if (!flagsSurfaceExts.KHR_surface || !flagsSurfaceExts.MVK_macos_surface || !flagsSurfaceExts.EXT_metal_surface) {
         amVK_LOG_EX("vkEnumerateInstanceExtensionProperties didn't report [VK_KHR_surface] or [VK_MVK_macos_surface] as available");
         return false;
     }
@@ -299,14 +302,14 @@ bool amVK_Instance::filter_SurfaceExts(void) {
     return true;
 }
 
-bool amVK_Instance::add_InstanceExt(char *extName) {
-    _LOG("amVK_Instance::add_InstanceExt");
+bool amVK_InstanceMK2::add_InstanceExt(const char *extName) {
+    _LOG("amVK_InstanceMK2::add_InstanceExt");
 
     if (ICS.IEP.data == nullptr) {
         enum_InstanceExts();
     }
 
-    uint32_t index = amVK_Instance::iExtName_to_index(extName);
+    uint32_t index = amVK_InstanceMK2::iExtName_to_index(extName);
     if (index == 0xFFFFFFFF) {  //Error Checking
         amVK_LOG_EX("Instance EXT: " << extName << " isn't sup. on this PC/Device/Computer/System whatever....");
         return false;
@@ -325,8 +328,8 @@ bool amVK_Instance::add_InstanceExt(char *extName) {
     }
 }
 
-bool amVK_Instance::add_ValLayer(char *vLayerName) {
-    _LOG("amVK_Instance::add_ValLayer");
+bool amVK_InstanceMK2::add_ValLayer(const char *vLayerName) {
+    _LOG("amVK_InstanceMK2::add_ValLayer");
 
     uint32_t index = vLayerName_to_index(vLayerName);
     if (index == 0xFFFFFFFF) {
@@ -347,7 +350,7 @@ bool amVK_Instance::add_ValLayer(char *vLayerName) {
     }
 }
 
-uint32_t amVK_Instance::iExtName_to_index(char *iExtName) {
+uint32_t amVK_InstanceMK2::iExtName_to_index(const char *iExtName) {
     for (uint32_t i = 0; i < ICS.IEP.n; i++) {
         if (strcmp(iExtName, ICS.IEP[i].extensionName) == 0) {
             return i;
@@ -355,7 +358,7 @@ uint32_t amVK_Instance::iExtName_to_index(char *iExtName) {
     }
     return 0xFFFFFFFF;
 }
-uint32_t amVK_Instance::vLayerName_to_index(char *vLayerName) {
+uint32_t amVK_InstanceMK2::vLayerName_to_index(const char *vLayerName) {
     for (uint32_t i = 0; i < ICS.vLayerP.n; i++) {
         if (strcmp(vLayerName, ICS.vLayerP[i].layerName) == 0) {
             return i;
@@ -405,8 +408,8 @@ uint32_t amVK_Instance::vLayerName_to_index(char *vLayerName) {
  *                                    - VkPhysicalDevice [Enum, Get, Info, Queue Families, Queues] -
  * ═════════════════════════════════════════════════════════ HIGH LIGHTS ═════════════════════════════════════════════════════════
  */
-bool amVK_Instance::load_PD_info(bool force_load, bool auto_choose) {
-    _LOG("amVK_Instance::load_PD_info");
+bool amVK_InstanceMK2::load_PD_info(bool force_load, bool auto_choose) {
+    _LOG("amVK_InstanceMK2::load_PD_info");
 
     if (SPD.list != nullptr) {
         _LOG("Already SPD Info loaded Once....");
@@ -425,12 +428,12 @@ bool amVK_Instance::load_PD_info(bool force_load, bool auto_choose) {
     load_PD:
     {
         if (!HEART || !s_Instance) {amVK_LOG_EX("amVK_CX::CreateInstance() has to be called before. [or set amVK_IN::instance & amVK_CX::heart]"); return false;}
-        bool any_PD_sup = amVK_Instance::enum_PhysicalDevs();
+        bool any_PD_sup = amVK_InstanceMK2::enum_PhysicalDevs();
         if (!any_PD_sup) {
             amVK_LOG_EX("Vulkan not supported by any Available Physical Device");
             return false;
         }
-        amVK_Instance::enum_PD_qFamilies();
+        amVK_InstanceMK2::enum_PD_qFamilies();
         if(auto_choose) {this->auto_choosePD();}    //Does Benchmark TOO!
 
         _LOG0("Loaded PD_info \n");
@@ -438,8 +441,8 @@ bool amVK_Instance::load_PD_info(bool force_load, bool auto_choose) {
     }
 }
 
-bool amVK_Instance::enum_PhysicalDevs() {
-    _LOG("amVK_Instance::enum_PhysicalDevs");
+bool amVK_InstanceMK2::enum_PhysicalDevs() {
+    _LOG("amVK_InstanceMK2::enum_PhysicalDevs");
 
     if (SPD.list != nullptr) free(SPD.list);      //By Default force_load
 
@@ -447,8 +450,13 @@ bool amVK_Instance::enum_PhysicalDevs() {
     if (SPD.n == 0) {
         amVK_LOG_EX("Vulkan Loader failed to find GPUs with Vulkan support!");
         return false;
-    }  else if (SPD.n > 1000) {
-        amVK_LOG_EX("MORE THAN A THOUSAND GPUs? Are you REALLY SURE?");
+        
+    } else if (SPD.n > 1000000) {
+        amVK_LOG_EX("MORE THAN A  Million GPUs? Are you REALLY SURE?  [return-ing false]");
+        return false;
+
+    } else if (SPD.n > 1000) {
+        amVK_LOG_EX("MORE THAN A THOUSAND GPUs? Are you REALLY SURE?  [Proceeding anyway]");
     }
 
     // ----------- THE GRAND MALLOC ------------
@@ -498,12 +506,12 @@ bool amVK_Instance::enum_PhysicalDevs() {
     return true;
 }
 
-bool amVK_Instance::enum_PD_qFamilies() {
-    _LOG("amVK_Instance::enum_PD_qFamilies");
+bool amVK_InstanceMK2::enum_PD_qFamilies() {
+    _LOG("amVK_InstanceMK2::enum_PD_qFamilies");
 
     if (SPD.list == nullptr) {
-        amVK_LOG_EX("call amVK_Instance::enum_PhysicalDevs() first    [trying to solve, by calling that]");
-        amVK_Instance::enum_PhysicalDevs();
+        amVK_LOG_EX("call amVK_InstanceMK2::enum_PhysicalDevs() first    [trying to solve, by calling that]");
+        amVK_InstanceMK2::enum_PhysicalDevs();
     }
 
     // ----------- GET HOW MUCH TO MALLOC ------------
@@ -533,13 +541,13 @@ bool amVK_Instance::enum_PD_qFamilies() {
     return true;
 }
 
-void amVK_Instance::benchMark_PD(void) {
-    _LOG("amVK_Instance::benchMark_PD");
+void amVK_InstanceMK2::benchMark_PD(void) {
+    _LOG("amVK_InstanceMK2::benchMark_PD");
 
     if (SPD.list == nullptr) {
         amVK_LOG_EX("call amVK_CX::enum_PhysicalDevs() & enum_PD_qFamilies() first      [trying to solve, by calling those]");
-        amVK_Instance::enum_PhysicalDevs();
-        amVK_Instance::enum_PD_qFamilies();
+        amVK_InstanceMK2::enum_PhysicalDevs();
+        amVK_InstanceMK2::enum_PD_qFamilies();
     }
 
     // ----------- THE GREAT TIME TRAVELING BENCHMARK ------------
@@ -573,8 +581,8 @@ void amVK_Instance::benchMark_PD(void) {
     bool sort_success = amVK_Utils::mergeSort<uint32_t> (0, SPD.n-1, SPD.benchMarks, SPD.index_sortedByMark);
 }
 
-bool amVK_Instance::auto_choosePD(void) {
-    _LOG("amVK_Instance::auto_choosePD");
+bool amVK_InstanceMK2::auto_choosePD(void) {
+    _LOG("amVK_InstanceMK2::auto_choosePD");
 
     benchMark_PD(); //even if already benchmarked ONCE
 
@@ -592,4 +600,51 @@ bool amVK_Instance::auto_choosePD(void) {
     } else {
         return true;
     }
+}
+
+
+
+
+
+
+
+
+
+
+
+// And this is the callback that the validator will call
+VkBool32 _debug_printf_callback(VkDebugReportFlagsEXT flags,
+    VkDebugReportObjectTypeEXT objectType,
+    uint64_t object, 
+    size_t location, 
+    int32_t messageCode,
+    const char* pLayerPrefix,
+    const char* pMessage, 
+    void* pUserData)
+{
+    //if(flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+    //{
+    //    amVK_LOG("debugPrintfEXT: " << pMessage);
+    //}
+    amVK_LOG("debugPrintfEXT: " << pMessage);
+ 
+    return false;
+}
+
+
+VkDebugReportCallbackEXT amVK_InstanceMK2::set_debug_printf_callback(void) {
+    VkDebugReportCallbackEXT DRC;
+ 
+    VkDebugReportCallbackCreateInfoEXT ci = {VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT, nullptr,
+        VK_DEBUG_REPORT_INFORMATION_BIT_EXT,
+        _debug_printf_callback, nullptr
+    };
+    
+    PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback = VK_NULL_HANDLE;
+    CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(s_Instance, "vkCreateDebugReportCallbackEXT");
+
+    // Create the callback handle
+    VkResult res = CreateDebugReportCallback(s_Instance, &ci, nullptr, &DRC);
+    if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
+    return DRC;
 }

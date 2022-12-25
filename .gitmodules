@@ -1,6 +1,3 @@
 [submodule "Vulkan-Headers"]
 	path = VK
 	url = https://github.com/KhronosGroup/Vulkan-Headers
-[submodule "extern/REYNEP_utils"]
-	path = extern/REYNEP_utils
-	url = https://gist.github.com/REYNEP/54f282de643a0cb917706d3cfa747c64

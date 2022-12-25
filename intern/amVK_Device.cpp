@@ -6,7 +6,7 @@
   ─ ─  │  │ ││││└─┐ │ ├┬┘│ ││   │ │ │├┬┘
   /│\  └─┘└─┘┘└┘└─┘ ┴ ┴└─└─┘└─┘ ┴ └─┘┴└─
  */
-amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur_exts_n, uint32_t ur_qCIs_n, VkPhysicalDevice PD) : flag(DevicePreset), PD(PD) {
+amVK_DeviceMK2::amVK_DeviceMK2(VkPhysicalDevice PD, uint32_t ur_exts_n, uint32_t ur_qCIs_n, amVK_DevicePreset_Flags DevicePreset) : flag(DevicePreset), PD(PD) {
     /** Pre-Cautions.... */
         // amVK Support for now
         if (DevicePreset == amVK_DP_UNDEFINED) {
@@ -28,7 +28,7 @@ amVK_DeviceMK2::amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur
 
         // XD
         if (PD == nullptr) {
-            /** ---------- \requires amVK_Instance::PD to have the data ---------- */
+            /** ---------- \requires amVK_InstanceMK2::PD to have the data ---------- */
             if (!HEART->SPD.list) {HEART->load_PD_info(false, true);}
 
             /** PD.chozen gets autoChozen by 'load_PD_info' as the 2nd Param above was true */
@@ -266,7 +266,7 @@ void amVK_DeviceMK2::set_qCIs(void) {
             };
         }
         if (m_req_Queues & VK_QUEUE_COMPUTE_BIT) {  //amVK_DevicePreset_Compute
-            if (!m_compute_qFAM == 0xFFFFFFFF) {amVK_LOG_EX("Couldn't Find any COMPUTE qFamily"); konfigurieren_err = true;}
+            if (m_compute_qFAM == 0xFFFFFFFF) {amVK_LOG_EX("Couldn't Find any COMPUTE qFamily"); konfigurieren_err = true;}
             amVK_ARRAY_PUSH_BACK(qCIs) = {
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr,
@@ -369,7 +369,7 @@ void amVK_DeviceMK2::set_exts(void) {
     modifications:
     {
         if (m_req_exts.VK_KHR_SWAPCHAIN) {
-            amVK_ARRAY_PUSH_BACK(exts) = "VK_KHR_swapchain";
+            amVK_ARRAY_PUSH_BACK(exts) = (char *)"VK_KHR_swapchain";
         }
     }
 }
@@ -429,6 +429,7 @@ void amVK_DeviceMK2::set_ftrs(void) {
       }
     }
     amVK_LOG_EX("amVK_DeviceMK2 doesn't Exist in " << typeid(this).name());
+    return false;
   }
 
   uint32_t vec_amVK_Device::index(amVK_DeviceMK2 *D) {
@@ -454,4 +455,5 @@ void amVK_DeviceMK2::set_ftrs(void) {
     }
 
     neXt--;
+    return true;
   }

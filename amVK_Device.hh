@@ -13,7 +13,6 @@ class amVK_DeviceMK2;
 
 
 
-
 /**
  * ══════════════════════════════════════════════════════════════════════════════════════════════════
  *                                         - amVK_Device -
@@ -28,6 +27,8 @@ class amVK_DeviceMK2;
  * \todo have a _free()   for  \fn calc_n_alloc() ?
  * \todo reset of the Modification Vars 
  * \todo you can mix multiple DevicePresets
+ * 
+ * \todo add error detection for get_graphics_queue()
  */
 class amVK_DeviceMK2 {
     public:
@@ -38,18 +39,20 @@ class amVK_DeviceMK2 {
 
     bool  Create_VkDevice(void);
     bool Destroy_VkDevice(void);
+    inline bool  Activate_Device(void) { HEART->s_ActiveD = this; return true;}
 
     /**
-     * calls konfigurieren()
-     * 
-     * \param DevicePreset: \see amVK_TDevicePreset....
+     * check amVK_SurfaceMK2 first....
+     * [this function calls konfigurieren()]
      *
+     * \param  PD: check amVK_SurfaceMK2::select_DisplayDevice(), or pass nullptr to autoChoose
+     * 
      * \param   ur_exts_n: [MAX 200] USE: amVK_ARRAY_PUSH_BACK(device->exts) = ("VK_KHR_imageless_framebuffer");
      * \param   ur_qCIs_n: [MAX 100] USE: amVK_ARRAY_PUSH_BACK(device->qCIs)
      * 
-     * \param  PD: check amVK_SurfaceMK2::select_DisplayDevice(), or pass nullptr to autoChoose
+     * \param DevicePreset: [see amVK_TDevicePreset...]
      */
-    amVK_DeviceMK2(amVK_DevicePreset_Flags DevicePreset, uint32_t ur_exts_n, uint32_t ur_qCIs_n, VkPhysicalDevice PD);
+    amVK_DeviceMK2(VkPhysicalDevice PD, uint32_t ur_exts_n, uint32_t ur_qCIs_n, amVK_DevicePreset_Flags DevicePreset);
     ~amVK_DeviceMK2() {}
 
   protected:

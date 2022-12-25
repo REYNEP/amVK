@@ -233,6 +233,8 @@ VkImageUsageFlags image_layout_2_usageflags(VkImageLayout finalLayout) {
         case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:               return VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
         case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:                               return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        default:
+            return 0;
     }
 }
 
@@ -250,5 +252,7 @@ VkImageAspectFlags image_layout_2_aspectMask(VkImageLayout finalLayout) {
         case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:               return VK_IMAGE_ASPECT_DEPTH_BIT;
 
         case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:                               return VK_IMAGE_ASPECT_COLOR_BIT;
+        default:
+            return 0;
     }
 }

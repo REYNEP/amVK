@@ -214,6 +214,7 @@ bool IMG_DATA_MK2::i_alloc(void) {  //malloc
     clearValues = reinterpret_cast<VkClearValue  *> (  framebufs + framebuf_size);
 
     alloc_called = true;
+    return true;
 }
 
 
@@ -260,13 +261,13 @@ bool IMG_DATA_MK2::i_alloc(void) {  //malloc
  *  ╺╋╸   ┣━┫┃┃┃┃┏┛┣┻┓   ┃╻┃┃   ┃┃┃┣┻┓┏━┛
  *  ╹ ╹   ╹ ╹╹ ╹┗┛ ╹ ╹╺━╸┗┻┛╹╺━╸╹ ╹╹ ╹┗━╸
  */
-amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D) : m_windowName(window), amVK_D(D), amVK_S(S), amVK_RP(RP) {
-         if (window == nullptr) { amVK_LOG_EX("Please dont pass nullptr, ERROR/WARNING Logs will look messy, this is used to let you know which window ");
-                                  window = "nullptr";}
-    if           (D == nullptr) { amVK_LOG_EX("[param]        amVK_DeviceMK2 *D      is nullptr.... name: " << window); }
-    else if ( D->PD == nullptr) { amVK_LOG_EX("[param]        amVK_DeviceMK2 *D->_PD is nullptr.... name: " << window); }
-         if (     S == nullptr) { amVK_LOG_EX("[param]       amVK_SurfaceMK2 *S      is nullptr.... name: " << window); }
-         if (    RP == nullptr) { amVK_LOG_EX("[param]    amVK_RenderPassMK2 *RP     is nullptr.... name: " << window); }
+amVK_WI_MK2::amVK_WI_MK2(const char *name, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D) : m_windowName(name), amVK_D(D), amVK_S(S), amVK_RP(RP) {
+         if ( name == nullptr) { amVK_LOG_EX("Please dont pass nullptr, ERROR/WARNING Logs will look messy, this is used to let you know which window ");
+                                  name = "nullptr";}
+    if          (D == nullptr) { amVK_LOG_EX("[param]        amVK_DeviceMK2 *D      is nullptr.... name: " << name); }
+    else if (D->PD == nullptr) { amVK_LOG_EX("[param]        amVK_DeviceMK2 *D->_PD is nullptr.... name: " << name); }
+         if (    S == nullptr) { amVK_LOG_EX("[param]       amVK_SurfaceMK2 *S      is nullptr.... name: " << name); }
+         if (   RP == nullptr) { amVK_LOG_EX("[param]    amVK_RenderPassMK2 *RP     is nullptr.... name: " << name); }
 
 
     if (amVK_S->PD != amVK_D->PD) {
@@ -278,7 +279,7 @@ amVK_WI_MK2::amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPass
     _LOG0("amVK_WI_MK2 Constructed   &   _default_the_info() called...");
 }
 
-void amVK_WI_MK2::_fallback_the_info(void) {
+bool amVK_WI_MK2::_fallback_the_info(void) {
     // ----------- PRESENT MODE SUPPORTED ------------
         amVK_S->get_PresentModes();
         amVK_Array<VkPresentModeKHR> present_modes = amVK_S->present_modes;
@@ -308,7 +309,7 @@ void amVK_WI_MK2::_fallback_the_info(void) {
             }
 
             /** Finally set the_info.minImageCount.... \note \see Default_the_info */
-            amVK_LOG("in create_Swapchain we do,    the_info.minImageCount += surfaceCaps->minImageCount;     [\see create_Swapchain]");
+            amVK_LOG("in Create_Swapchain we do,    the_info.minImageCount += surfaceCaps->minImageCount;     [\\see Create_Swapchain]");
             amVK_LOG("So we are setting here        the_info.minImageCount  = surfaceCaps->maxImageCount - surfaceCaps->minImageCount");
             the_info.minImageCount = surfaceCaps->maxImageCount - surfaceCaps->minImageCount;
         }
@@ -318,6 +319,8 @@ void amVK_WI_MK2::_fallback_the_info(void) {
         amVK_S->filter_SurfaceFormat();
         the_info.imageFormat = amVK_S->final_imageFormat;
         the_info.imageColorSpace = amVK_S->final_imageColorSpace;
+
+        return true;
 }
 
 
@@ -326,7 +329,7 @@ void amVK_WI_MK2::_fallback_the_info(void) {
     ─ ─  │  ├┬┘├┤ ├─┤ │ ├┤     ╚═╗│││├─┤├─┘│  ├─┤├─┤││││
     /│\  └─┘┴└─└─┘┴ ┴ ┴ └─┘────╚═╝└┴┘┴ ┴┴  └─┘┴ ┴┴ ┴┴┘└┘
  */
-VkSwapchainKHR amVK_WI_MK2::create_Swapchain(bool check_the_info) {
+VkSwapchainKHR amVK_WI_MK2::Create_Swapchain(bool check_the_info) {
     if (this->swapchain || check_the_info) {
         _fallback_the_info();
     }
@@ -640,11 +643,11 @@ void amVK_WI_MK2::Begin_RenderPass(VkCommandBuffer cmdBuf, VkSubpassContents idk
     vkCmdBeginRenderPass(cmdBuf, &rpInfo, idk);
 }
 
-bool amVK_WI_MK2::Present(VkSemaphore to_wait) {
+bool amVK_WI_MK2::PresentNextImage(VkSemaphore to_wait) {
     VkResult res;
-    present_info.pWaitSemaphores = &to_wait;
-    present_info.pResults = &res;
-    vkQueuePresentKHR(amVK_D->get_graphics_queue(), &present_info);
+    presentInfo.pWaitSemaphores = &to_wait;
+    presentInfo.pResults = &res;
+    vkQueuePresentKHR(amVK_D->get_graphics_queue(), &presentInfo);
 
     if (res != VK_SUCCESS) {
         amVK_LOG_EX("vkQueuePresentKHR() failed.... Serious bug....");

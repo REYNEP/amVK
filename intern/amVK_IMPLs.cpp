@@ -48,7 +48,7 @@ const char *flag_2_strName(amVK_DevicePreset_Flags flag) {
  * For now these are the known Ones I found from Nvidia or AMD surfaceCapabilities
  * http://www.vulkan.gpuinfo.org/listsurfaceformats.php
  */
-char *VkFormat_2_String(VkFormat F) {
+const char *VkFormat_2_String(VkFormat F) {
   switch (F) {
     //100% on MAC & Android [100% from the ones that Support VULKAN]
     case VK_FORMAT_R8G8B8A8_SRGB:  return "VK_FORMAT_R8G8B8A8_SRGB";
@@ -88,7 +88,7 @@ char *VkFormat_2_String(VkFormat F) {
 
 
 /** \see amVK_ColorSpace in amVK_Types.hh */
-char *VkColorSpace_2_String(VkColorSpaceKHR colorspace_name) {
+const char *VkColorSpace_2_String(VkColorSpaceKHR colorspace_name) {
   amVK_ColorSpace _colorspace = (amVK_ColorSpace) colorspace_name;
   switch (_colorspace) 
   {
@@ -118,9 +118,11 @@ char *VkColorSpace_2_String(VkColorSpaceKHR colorspace_name) {
     // COOL!
     case amVK_COLOR_SPACE_PASS_THROUGH:   return "amVK_COLOR_SPACE_PASS_THROUGH     [       VK_COLOR_SPACE_PASS_THROUGH_EXT    ]";
     case amVK_DISPLAY_NATIVE_AMD:         return "amVK_DISPLAY_NATIVE_AMD           [      VK_COLOR_SPACE_DISPLAY_NATIVE_AMD   ]";
+    default: 
+      return "well, i guess the VkColorSpaceKHR you are thinking about must be really stellar....";
   }
 }
 
-char * amVKColorSpace_2_String(amVK_ColorSpace amVK_Colorspace_name) {
+const char* amVKColorSpace_2_String(amVK_ColorSpace amVK_Colorspace_name) {
   return VkColorSpace_2_String( static_cast<VkColorSpaceKHR> (amVK_Colorspace_name) );
 }

@@ -54,13 +54,14 @@ VkShaderModule amVK_PipeStoreMK2::load_ShaderModule(std::string &spvPath) {
 }
 
 #include <cstring>
-VkShaderModule amVK_PipeStoreMK2::glslc_Shader(std::string &glslPath, amVK_ShaderStage stage, std::string cacheSPVPath, bool cache) {
+VkShaderModule amVK_PipeStoreMK2::glslc_Shader(std::string const &glslPath, amVK_ShaderStage stage, std::string cacheSPVPath, bool cache) {
     //glslCode
     uint64_t size; char *glslCode;
 
     //READ
     if (glslPath.size() > 0) {
         /** open the file. With cursor at the end     TODO: Erorr Checking in DEBUG */
+        /** Furthur on EOF: https://unix.stackexchange.com/questions/537858/do-files-actually-contain-an-end-of-file-eof-character */
         std::ifstream glslFile(glslPath, std::ios::ate | std::ios::binary);
 
         if (!glslFile.is_open()) {
@@ -81,7 +82,7 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(std::string &glslPath, amVK_Shade
         }
 
         glslFile.close();
-    } else {amVK_LOG_EX("glslPath's Size isn't more than 0"); return nullptr;}
+    } else {amVK_LOG_EX("[param: String] glslPath isn't defined  (glslPath.size() <= 0) "); return nullptr;}
 
 
     // .spv Output [WRITE....]
@@ -108,10 +109,10 @@ VkShaderModule amVK_PipeStoreMK2::glslc_Shader(std::string &glslPath, amVK_Shade
     }
 
 
-    return glslc_Shader(glslCode, stage, cacheSPVPath, cache);
+    return glslc_ShaderCode(glslCode, stage, cacheSPVPath, cache);
 }
 
-VkShaderModule amVK_PipeStoreMK2::glslc_Shader(const char *glslCode, amVK_ShaderStage stage, std::string cacheSPVPath, bool cache) {
+VkShaderModule amVK_PipeStoreMK2::glslc_ShaderCode(const char *glslCode, amVK_ShaderStage stage, std::string cacheSPVPath, bool cache) {
     //Shader Stage
     EShLanguage stage_glslang;
     switch (stage)
@@ -316,6 +317,7 @@ VkPipeline amVK_GraphicsPipes::build_Pipeline(void) {
     }
     else
     {
+        amVK_LOG("Pipeline Craeted");
         return newPipeline;
     }
 }

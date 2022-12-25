@@ -5,6 +5,7 @@
 #include "amVK_Defines.hh"    // You should check this one 😉
 #include "vulkan/vulkan.h"
 
+                              // TODO: These four are heavy.... consider making amVK Local Alternatives....
 #include <stdint.h>           // These two are included in amVK_Utils too 🤔
 #include <stddef.h>
 #ifndef amVK_IN_NOSTDLIB

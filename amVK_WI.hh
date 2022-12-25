@@ -13,7 +13,7 @@
  *    This is one of the Ties between amVK_RenderPass & amVK_WI    (RenderPass n' Swapchain)
  *    The other one is ImageAttachments + their Format & Colorspace
  * 
- *    also \fn amVK_WI_MK2::create_Swapchain or \fn fallback_the_info needs surface information....
+ *    also \fn amVK_WI_MK2::Create_Swapchain or \fn fallback_the_info needs surface information....
  * 
  * \history
  *   calling get_SurfaceFormats 2nd time smtimes gave me NULL values.... (nvidia, win10) [which I didn't see happen after october 2021]
@@ -29,7 +29,7 @@ class amVK_SurfaceMK2 {
 
  public:
   amVK_SurfaceMK2(VkSurfaceKHR S,  amVK_DeviceMK2  *D, bool uKnowWhatURDoing = false);
-  amVK_SurfaceMK2(VkSurfaceKHR S, VkPhysicalDevice PD) : S(S), PD(PD) {}
+  amVK_SurfaceMK2(VkSurfaceKHR S, VkPhysicalDevice PD = nullptr) : S(S), PD(PD) {}
   ~amVK_SurfaceMK2 () {}
   /** TODO: delete[] surface_formats.data; delete[] present_modes.data; */
 
@@ -39,6 +39,17 @@ class amVK_SurfaceMK2 {
 
 
  public:
+  /**
+   * NotAll PhysicalDevice supports presenting to the Surface/Window of Screen/Monitor
+   * 
+   *  So here, before creating a VkDevice or constructing a amVK_DeviceMK2 thing....
+   *  you can, just uhhh, query for the best device that supports present to surface
+   *  and uhh, yesssssss, we do got our little own benchmarking system too...
+   * 
+   * It might be that, in a MultiGPU system, only 1GPU is serving all the monitors....
+   * 
+   * sets into member variable `PD` & returns that
+   */
   VkPhysicalDevice select_DisplayDevice(void);              /** based on   present_qFam(),     chooses bestOne      */
   uint32_t       present_qFam(bool re = true);              /** based on   vkGetPhysicalDeviceSurfaceSupportKHR()   */
   uint32_t       present_qFamily = UINT32_T_NULL;
@@ -46,12 +57,14 @@ class amVK_SurfaceMK2 {
     return this->present_qFam(false) == UINT32_T_NULL ? false : true;
   }
 
+  static VkPhysicalDevice select_DisplayDevice(VkSurfaceKHR S) { return amVK_SurfaceMK2(S, (VkPhysicalDevice) nullptr).select_DisplayDevice(); }
+
 
   void get_SurfaceFormats(bool print = false);              /**    called in     filter_SurfaceFormat()             */
   void get_PresentModes(void);                              /**    called in     amVK_WI_MK2::fallback_the_info     */
   amVK_Array<VkSurfaceFormatKHR> surface_formats = {};
   amVK_Array<VkPresentModeKHR>     present_modes = {};
-  VkSurfaceCapabilitiesKHR          surface_caps = {};      /** connected to    amVK_WI_MK2::the_info   stuffs....  */
+  VkSurfaceCapabilitiesKHR          surface_caps = {};      /** connected to     amVK_WI_MK2::the_info  stuffs....  */
 
   /** \todo different update module, on resize only.... */
   VkSurfaceCapabilitiesKHR     *get_SurfaceCaps(void) {
@@ -207,6 +220,9 @@ class IMG_DATA_MK2 {
  * TODO: Test Buffering MULTI-THREADING.... 
  * TODO: TEST how muich memory consumption per IMAGE
  * 
+ * TODO: Moment of truth.  If the graphics queue family and present family don't match
+ *       then we need to create the swapchain with different information.      - Faster Than life, Part III
+ * 
  * 
  * 
  *  THE_INFO DOCS:
@@ -245,7 +261,7 @@ class amVK_WI_MK2 {
 
  public:
   /** calls \fn Default_the_info(); */
-  amVK_WI_MK2(const char *window, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D = nullptr);
+  amVK_WI_MK2(const char *name, amVK_SurfaceMK2 *S, amVK_RenderPassMK2 *RP, amVK_DeviceMK2 *D = nullptr);
   ~amVK_WI_MK2() {}
   
   void Destroy_Swapchain(void);                           /**           \return false, if  !swapchain             */
@@ -259,10 +275,10 @@ class amVK_WI_MK2 {
 
 
  public:
-  VkSwapchainCreateInfoKHR the_info = {};                 /** modify before _fallback_the_info / create_Swapchain */
-  bool konfigurieren(void) {_fallback_the_info();}        /**   [internally    _fallback_the_info    is called]   */
+  VkSwapchainCreateInfoKHR the_info = {};                 /** modify before _fallback_the_info / Create_Swapchain */
+  bool konfigurieren(void) {return _fallback_the_info();} /**   [internally    _fallback_the_info    is called]   */
 
-  void _fallback_the_info(void);                          /** not evrythng in _default_the_info is sup. everywhere*/
+  bool _fallback_the_info(void);                          /** not evrythng in _default_the_info is sup. everywhere*/
   void _default_the_info() {                              /**            called in     CONSTRUCTOR()              */
     the_info.presentMode            = VK_PRESENT_MODE_IMMEDIATE_KHR;
     the_info.oldSwapchain           = nullptr;
@@ -296,16 +312,16 @@ class amVK_WI_MK2 {
 
 
  public:
-  VkSwapchainKHR          swapchain = nullptr;            /**            plz, dont modify this 😶          */
+  VkSwapchainKHR          swapchain = nullptr;            /**           plz, dont modify these 😶          */
   VkExtent2D                 extent = {};                 /**            updated as you reCreate           */
   IMG_DATA_MK2                 IMGs = {};                 /** untouched before \fn post_create_swapchain() */
-  uint32_t                   n_IMGs = 0;                  /** the_info.minImageCount += amVK_S->surface_caps.minImageCount  [create_Swapchain] */
+  uint32_t                   n_IMGs = 0;                  /** the_info.minImageCount += amVK_S->surface_caps.minImageCount  [Create_Swapchain] */
 
   /**
-   * \also [Recreate Swapchain]
+   * this is \also [Recreate Swapchain]
    * \param check_the_info: calls fallback_the_info()    [if (this->swapchain || check_the_info)]
    */
-  VkSwapchainKHR   create_Swapchain(bool check_the_info = true);
+  VkSwapchainKHR   Create_Swapchain(bool check_the_info = true);
 
  private:
   /** 
@@ -330,7 +346,7 @@ class amVK_WI_MK2 {
 
  public:
   uint32_t nExt_img = 0;    /**     index into IMGs.images    */
-  VkPresentInfoKHR     present_info = {
+  VkPresentInfoKHR     presentInfo = {
     VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, nullptr,
     1, nullptr,
     1, &swapchain,
@@ -346,15 +362,15 @@ class amVK_WI_MK2 {
   /**
    * \param to_signal: after acquiring is done, ig
    * \param timeout: def: 0.1sec
-   * \return nExt_img
+   * \return nExt_img [by vkAcquireNextImageKHR]
    */
   uint32_t AcquireNextImage(VkSemaphore to_signal, uint64_t timeout = 100000000);
+  bool     PresentNextImage(VkSemaphore to_wait);     /** in Vulkan, acquired images is locked till its 'Presented' */
+
   /** 
+   * Has to be called between AcquireNextImage & PresentNextImage
    * \param idk: I Dont Know much about this.... 
    */
   void Begin_RenderPass(VkCommandBuffer cmdBuf, VkSubpassContents idk = VK_SUBPASS_CONTENTS_INLINE);
-  /** 
-   * in VK, acquired images is locked till its 'Presented' 
-   */
-  bool Present(VkSemaphore to_wait);
+  
 };

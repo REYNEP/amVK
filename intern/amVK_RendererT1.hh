@@ -16,7 +16,7 @@
  * 
  * \brief
  * How you render in Vulkan....
- *      - After you have created a amVK_Renderpass, amVK_WI & amVK_WI::create_Swapchain.... now you can go ahead and Render in your MainLoop
+ *      - After you have created a amVK_Renderpass, amVK_WI & amVK_WI::Create_Swapchain.... now you can go ahead and Render in your MainLoop
  *      - in Vulkan, GPU commands e.g. VkCmdDraw, VkCmdCopyBufferToImage, has to be Recorded into a CommandBuffer.... then you simply submit that CommandBuffer to an actual VkQueue on the GPU
  * 
  * NOTE: Render_BeginRecord & EndRecord_N_Submit is supposed to be inside MainLoop.... that means, yes, we're recording the CommandBuffer everyFrame
@@ -27,7 +27,7 @@
 class amVK_RD {
   public:
     uint32_t m_qFam;  /** Graphics [a.k.a Draw] QueueFamily [qFamily is as per PhysicalDevice (vulkan)] */
-    static inline VkPipelineStageFlags s_waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;   /** does smth related to synchronization for SubmitInfo SEMAs*/
+    static inline VkPipelineStageFlags s_waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;   /** does smth related to synchronization for SubmitInfo SEMAs */
     VkSubmitInfo m_whatever;
     VkQueue m_Q;
 
@@ -39,7 +39,7 @@ class amVK_RD {
     amVK_CommandBuf  m_cmdBuf;
     /** This can be optimized as hell, I guess.... */
     amVK_RD(amVK_DeviceMK2 *amVK_D) : 
-        m_qFam( amVK_D->get_graphics_qFamily() ),
+        m_qFam( amVK_D->m_graphics_qFAM ),
         m_cmdPool( amVK_CommandPool(m_qFam, amVK_D) ),
         m_cmdBuf(  amVK_CommandBuf (*(m_cmdPool.alloc_Bufs(1)))),
 
@@ -87,7 +87,20 @@ class amVK_RD {
         VkResult res = vkQueueSubmit(m_Q, 1, &m_whatever, m_queueFence.FENCE);  /** fenceOne blocks till vkCmd*s finishes [Will get RESET on its own ig] */
         if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return;}
 
-        s_last_WI->Present(m_renderSemaphore.SEMA);   // Finally Present to the Window, a.k.a SwapBuffers or Refresh Screen
+        s_last_WI->PresentNextImage(m_renderSemaphore.SEMA);   // Finally Present to the Window, a.k.a SwapBuffers or Refresh Screen
+    }
+
+    void Just_Acquire(amVK_WI_MK2 *WI) {
+        this->s_last_WI = WI;
+        m_queueFence.wait();
+        m_queueFence.reset();
+        WI->AcquireNextImage(m_presentSemaphore.SEMA, 1000000000);
+    }
+    void Just_Submit(void) {
+        VkResult res = vkQueueSubmit(m_Q, 1, &m_whatever, m_queueFence.FENCE);  /** fenceOne blocks till vkCmd*s finishes [Will get RESET on its own ig] */
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return;}
+
+        s_last_WI->PresentNextImage(m_renderSemaphore.SEMA);   // Finally Present to the Window, a.k.a SwapBuffers or Refresh Screen
     }
 
   protected:

@@ -79,7 +79,7 @@ class amVK_CommandPool {
 
 
     /** \todo add pNext & flags support, \todo Add support for Multi-Threaded CommandPool    [Start Here: https://stackoverflow.com/questions/53438692/creating-multiple-command-pools-per-thread-in-vulkan]*/
-    amVK_CommandPool(uint32_t qFamily, amVK_DeviceMK2 *D = nullptr) : amVK_D(D) {
+    amVK_CommandPool(uint32_t qFamily, amVK_DeviceMK2 *D = nullptr, VkCommandPoolCreateFlags flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) : amVK_D(D) {
         if (D == nullptr) {amVK_SET_activeD(amVK_D);}
         else {amVK_CHECK_DEVICE(D, amVK_D);}
 
@@ -89,7 +89,7 @@ class amVK_CommandPool {
             CI.queueFamilyIndex = qFamily;
         /** we also want the pool to allow for resetting of individual command buffers 
          *  Lets us use   vkResetCommandBuffer() later On     [ VUID-vkResetCommandBuffer-commandBuffer-00046 ]*/
-            CI.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            CI.flags = flags;
 
         VkResult res = vkCreateCommandPool(amVK_D->D, &CI, nullptr, &POOL);
         if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res));}

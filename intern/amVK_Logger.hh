@@ -79,7 +79,7 @@ namespace amVK {
  *  - _LOG   [debug for amVK devs]
  *  - _LOG0  [GENERAL Logging... e.g. vkCreateInsntace, vkCreateDevice etc....]
  */
-#if defined(amVK_DEBUG_LOG)
+#if defined(amVK_DEV_LOG)
   #define _LOG(x) amVK_LOG(x)
   #define _LOG_LOOP(log_heading, iterator_var, loop_limit, log_inside_loop) amVK_LOG_LOOP(log_heading, iterator_var, loop_limit, log_inside_loop)
 #else
@@ -87,7 +87,7 @@ namespace amVK {
   #define _LOG_LOOP(log_heading, iterator_var, loop_limit, log_inside_loop)
 #endif
 
-#if defined(amVK_DO_LOG)
+#if defined(amVK_ZEN_LOG)
   #define _LOG0(x) amVK_LOG(x)
   #define _LOG_LOOP0(log_heading, iterator_var, loop_limit, log_inside_loop) amVK_LOG_LOOP(log_heading, iterator_var, loop_limit, log_inside_loop)
 #else
@@ -189,7 +189,7 @@ typedef struct noob_timer_store__ {
   #include <chrono>
   class _noob_timer {
    public:
-    std::chrono::steady_clock::time_point time_start = {}, time_now = {};
+    std::chrono::time_point<std::chrono::high_resolution_clock> time_start = {}, time_now = {};
   } noob_timer;
 
   amVK_NoobTimer::amVK_NoobTimer(void) {
@@ -703,17 +703,19 @@ typedef struct noob_timer_store__ {
   
 
   #elif defined(__linux__) || defined(__APPLE__)
-/**
- *            ██████╗ ██╗     ███████╗███╗   ██╗██╗     ██╗██████╗       ██╗  ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗      ██╗  ███████╗██╗   ██╗███████╗████████╗███████╗███╗   ███╗    ██████╗
- *  ▄ ██╗▄    ██╔══██╗██║     ██╔════╝████╗  ██║██║     ██║██╔══██╗     ██╔╝  ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║     ██╔╝  ██╔════╝╚██╗ ██╔╝██╔════╝╚══██╔══╝██╔════╝████╗ ████║   ██╔════╝
- *   ████╗    ██████╔╝██║     █████╗  ██╔██╗ ██║██║     ██║██████╔╝    ██╔╝   ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║    ██╔╝   ███████╗ ╚████╔╝ ███████╗   ██║   █████╗  ██╔████╔██║   ██║     
- *  ▀╚██╔▀    ██╔══██╗██║     ██╔══╝  ██║╚██╗██║██║     ██║██╔══██╗   ██╔╝    ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║   ██╔╝    ╚════██║  ╚██╔╝  ╚════██║   ██║   ██╔══╝  ██║╚██╔╝██║   ██║     
- *    ╚═╝     ██████╔╝███████╗███████╗██║ ╚████║███████╗██║██████╔╝  ██╔╝     ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║  ██╔╝     ███████║   ██║   ███████║   ██║   ███████╗██║ ╚═╝ ██║██╗╚██████╗
- *            ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝╚═════╝   ╚═╝      ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══   ╚═╝      ╚══════╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝╚═╝ ╚═════╝
- *  
- * copied from [https://github.com/blender/blender/blob/594f47ecd2d5367ca936cf6fc6ec8168c2b360d0/source/blender/blenlib/intern/system.c#L79]
- * Still BLI_ASSERT
- */
+  /**
+   *            ██████╗ ██╗     ███████╗███╗   ██╗██╗     ██╗██████╗       ██╗  ██╗███╗   ██╗████████╗███████╗██████╗ ███╗   ██╗      ██╗  ███████╗██╗   ██╗███████╗████████╗███████╗███╗   ███╗    ██████╗
+   *  ▄ ██╗▄    ██╔══██╗██║     ██╔════╝████╗  ██║██║     ██║██╔══██╗     ██╔╝  ██║████╗  ██║╚══██╔══╝██╔════╝██╔══██╗████╗  ██║     ██╔╝  ██╔════╝╚██╗ ██╔╝██╔════╝╚══██╔══╝██╔════╝████╗ ████║   ██╔════╝
+   *   ████╗    ██████╔╝██║     █████╗  ██╔██╗ ██║██║     ██║██████╔╝    ██╔╝   ██║██╔██╗ ██║   ██║   █████╗  ██████╔╝██╔██╗ ██║    ██╔╝   ███████╗ ╚████╔╝ ███████╗   ██║   █████╗  ██╔████╔██║   ██║     
+   *  ▀╚██╔▀    ██╔══██╗██║     ██╔══╝  ██║╚██╗██║██║     ██║██╔══██╗   ██╔╝    ██║██║╚██╗██║   ██║   ██╔══╝  ██╔══██╗██║╚██╗██║   ██╔╝    ╚════██║  ╚██╔╝  ╚════██║   ██║   ██╔══╝  ██║╚██╔╝██║   ██║     
+   *    ╚═╝     ██████╔╝███████╗███████╗██║ ╚████║███████╗██║██████╔╝  ██╔╝     ██║██║ ╚████║   ██║   ███████╗██║  ██║██║ ╚████║  ██╔╝     ███████║   ██║   ███████║   ██║   ███████╗██║ ╚═╝ ██║██╗╚██████╗
+   *            ╚═════╝ ╚══════╝╚══════╝╚═╝  ╚═══╝╚══════╝╚═╝╚═════╝   ╚═╝      ╚═╝╚═╝  ╚═══╝   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══   ╚═╝      ╚══════╝   ╚═╝   ╚══════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝╚═╝ ╚═════╝
+   *  
+   * copied from [https://github.com/blender/blender/blob/594f47ecd2d5367ca936cf6fc6ec8168c2b360d0/source/blender/blenlib/intern/system.c#L79]
+   * Still BLI_ASSERT
+   */
+
+    #include <execinfo.h>
     /**
      * Write a backtrace into a file for systems which support it.
      */
@@ -743,6 +745,7 @@ typedef struct noob_timer_store__ {
         fputs(strings[i], fp);
         fputc('\n', fp);
       }
+      fputc('\n', fp);
 
       free(strings);
     #    undef SIZE

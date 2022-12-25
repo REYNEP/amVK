@@ -1,6 +1,16 @@
-## TODO: Use SCons [like Godot]
+### lib
+- Binaries will be downloaded here
+- Release Builds are updated more
 
-## Only supposed to be used as subdirectory `extern` of `amVK`.... we set up a submodule flow
-### Remember not to use  `submodule recurse`.... cz `inc` & `lib` has it all.... 
+### inc
+- glslang for now *[without_source]*
+- for now source code won't be shipped
 
-###### Currently lib folder also will have .exe   as   set_target_properties(... RUNTIME_OUTPUT_DIRECTORY ${_amVK_EXTERN_LIB}) is set
+### build_files
+- Why share? If anyone wants to build any library
+- These are made in a way so that, it works with git REPOs, (glslang for now)
+
+
+### Where you need download EVERY LIBRARY FROM....
+- VULKAN
+    1. Vulkan-SDK Vulkan-1LIB

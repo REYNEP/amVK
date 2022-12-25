@@ -7,54 +7,18 @@
 
 /**
  * \page
- * ShaderInputsMK2 [a.k.a PIPELINE LAYOUT]
  * amVK_PipeStoreMk2
  *  amVK_GraphicsPipes
  *  amVK_ComputePires [W.I.P]
  * 
- * some SPOTIFY links....
- * amVK_Pipeline ['Basically this is why, we came all this way....']
+ * some SPOTIFY links.... 😉
+ * 
+ * ShaderInputsMK2 [a.k.a PIPELINE LAYOUT]
+ * amVK_Pipeline   ['Basically this is why, we came all this way....']
  */
 
 
-/** 
- *   █▀█ █ █▀█ █▀▀ █░░ █ █▄░█ █▀▀  █░░ ▄▀█ █▄█ █▀█ █░█ ▀█▀
- *   █▀▀ █ █▀▀ ██▄ █▄▄ █ █░▀█ ██▄  █▄▄ █▀█ ░█░ █▄█ █▄█ ░█░
- * 
- * \todo SPIRV-Reflect: Parse DescriptorSet & PushConstant input information from (Compiled Shader) .spv binary 
- * How do you use this class? Well, its just a helper class around 'Create VkPipelineLayout'
- *  see example in RTC_2D_Quad
- * 
- * You won't need to have CI anymore after you vkCreatePipelineLayout, so thats STATIC
- * atleast, not unless you need to create the same Layout & Pipeline on different Devices at RANDOM times....   [idontthink set_Info can hurt in this case, so]
- */
-class ShaderInputsMK2 {
- public:
-  static inline VkPipelineLayout       S_layout = nullptr;
-  static inline VkPipelineLayoutCreateInfo s_CI = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr, 0};
 
-  ShaderInputsMK2(void) {}
-  ~ShaderInputsMK2(void) {}
-
-  static inline void set_Info(uint32_t pushCount, const VkPushConstantRange *pPushConstantRanges, uint32_t setLayoutCount, const VkDescriptorSetLayout *pSetLayouts) {
-    s_CI.pushConstantRangeCount = pushCount;
-    s_CI.pPushConstantRanges = pPushConstantRanges;
-    s_CI.setLayoutCount = setLayoutCount;
-    s_CI.pSetLayouts = pSetLayouts;
-  }
-
-  /**
-   * Destroy using vkDestroyPipelineLayout()
-   */
-  static inline VkPipelineLayout create_PipelineLayout(VkDevice D) {
-    VkResult res = vkCreatePipelineLayout(D, &s_CI, nullptr, &S_layout);
-    if (res != VK_SUCCESS) { 
-      amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); amVK_LOG_EX("vkCreatePipelineLayout() failed"); 
-    }
-    return S_layout;
-  }
-  static inline VkPipelineLayout create_PipelineLayout(amVK_DeviceMK2 *amVK_D) { return create_PipelineLayout(amVK_D->D);}
-};
 
 
 /**
@@ -88,8 +52,8 @@ class ShaderInputsMK2 {
 class amVK_PipeStoreMK2 {
  public:
   amVK_DeviceMK2 *amVK_D;
-  VkPipelineLayout shaderInputsLayout; /** MUST */
-  VkPipelineCreateFlags flags;  /** :WIP: */
+  VkPipelineLayout shaderInputsLayout = nullptr; /** MUST */
+  VkPipelineCreateFlags flags;                   /** WIP: */
 
   amVK_PipeStoreMK2(amVK_DeviceMK2 *D = nullptr);
   ~amVK_PipeStoreMK2() {}
@@ -100,6 +64,8 @@ class amVK_PipeStoreMK2 {
    *   ▄█ █▀█ █▀█ █▄▀ ██▄ █▀▄  █░▀░█ █▄█ █▄▀ █▄█ █▄▄ ██▄ 
    * 
    * \param spvPath: You should compile any .vert or .frag and specify Full/Rel-path to EXE (.spv)
+   * 
+   * or, you can compile GLSL Shader code, using the function below.... on the fly (runtime), supports saving cache (partly WIP)
    */
   VkShaderModule load_ShaderModule(std::string &spvPath);
   /**
@@ -108,11 +74,12 @@ class amVK_PipeStoreMK2 {
    * \todo fix/add preamble stuffs
    * 
    * \param glslPath: Full Path of glsl file
+   * \param glslCode: Code inside  glsl file
    * \param cacheSPVPath: if '\0', glslPath's folder & name is used.... with '.spv' prefix for the SPV output
    *                      otherwise should be a full/path/fileName.spv,      '.spv' not added implicitly then
    */
-  VkShaderModule glslc_Shader(std::string &glslPath, amVK_ShaderStage stage = Shader_Unknown, std::string cacheSPVPath = "\0", bool cache = false);
-  VkShaderModule glslc_Shader(const char  *glslCode, amVK_ShaderStage stage,                  std::string cacheSPVPath,        bool cache);
+  VkShaderModule glslc_Shader(std::string const &glslPath, amVK_ShaderStage stage = Shader_Unknown, std::string cacheSPVPath = "\0", bool cache = false);
+  VkShaderModule glslc_ShaderCode(  const char  *glslCode, amVK_ShaderStage stage,                  std::string cacheSPVPath,        bool cache);
 
   static inline bool is_glslang_init = false; /** Godot says its safe to call it on Multiple threads, but glslang:InitializeProcess calls `ShInitialize()` function only, which GLSLang tells to only call per process, *not per thread */
                                               /** https://github.com/godotengine/godot/blob/8f6c16e4a459b54d6b37bc64e0bd21a361078a01/modules/glslang/register_types.cpp#L193-L195 */
@@ -122,7 +89,6 @@ class amVK_PipeStoreMK2 {
 
   /** \see ShaderInputsMK2::create_pipelineLayout for layout */
 };
-
 
 
 
@@ -146,6 +112,8 @@ class amVK_PipeStoreMK2 {
  *     OPT-I: Create a base amVK_GraphicsPipe.... have _vert,_frag (stuffs like that)   as members of your MESH,
  *            Think of this CLASS as a NAMESPACE with bunch of MODIFY-able GLOBAL OPTIONS....
  * METAPHORE: think of it in this way....   this is amVK_GraphicsPipe.... you take PIPE/s from here & do \fn build_Pipeline().... this is the STORE for all your PIPEs
+ * 
+ *  USAGE-II: 
  */
 class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
  public:
@@ -165,6 +133,7 @@ class amVK_GraphicsPipes : public amVK_PipeStoreMK2 {
   VkShaderModule frag = nullptr;     /** [IN, MUST] */
 
 
+  /** \todo use amVK_ArrayDYN instead? */
   amVK_Array<VkVertexInputBindingDescription>     VIBindings{};  /** VertexInput   'Binding' */
   amVK_Array<VkVertexInputAttributeDescription> VIAttributes{};  /** VertexInput 'Attribute'  */
 
@@ -269,78 +238,142 @@ class amVK_ComputePipes : public amVK_PipeStoreMK2 {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /** 
- * Basically this is why, we came all this way.... from the Beginning, when we chose VULKAN....
+ *   █▀█ █ █▀█ █▀▀ █░░ █ █▄░█ █▀▀  █░░ ▄▀█ █▄█ █▀█ █░█ ▀█▀
+ *   █▀▀ █ █▀▀ ██▄ █▄▄ █ █░▀█ ██▄  █▄▄ █▀█ ░█░ █▄█ █▄█ ░█░
  * 
- * Its NOT OK to create amVK_Pipeline as per OBJECT....
- * instead you should create Classes like 2D_Quad, have a single STATIC Pipeline for all the objects....
- * But pipelines vary by devices.... \see RTC Quad2D.hh and other files for solution for this
+ * \todo SPIRV-Reflect: Parse DescriptorSet & PushConstant input information from (Compiled Shader) .spv binary
+ * 
+ * \see amVK_Pipeline::set_ShaderInputs()
+ * 
+ * You won't need to have CI anymore after you 'vkCreatePipelineLayout', so thats STATIC
+ * atleast, not unless you need to create the same Layout & Pipeline on different Devices at RANDOM times....   [idontthink ALT: 'set_Info()' can hurt in this case, so, meh 🤷‍♀️]
+ */
+class ShaderInputsMK2 {
+ public:
+  static inline uint32_t               n_layout = 0;           /** number of PipelineLayouts that were created */
+  static inline VkPipelineLayout       S_layout = nullptr;
+  static inline VkPipelineLayoutCreateInfo s_CI = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr, 0};
+
+  ShaderInputsMK2(void) {}
+  ~ShaderInputsMK2(void) {}
+
+  static inline void set_Info(uint32_t pushCount, const VkPushConstantRange *pPushConstantRanges, uint32_t setLayoutCount, const VkDescriptorSetLayout *pSetLayouts) {
+    s_CI.pushConstantRangeCount = pushCount;
+    s_CI.pPushConstantRanges = pPushConstantRanges;
+    s_CI.setLayoutCount = setLayoutCount;
+    s_CI.pSetLayouts = pSetLayouts;
+  }
+
+  static inline VkPipelineLayout create_PipelineLayout(VkDevice D) {
+
+    VkResult res = vkCreatePipelineLayout(D, &s_CI, nullptr, &S_layout);
+    if (res != VK_SUCCESS) { 
+      amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); amVK_LOG_EX("vkCreatePipelineLayout() failed"); 
+    }
+
+    return S_layout;
+  }
+  static inline VkPipelineLayout create_PipelineLayout(amVK_DeviceMK2 *amVK_D) { return create_PipelineLayout(amVK_D->D);}
+};
+
+
+
+
+/** 
+ * You Just got Bamboozled... xD
+ * all this time.... this is what we're looking for..... when we choose VULKAN....
+ * 
+ * NOT OK - amVK_Pipeline per Object
+ *     OK - Child classes like Quad2D_Pipeline [Reuse for same object]
+ * NOT OK - multiple pipelines.... from same shaders
  */
 class amVK_Pipeline {
  public:
-  /** \fn Destroy() makes is nullptr */
-  VkPipeline             P = nullptr;
-  VkPipelineLayout  layout = nullptr;
-  VkShaderModule      vert = nullptr;
-  VkShaderModule      frag = nullptr;
-
   /**
    * PURE VIRTUAL FUNCTION
-   * has to call \fn ShaderInputsMK2::set_Info()  \see 2D/Quad2D.hh
-   *   called in \fn   amVK_Pipeline::Build()
+   * has to call \fn ShaderInputsMK2::set_Info()
+   *   called in \fn   amVK_Pipeline::Pre_Build_4_Device()
    * [Every Pipeline needs Inputs.... this function sets Inputs info so the VkPipelineLayout can be created]
    */
-  virtual inline void set_ShaderInputs(void) = 0;
+  virtual inline void _set_ShaderInputs(VkPipelineLayout layout = nullptr) = 0;
 
   amVK_Pipeline() {}
   ~amVK_Pipeline() {}
 
-  /** Destroyed ShaderModule & Pipeline.... [Remember to separately Destroy ShaderInputs a.k.a PipelineLayouts]*/
-  bool destroy(VkDevice D) {
-    // _PS->destroy_ShaderModule(vert);
-    // _PS->destroy_ShaderModule(frag);
-    vkDestroyShaderModule(D, vert, nullptr);
-    vkDestroyShaderModule(D, frag, nullptr);
-    
-    //seems this below implicitly destroyes ShaderModules
-    if      (this->P) {vkDestroyPipeline(D, this->P, nullptr);}
-    else {amVK_LOG_EX("Seems the pipeline [amVK_Pipeline::_P] is already destroyed");}
-
-    if (layout) {vkDestroyPipelineLayout(D, layout, nullptr);}
-    else {amVK_LOG_EX("Seems the pipelien layout [layout]   is already destroyed");}
-
-    this->P = nullptr;
-    return true;
-  }
-  inline bool destroy(amVK_DeviceMK2 *amVK_D) {return destroy(amVK_D->D);}
+  VkPipeline             P = nullptr;
+  VkPipelineLayout  layout = nullptr;
+  VkShaderModule      vert = nullptr;
+  VkShaderModule      frag = nullptr;
+  amVK_DeviceMK2   *amVK_D = nullptr;
 
   /** 
    * \todo update to support any kinda pipestore like compute, currently param PS is amVK_GraphicsPipes
    * 
    * \param spvFileName_Common: without the '.vert'/'.frag'  e.g. 'shaders/2D_Quad'
-   * \param inputs: ShaderInputsMK2_Solo/ShaderInputsMK2_NotSolo
-   * \param C_PipelineLayout: true default, calles inputs->create_PipelineLayout(PS->_amVK_D) if true
+   * \param C_PipelineLayout: a PipelineLayout is created [MUST]
    * 
    * \param PS: PS is the Pipestore, where we create Pipelines from.... cz so many stuffs are repetitive in different pipelines, so we made a store
    *            \see amVK_PipeStoreMK2
    */
-  void Build(std::string spvFileName_Common, amVK_GraphicsPipes *PS) {
-    //vert = _PS->load_ShaderModule(spvFileName_Common + ".vert.spv");
-    //frag = _PS->load_ShaderModule(spvFileName_Common + ".frag.spv");
+  void Build_4_Device(std::string    spvFileName_Common, amVK_GraphicsPipes *PS) {
     vert = PS->glslc_Shader(spvFileName_Common + ".vert", Shader_Vertex);
     frag = PS->glslc_Shader(spvFileName_Common + ".frag", Shader_Fragment);
     
-    set_ShaderInputs();
-    layout = ShaderInputsMK2::create_PipelineLayout(PS->amVK_D);
+    _set_ShaderInputs();
+    if (!layout) layout = ShaderInputsMK2::create_PipelineLayout(PS->amVK_D);
 
     PS->vert = vert;
     PS->frag = frag;
     PS->shaderInputsLayout = layout;
 
-    this->P = PS->build_Pipeline();
+    P = PS->build_Pipeline();
+  }
+
+
+  /** 
+   * DESTROYS: ShaderModule & Pipeline.... 
+   * [Remember to separately Destroy ShaderInputs a.k.a PipelineLayouts]
+   */
+  bool Destroy_4_Device(void) {
+    // _PS->destroy_ShaderModule(vert);
+    // _PS->destroy_ShaderModule(frag);
+    vkDestroyShaderModule(amVK_D->D, vert, nullptr);
+    vkDestroyShaderModule(amVK_D->D, frag, nullptr);
+    
+    //seems this below implicitly destroyes ShaderModules
+    if      (this->P) {vkDestroyPipeline(amVK_D->D, this->P, nullptr);}
+    else {amVK_LOG_EX("Seems the pipeline [amVK_Pipeline::_P] is already destroyed");}
+
+    //if (layout) {vkDestroyPipelineLayout(D, layout, nullptr);}
+    //else {amVK_LOG_EX("Seems the pipelien layout [layout]   is already destroyed");}
+
+    this->P = nullptr;
+    return true;
   }
 
  protected:
-  amVK_Pipeline(const amVK_Pipeline&) = delete;             //Brendan's Solution
-  amVK_Pipeline& operator=(const amVK_Pipeline&) = delete;  //Brendan's Solution
+  amVK_Pipeline(const amVK_Pipeline&) = delete;             // Brendan's Solution
+  amVK_Pipeline& operator=(const amVK_Pipeline&) = delete;  // Brendan's Solution
 };
