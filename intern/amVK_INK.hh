@@ -19,4 +19,13 @@
 #include "amVK_Utils.hh"
 #include "amVK_Types.hh"
 
+
+#define amVK_pNext_Search(pNext_TYPE, pNext_IN, pNext_VAR) \
+    const VkBaseOutStructure* pNext_VAR = reinterpret_cast<const VkBaseOutStructure *>(pNext_IN);    \
+    while(pNext_VAR != nullptr) {    \
+        if(pNext_VAR->sType == pNext_TYPE)  \
+            break;   \
+        pNext_VAR = pNext_VAR->pNext; \
+    }
+
 #endif

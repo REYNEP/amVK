@@ -76,17 +76,21 @@ struct instance_creation_settings_internal {
   amVK_Array<VkLayerProperties>             vLayerP = {nullptr, 0};
   amVK_Array<bool>                 isEnabled_vLayer = {nullptr, 0};
   amVK_ArrayDYN<char *>             enabled_vLayers = amVK_ArrayDYN<char *>(8);     // WELP, the default one.
+
+
+
   #ifdef amVK_RELEASE
     const bool enableDebugLayers_LunarG = false;
   #else
     const bool enableDebugLayers_LunarG = true;   /** by default adds VK_LAYER_KHRONOS_validation*/
+
+    /** lets you use 'debugPrintfEXT' function inside shaders.... check out: https://anki3d.org/debugprintf-vulkan/ */
+    /** NOTE: You'd also need to call \fn amVK_InstanceMK2::set_debug_printf_callback() *
+     *       & ENABLE VK_KHR_shader_non_semantic_info    [Device Extension] */
+    VkValidationFeatureEnableEXT GLSL_debug_printf_EXT = VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT;   /** TODO: Better way to enable...*/
+
+    VkDebugReportCallbackEXT s_DebugKonsument1 = nullptr;
   #endif
-
-
-  /** lets you use 'debugPrintfEXT' function inside shaders.... check out: https://anki3d.org/debugprintf-vulkan/ */
-  /** NOTE: You'd also need to call \fn amVK_InstanceMK2::set_debug_printf_callback() *
-   *       & ENABLE VK_KHR_shader_non_semantic_info    [Device Extension] */
-  VkValidationFeatureEnableEXT GLSL_debug_printf_EXT = VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT;   /** TODO: Better way to enable...*/
 };
 
 
@@ -129,10 +133,23 @@ class amVK_InstanceMK2 {
   static inline                 amVK_InstanceMK2 *heart = nullptr;  /** C++17 - static inline */
   static inline amVK_DeviceMK2               *s_ActiveD = nullptr;
   static inline VkInstance                   s_Instance = nullptr;
-  static inline VkApplicationInfo           s_VkAppInfo = {};
-  vec_amVK_Device                          s_DeviceList = {};       /** not a static one :D */
+  static inline VkApplicationInfo           s_VkAppInfo = {
+    VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr,
+    "xD_MadeWith_amVK", VK_MAKE_VERSION(0, 0, 1),     /** AppName, Version */
+                "amVK", VK_MAKE_VERSION(0, 0, 4),     /** EngineName, Ver. */ /** Also see   VK_MAKE_API_VERSION    */
+                        VK_MAKE_VERSION(1, 3, 0)      /** Vulkan(SDK) Ver. */ /** If 1.3 U can't call 1.4 stuff.... but can run app. in v1.0, if device/sys. only sup. upto that (dont call EXTs / v1.1+ stuff) */
+  };
+  static inline VkInstanceCreateInfo           the_info = {
+    VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0,
+    &s_VkAppInfo,
+    0, nullptr,                                       /**   EnabledLayers  */
+    0, nullptr                                        /**    EnabledExts.  */
+  };
+  vec_amVK_Device                          s_DeviceList = {};       /**  not a static one :D  */
   loaded_PD_info_internal                           SPD = {};       /** call \fn load_PD_info() before, always used as 'HEART->PD' */
   instance_creation_settings_internal               ICS = {};
+
+
 
  public:
   /**
@@ -142,17 +159,54 @@ class amVK_InstanceMK2 {
   VkInstance Create_VkInstance(void);
        bool Destroy_VkInstance(void);
 
-  bool check_VkSupport(void) { return true; }; /** \todo */
-  void set_VkApplicationInfo(VkApplicationInfo *appInfo);
-  
-  VkDebugReportCallbackEXT set_debug_printf_callback(void);
+  /** 
+   * WORKS: if amVK_RELEASE isn't defined
+   * \param DebugKonsument: a CallBack function (yours) 
+   */
+  VkDebugReportCallbackEXT Set_DebugKonsument(PFN_vkDebugReportCallbackEXT DebugKonsument = nullptr);
+  /**
+   *  \see ICS.GLSL_debug_printf_EXT
+   *  You should set VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT
+   */
+  void Set_ValFeatures(VkValidationFeaturesEXT valFeatures);
 
   amVK_InstanceMK2(bool debug_EXTs = true) {heart = this; constructor_default_settings(debug_EXTs);}
   ~amVK_InstanceMK2() {}
 
+
+
+
+
+
+
+
+
+
+
+
+
+  /** \todo I Dont think there will be any cases where vulkan might not be supported 😜*/
+  static bool is_VkSupported(void) { 
+    return true; 
+  };                  
+
+  /** \param appVersion: VK_MAKE_VERSION(1, 3, 0) */
+  inline void set_AppInfo(const char *appName, uint32_t appVersion) {
+    s_VkAppInfo.pApplicationName   = appName;
+    s_VkAppInfo.applicationVersion = appVersion;
+  }
+
  protected:
   amVK_InstanceMK2(const amVK_InstanceMK2&) = delete;             // Brendan's Solution
   amVK_InstanceMK2& operator=(const amVK_InstanceMK2&) = delete;  // Brendan's Solution
+
+
+
+
+
+
+
+
 
  public:
   /**

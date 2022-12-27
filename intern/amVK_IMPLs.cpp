@@ -1,5 +1,5 @@
-#define amVK_LOGGER_IMPLIMENTATION
-#define amVK_UTILS_IMPLIMENTATION
+#define amVK_LOGGER_IMPLEMENTATION
+#define amVK_UTILS_IMPLEMENTATION
 #include "amVK_Logger.hh"
 #include "amVK_Utils.hh"
 

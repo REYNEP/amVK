@@ -1,7 +1,7 @@
 /** 
  * This file should be fully independant of any amVK Headers
- *  - I also made it super light.... it calls no `#include`, but there's a MACRO: amVK_LOGGER_IMPLIMENTATION now
- *  - #define amVK_LOGGER_IMPLIMENTATION    [in one of the .cpp files]
+ *  - I also made it super light.... it calls no `#include`, but there's a MACRO: amVK_LOGGER_IMPLEMENTATION now
+ *  - #define amVK_LOGGER_IMPLEMENTATION    [in one of the .cpp files]
  * 
  * Preprocessor RESC-1:
  *    https://sourceforge.net/p/predef/wiki/OperatingSystems/ 
@@ -55,7 +55,7 @@ class amVK_Logger {
 };
 
 namespace amVK {
-  #ifdef amVK_LOGGER_IMPLIMENTATION
+  #ifdef amVK_LOGGER_IMPLEMENTATION
     amVK_Logger cout = amVK_Logger();  /** 'console out' */
     char endl = '\n';
   #else
@@ -152,7 +152,7 @@ typedef struct noob_timer_store__ {
  *     ╚═╝     ██║██║ ╚═╝ ██║██║     ███████╗
  *             ╚═╝╚═╝     ╚═╝╚═╝     ╚══════╝
  */
-#ifdef amVK_LOGGER_IMPLIMENTATION
+#ifdef amVK_LOGGER_IMPLEMENTATION
   #include <iostream>
   amVK_Logger& amVK_Logger::operator<<(const char c) {
     std::cout << c;
@@ -272,7 +272,7 @@ typedef struct noob_timer_store__ {
  */
     
 #if defined(_WIN32) || defined(__linux__) || defined(__APPLE__)
-  void BLI_system_backtrace(int output = 0);   //There are Other Cool usable BLI_*_* functions too inside #ifdef amVK_LOGGER_IMPLIMENTATION
+  void BLI_system_backtrace(int output = 0);   //There are Other Cool usable BLI_*_* functions too inside #ifdef amVK_LOGGER_IMPLEMENTATION
   /** \todo impliment only stack trace till certain levels.... and not ABBORT.... */
   #if defined(_WIN32)
     void amVK_only_stacktrace(int output = 0);
@@ -284,7 +284,7 @@ typedef struct noob_timer_store__ {
 
 
 /** impl in amVK_Logger.cpp */
-#ifdef amVK_LOGGER_IMPLIMENTATION
+#ifdef amVK_LOGGER_IMPLEMENTATION
   #ifdef _WIN32
     #include <windows.h>
     #include <stdio.h>
@@ -758,7 +758,7 @@ typedef struct noob_timer_store__ {
     }
     /* end BLI_system_backtrace */
   #endif  //WIN32 || __linux__
-#endif    // amVK_LOGGER_IMPLIMENTATION
+#endif    // amVK_LOGGER_IMPLEMENTATION
 
 
 

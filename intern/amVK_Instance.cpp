@@ -19,55 +19,37 @@ VkInstance amVK_InstanceMK2::Create_VkInstance(void) {
         return nullptr;
     }
 
-    if (amVK_InstanceMK2::s_VkAppInfo.engineVersion == (uint32_t)NULL) {
-        amVK_InstanceMK2::set_VkApplicationInfo(nullptr);
-    }
-
 
     // ----------- Extensions for vkCreateInstance ------------
-    // Moved to CONSTRUCTOR....
     _LOG_LOOP("Enabled Instance Extensions:- ", i, ICS.enabled_iExts.size(), ICS.enabled_iExts[i]);
-
-    // ----------- CreateInfo for vkCreateInstance ------------
-    VkInstanceCreateInfo the_info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr, 0,
-        &(amVK_InstanceMK2::s_VkAppInfo),
-        0, nullptr,
-        static_cast<uint32_t>(ICS.enabled_iExts.size()), ICS.enabled_iExts.data
-    };
-    //the_info.pNext = nullptr;  the_info.flags [KHR Says 'reserved for future'] [No need to care about these 2 for now]
 
 
     // ----------- ValidationLayers for vkCreateInstance ------------
-    VkValidationFeaturesEXT validationFeatures = {VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT, the_info.pNext, 1, &ICS.GLSL_debug_printf_EXT};
+    VkValidationFeaturesEXT validationFeatures = {VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT, nullptr, 1, &ICS.GLSL_debug_printf_EXT};
     if (ICS.enableDebugLayers_LunarG) {
         amVK_InstanceMK2::enum_ValLayers();
+
         add_ValLayer("VK_LAYER_KHRONOS_validation");
         the_info.enabledLayerCount = static_cast<uint32_t>(ICS.enabled_vLayers.size());
         the_info.ppEnabledLayerNames = ICS.enabled_vLayers.data;
         _LOG_LOOP("Enabled Validation Layers:- ", i, ICS.enabled_vLayers.size(), ICS.enabled_vLayers[i]);
 
         /** \see ICS.GLSL_debug_printf_EXT */
-        the_info.pNext = &validationFeatures;
+        amVK_pNext_Search(VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT, the_info.pNext, _pNext);
+        if (_pNext == nullptr) {
+            the_info.pNext = &validationFeatures;
+        }
     }
 
 
     // ----------- Actually Create the VkInstance ------------
-    VkResult res = vkCreateInstance(    // You will Occassionally see this general pattern of Vulkan-Function Calls
-        &the_info,                      //VkInstanceCreateInfo *pCreateInfo;  [safe to pass in variable that we are gonna destroy later s:(VkInstanceCreateInfo ici = *pCreateInfo;)]
-        nullptr,                        //VkAllocationCallbacks *pAllocator
-        &s_Instance                     //VkInstance *pInstance               [s:(*pInstance = created_instance;) 's' means line of code from GITHUB_VULKAN_LOADER]
+    VkResult res = vkCreateInstance(
+        &the_info, nullptr, 
+        &s_Instance
     );
     if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
 
-
-    /** 
-     * [Mar 4th Week I Think, 3 Months Ago from now, Check again ASAP]
-     * BLENDER's CURRENT (MARCH 2021) VULKAN STATE, uses vkCreateInstance inside initializeDrawingContext() from what I have seen, 
-     * I believe that is a Function called for Every GHOST_Context created    [so caution is, vkCreateInstance might be called multiple times]
-     * https://developer.blender.org/T68990 & https://developer.blender.org/P1590
-     */
-
-    _LOG0("VkInstance Created! \n" << amVK::endl);
+    _LOG0("VkInstance Created!");
     return s_Instance;
 }
 
@@ -77,40 +59,22 @@ bool amVK_InstanceMK2::Destroy_VkInstance(void) {
     if (s_Instance == nullptr) {
         return false;
     }
+
+    #ifndef amVK_RELEASE
+    if (ICS.s_DebugKonsument1) {
+        PFN_vkDestroyDebugReportCallbackEXT _func_ = VK_NULL_HANDLE;
+        _func_ = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(s_Instance, "vkDestroyDebugReportCallbackEXT");
+
+        _func_(s_Instance, ICS.s_DebugKonsument1, nullptr);
+
+        _LOG0("[amVK_CX::destroy_Instance]  vkDestroyDebugReportCallbackEXT");
+    }
+    #endif
     
-    _LOG("amVK_CX::destroy_Instance");
+    _LOG0("[amVK_CX::destroy_Instance]  vKDestroyInstance");
     vkDestroyInstance(s_Instance, nullptr);
     s_Instance = nullptr;
     return true;
-}
-
-
-
-void amVK_InstanceMK2::set_VkApplicationInfo(VkApplicationInfo *appInfo) {
-    _LOG("amVK_InstanceMK2::set_VkApplication");
-
-    // ----------- Muhaha, we use OUR Own stuffs.... if nullptr ------------
-    if (appInfo == nullptr) {
-        _LOG("(amVK Dev Blubbering: muHahahaha, you didn't think about VkApplicationInfo, I am definitely gonna use that for Advertising purposes)");
-
-        VkApplicationInfo newAppInfo{};
-        newAppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        newAppInfo.pApplicationName = "xD_MadeWith_amVK";
-        newAppInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
-        newAppInfo.apiVersion =  VK_MAKE_VERSION(1, 2, 0);  //VK_API_VERSION_1_x [x is minor], [patch] is ignored... 
-        /** 
-         * Read the official Specs [This is supposed to be the Highest ur app uses, Even we said 1_2, a device that supports only 1_0 can still Run ur APP in VK1_0 mode... [just dont use 1_1 extensions on that DEVICE!]
-         * But if you specify this as 1_1, then you should not call any VK1_2 Functionality, And VK1_2 Drivers/Devices will run ur app in VK1_1 mode....
-         * [kh-reg-vk/specs/1.2-extensions/man/html/VkApplicationInfo.html#_description]
-         * VKGuideBook Was Wrong (or just.... not right enough I guess) (Vulkan Guide (2016 - VK1.0.22) said:- should be absolute Minimum Vulkan that your App needs)
-         */
-        appInfo = &newAppInfo;
-    }
-    appInfo->pEngineName = "amVK";
-    appInfo->engineVersion = VK_MAKE_VERSION(0, 0, 4);
-    _LOG0("amVK Engine Version 0.0.4");
-    
-    amVK_InstanceMK2::s_VkAppInfo = *(appInfo);
 }
 
 
@@ -610,10 +574,11 @@ bool amVK_InstanceMK2::auto_choosePD(void) {
 
 
 
-
+#ifndef amVK_RELEASE
+static bool _registered1 = false;
 
 // And this is the callback that the validator will call
-VkBool32 _debug_printf_callback(VkDebugReportFlagsEXT flags,
+VkBool32 _amVK_DebugKonsument1(VkDebugReportFlagsEXT flags,
     VkDebugReportObjectTypeEXT objectType,
     uint64_t object, 
     size_t location, 
@@ -626,25 +591,46 @@ VkBool32 _debug_printf_callback(VkDebugReportFlagsEXT flags,
     //{
     //    amVK_LOG("debugPrintfEXT: " << pMessage);
     //}
-    amVK_LOG("debugPrintfEXT: " << pMessage);
+    amVK_LOG("[amVK] debugPrintfEXT: " << pMessage);
  
     return false;
 }
+#endif      // Debug Part, amVK_RELEASE
 
-
-VkDebugReportCallbackEXT amVK_InstanceMK2::set_debug_printf_callback(void) {
-    VkDebugReportCallbackEXT DRC;
- 
-    VkDebugReportCallbackCreateInfoEXT ci = {VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT, nullptr,
-        VK_DEBUG_REPORT_INFORMATION_BIT_EXT,
-        _debug_printf_callback, nullptr
-    };
+VkDebugReportCallbackEXT amVK_InstanceMK2::Set_DebugKonsument(PFN_vkDebugReportCallbackEXT DebugKonsument) {
+#ifndef amVK_RELEASE
+    _LOG("amVK_InstanceMK2::Set_DebugKonsument");
     
-    PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback = VK_NULL_HANDLE;
-    CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(s_Instance, "vkCreateDebugReportCallbackEXT");
+    if(ICS.enableDebugLayers_LunarG) {
+        VkDebugReportCallbackEXT Handle = nullptr;
+        VkDebugReportCallbackEXT  *pH   = &Handle;
 
-    // Create the callback handle
-    VkResult res = CreateDebugReportCallback(s_Instance, &ci, nullptr, &DRC);
-    if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
-    return DRC;
+        if (DebugKonsument == nullptr) {
+            DebugKonsument = _amVK_DebugKonsument1;
+            pH = &ICS.s_DebugKonsument1;
+
+            if (_registered1) {
+                amVK_LOG_EX("param DebugKonsument == nullptr   &  the default _amVK_DebugKonsument1 is already registered");
+                return nullptr;
+            }
+        }
+    
+
+        VkDebugReportCallbackCreateInfoEXT ci = {VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT, nullptr,
+            VK_DEBUG_REPORT_INFORMATION_BIT_EXT,
+            _amVK_DebugKonsument1, nullptr
+        };
+        
+        PFN_vkCreateDebugReportCallbackEXT _func_ = VK_NULL_HANDLE;
+        _func_ = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(s_Instance, "vkCreateDebugReportCallbackEXT");
+
+
+        // Create the callback handle
+        VkResult res = _func_(s_Instance, &ci, nullptr, &Handle);
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
+        _LOG0("vkCreateDebugReportCallbackEXT...");
+
+        return Handle;
+    }
+#endif
 }

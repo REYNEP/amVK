@@ -56,7 +56,7 @@ struct amVK_Array {
 
 
 
-#ifdef amVK_UTILS_IMPLIMENTATION
+#ifdef amVK_UTILS_IMPLEMENTATION
   #include "string.h"
   #include "stdlib.h"
   void *amVK_memcpy(void *to, void *from, size_t size) {
@@ -327,7 +327,7 @@ bool mergeSort(uint32_t first_index, uint32_t last_index, T *unsorted, uint32_t 
 
 
 
-#ifdef amVK_UTILS_IMPLIMENTATION
+#ifdef amVK_UTILS_IMPLEMENTATION
 #include <vulkan/vulkan.h>
 #include <iostream>
 #include <bitset>
