@@ -27,6 +27,7 @@ struct amVK_SurfaceMK2;
  * \brief
  *    RenderPassMK2 is where you choose Format & ColorSpace.... 
  *    amVK_WI takes RenderPass in... & uses those formats at `the_info` & at \fn create_Attachments()
+ *      [For OUTPUT/Display]
  * 
  *  - amVK_Surface is 1 of the ties between amVK_RenderPass & amVK_WI    (RenderPass n' Swapchain)
  *  - The other one is ImageAttachments + their Format & Colorspace

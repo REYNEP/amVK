@@ -136,6 +136,22 @@ class amVK_DeadPool {
         10, 1, s_sizes   /** maxSets, poolSizeCount, pPoolSizes */
     };
 
+  protected:
+    amVK_DeadPool(const amVK_DeadPool&) = delete;             //Brendan's Solution
+    amVK_DeadPool& operator=(const amVK_DeadPool&) = delete;  //Brendan's Solution
+
+
+
+  public:
+    /** Functions */
+    amVK_DeadPool(amVK_DeviceMK2 *D) {
+        if (D == nullptr) {amVK_SET_activeD(amVK_D);}
+        else {amVK_CHECK_DEVICE(D, amVK_D);}
+    }
+   ~amVK_DeadPool(void) {}
+    inline void Destroy(void)                         {vkDestroyDescriptorPool(amVK_D->D, DPool, nullptr);}
+    inline void Reset(VkDescriptorPoolResetFlags flags) {vkResetDescriptorPool(amVK_D->D, DPool, flags);}
+    /** \see free() in RTC_DSET */
 
     inline bool Create(void) {
         if (DPool != nullptr) { amVK_LOG_EX("Descriptor Pool [_DPool] has already been created"); return false;}
@@ -146,20 +162,13 @@ class amVK_DeadPool {
     }
 
 
-    /** Functions */
-     amVK_DeadPool(amVK_DeviceMK2 *amVK_D) : amVK_D(amVK_D) {}
-    ~amVK_DeadPool(void) {}
-    inline void Destroy(void) {vkDestroyDescriptorPool(amVK_D->D, DPool, nullptr);}
-    inline void Reset(VkDescriptorPoolResetFlags flags) {vkResetDescriptorPool(amVK_D->D, DPool, flags);}
-    /** \see free() in RTC_DSET */
+
 
 
     // ---------- Alloc Set ----------
     static inline VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, 
         nullptr, 0, nullptr    /** descriptorPool, descriptorSetCount, pSetLayouts */
     };
-
-
     /** 
      * This is Separate, cz you might wanna set once, and then keep allocating multiple times. 
      * + INLINE optimizes it a lot 

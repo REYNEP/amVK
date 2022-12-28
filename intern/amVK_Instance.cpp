@@ -12,7 +12,7 @@
  */
 
 VkInstance amVK_InstanceMK2::Create_VkInstance(void) {
-    _LOG("amVK_InstanceMK2::Create_VkInstance");
+     _LOG("amVK_InstanceMK2::Create_VkInstance");
 
     if (s_Instance != nullptr) { 
         amVK_LOG_EX("amVK_IN::s_Instance isn't nullptr....");
@@ -22,6 +22,8 @@ VkInstance amVK_InstanceMK2::Create_VkInstance(void) {
 
     // ----------- Extensions for vkCreateInstance ------------
     _LOG_LOOP("Enabled Instance Extensions:- ", i, ICS.enabled_iExts.size(), ICS.enabled_iExts[i]);
+    the_info.enabledExtensionCount = static_cast<uint32_t>(ICS.enabled_iExts.size());
+    the_info.ppEnabledExtensionNames = ICS.enabled_iExts.data;
 
 
     // ----------- ValidationLayers for vkCreateInstance ------------

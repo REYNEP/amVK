@@ -26,7 +26,7 @@ class MemoryMK1 {
 class amVK_ImgNBuf_Kernal {
   public:
     static inline amVK_DeviceMK2 *s_amVK_D = nullptr;
-    static void set_device(amVK_DeviceMK2 *D) {
+    static void Set_Device(amVK_DeviceMK2 *D) {
         if (D == nullptr) {amVK_SET_activeD(s_amVK_D);}
         else {amVK_CHECK_DEVICE(D, s_amVK_D);}
     }
@@ -67,7 +67,7 @@ class BufferMK2 {
      * 
      * TODO: INVESTIGATE: What did AMD show us as 256MB here? https://www.youtube.com/watch?v=zSG6dPq57P8&t=308s
      */
-    void amvkCreateBuffer(uint64_t sizeByte, VkBufferUsageFlags usage)
+    void Create(uint64_t sizeByte, VkBufferUsageFlags usage)
     {
         if (S_amVK_DEVICE == nullptr) {amVK_LOG_EX("call amVK_ImgNBuf_Kernal::set_device();");}
         m_sizeByte = sizeByte;
@@ -90,14 +90,14 @@ class BufferMK2 {
     }
 
     /** \todo VkMemoryMapFlags */
-    void amvkCopyBuffer(const void *from) {
+    void CopyFrom(const void *from) {
         void* data;
         vkMapMemory(  S_amVK_DEVICE->D, MEMORY.M, 0, m_sizeByte, 0, &data);
         memcpy(data, from, m_sizeByte);
         vkUnmapMemory(S_amVK_DEVICE->D, MEMORY.M);
     }
 
-    void amvkDestroyBuffer(void) {
+    void Destroy(void) {
         vkDestroyBuffer(S_amVK_DEVICE->D, BUFFER, nullptr);
         vkFreeMemory(   S_amVK_DEVICE->D, MEMORY.M, nullptr);
     }
@@ -226,6 +226,21 @@ class ImageMK2 {
         vkDestroyImage(    amVK_D->D, img,    nullptr);
         vkFreeMemory(      amVK_D->D, memory, nullptr);
         return true;
+    }
+
+
+
+
+    static inline VkSamplerCreateInfo CI = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, nullptr, 0,
+        VK_FILTER_NEAREST, VK_FILTER_NEAREST,
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE
+    };
+    static inline VkSampler amvkCreateSampler(amVK_DeviceMK2 *amVK_D) {
+        VkSampler _S;
+        VkResult res = vkCreateSampler(amVK_D->D, &CI, nullptr, &_S);
+        if (res != VK_SUCCESS) {amVK_LOG_EX(amVK_Utils::vulkan_result_msg(res)); return nullptr;}
+        return _S;
     }
 };
 

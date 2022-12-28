@@ -7,6 +7,7 @@
   /│\  └─┘└─┘┘└┘└─┘ ┴ ┴└─└─┘└─┘ ┴ └─┘┴└─
  */
 amVK_DeviceMK2::amVK_DeviceMK2(VkPhysicalDevice PD, uint32_t ur_exts_n, uint32_t ur_qCIs_n, amVK_DevicePreset_Flags DevicePreset) : flag(DevicePreset), PD(PD) {
+    _LOG("amVK_DeviceMK2 CONSTRUCTOR");
     /** Pre-Cautions.... */
         // amVK Support for now
         if (DevicePreset == amVK_DP_UNDEFINED) {
@@ -21,9 +22,8 @@ amVK_DeviceMK2::amVK_DeviceMK2(VkPhysicalDevice PD, uint32_t ur_exts_n, uint32_t
             this->PD_index = HEART->SPD.index(PD);
             if (PD_index == UINT32_T_NULL) {
                 amVK_LOG_EX("You passed in a invalid VkPhysicalDevice pointer.... [trying to choose our own]");
+                PD = nullptr;
             }
-
-            PD = nullptr;
         }
 
         // XD
@@ -45,6 +45,7 @@ amVK_DeviceMK2::amVK_DeviceMK2(VkPhysicalDevice PD, uint32_t ur_exts_n, uint32_t
         this->exts.n = ur_exts_n;
     /** Pre-Cautions END.... */
 
+    _LOG0("amVK_DeviceMK2 (Settings have been set, going into    'konfigurieren()'");
     this->konfigurieren();
 }
 
